@@ -112,9 +112,11 @@ if __name__ == "__main__":
                    for x in strains}
     k = pd.DataFrame(k).T
     k[np.isnan(k)] = 0.0
+    # obtain and filter by maf
     ksum = k.T.sum() / k.shape[1]
     k = k.loc[ksum[(ksum >= options.min_maf) & (ksum <= options.max_maf)].index]
 
+    # prefilter the kmers
     fkmer = {kmer for kmer in k.index
              if stats.ttest_ind(p.loc[p.index[k.loc[kmer] >= 1]],
                                 p.loc[p.index[k.loc[kmer] == 0]],
