@@ -3,15 +3,15 @@
 def get_options():
     import argparse
 
-    description = 'SEER on continuous phenotypes, rewritten in python'
+    description = 'SEER, rewritten in python'
     parser = argparse.ArgumentParser(description=description)
 
     parser.add_argument('kmers',
                         help='Kmers file')
     parser.add_argument('phenotypes',
                         help='Phenotypes file')
-    parser.add_argument('structure',
-                        help='Population structure file')
+    parser.add_argument('distances',
+                        help='Strains distance square matrix')
     
     parser.add_argument('--min-maf',
                         type=float,
@@ -25,8 +25,61 @@ def get_options():
                         type=float,
                         default=1E-5,
                         help='Prefiltering t-test pvalue threshold [Default: 1E-5]')
+    parser.add_argument('--max-dimensions',
+                        type=int,
+                        default=3,
+                        help='Maximum number of dimensions to consider after MDS [Default: 3]')
 
     return parser.parse_args()
+
+
+# thanks to Francis Song for this function
+# source: http://www.nervouscomputer.com/hfs/cmdscale-in-python/
+def cmdscale(D):
+    """
+    Classical multidimensional scaling (MDS)
+
+    Parameters
+    ----------
+    D : (n, n) array
+        Symmetric distance matrix.
+
+    Returns
+    -------
+    Y : (n, p) array
+        Configuration matrix. Each column represents a dimension. Only the
+        p dimensions corresponding to positive eigenvalues of B are returned.
+        Note that each dimension is only determined up to an overall sign,
+        corresponding to a reflection.
+
+    e : (n,) array
+        Eigenvalues of B.
+    """
+    # Number of points
+    n = len(D)
+
+    # Centering matrix
+    H = np.eye(n) - np.ones((n, n))/n
+
+    # YY^T
+    B = -H.dot(D**2).dot(H)/2
+
+    # Diagonalize
+    evals, evecs = np.linalg.eigh(B)
+
+    # Sort by eigenvalue in descending order
+    idx   = np.argsort(evals)[::-1]
+    evals = evals[idx]
+    evecs = evecs[:,idx]
+
+    # Compute the coordinates using positive-eigenvalued components only
+    w, = np.where(evals > 0)
+    L  = np.diag(np.sqrt(evals[w]))
+    V  = evecs[:,w]
+    Y  = V.dot(L)
+
+    return Y, evals
+
 
 if __name__ == "__main__":
     options = get_options()
@@ -43,10 +96,14 @@ if __name__ == "__main__":
                      index=[x.split()[0]
                             for x in open(options.phenotypes)])
 
-    m = pd.read_table(options.structure,
-                      sep=',',
-                      header=None)
-    m.index = p.index
+    m = pd.read_table(options.distances,
+                      index_col=0)
+    # restrict to strains for which we have phenotypes
+    m = m.loc[p.index, p.index]
+    m = pd.DataFrame(cmdscale(m)[0][:, :options.max_dimensions],
+                     index=m.index)
+    for i in range(m.shape[1]):
+        m[i] = m[i] / max(abs(m[i]))
 
     k = {}
     for l in open(options.kmers):
