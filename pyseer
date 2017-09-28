@@ -101,7 +101,9 @@ def iter_kmers(p, m, infile, all_strains, min_maf, max_maf, filter_pvalue):
         if not options.uncompressed:
             l = l.decode()
         kmer, strains = l.split()[0], l.rstrip().split()[2:]
-        maf = len(strains) / len(all_strains)
+        maf1 = len(strains) / len(all_strains)
+        maf2 = 1 - maf1
+        maf = min((maf1, maf2))
         # filter by MAF
         if maf < min_maf or maf > max_maf:
             continue
@@ -115,7 +117,6 @@ def iter_kmers(p, m, infile, all_strains, min_maf, max_maf, filter_pvalue):
         k = pd.Series(k, name=kmer)
         k[np.isnan(k)] = 0.0
         k[k >= 1] = 1.0
-        maf = k.sum() / k.shape[0]
         yield p, k, m, maf, filter_pvalue
 
 
