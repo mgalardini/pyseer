@@ -3,6 +3,8 @@ pyseer
 
 [SEER](https://github.com/johnlees/seer), reimplemented in python
 
+    pyseer kmers.gz phenotypes.tsv structure.tsv --min-maf 0.01 --max-maf 0.99 --cpu 15 --filter-pvalue 1E-8
+
 Motivation
 ----------
 
