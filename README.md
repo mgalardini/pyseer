@@ -91,6 +91,7 @@ Absent features:
 * user-defined covariates
 * betas for covariates are not present in output
 * reasons for failures are not reported
+* filtering of results based on LRT p-value
 
 Additional features:
 
