@@ -30,9 +30,10 @@ As this script is a reimplementation of previously published work, if you end
 up using it you should cite the original paper. They did the hard work and
 they need to be recognized for it.
 
-Lees, John A., et al. "Sequence element enrichment analysis to determine
-the genetic basis of bacterial phenotypes." Nature communications 7 (2016): 12797.
-doi: 10.1038/ncomms12797
+``Lees, John A., et al. "Sequence element enrichment analysis to determine
+the genetic basis of bacterial phenotypes." Nature communications 7 (2016): 12797.``
+
+``doi: 10.1038/ncomms12797``
 
 Prerequisites
 -------------
@@ -48,7 +49,7 @@ Between parenthesis the versions the script was tested against:
 Installation
 ------------
 
-Since everythinn fits in a script (`pyseer`), you can just place it in your `$PATH`,
+Since everything fits in a script (`pyseer`), you can just place it in your `$PATH`,
 make it executable (`chmod 755 pyseer`) and type:
 
     pyseer -h
