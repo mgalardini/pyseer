@@ -128,17 +128,17 @@ def binary(p, k, m, maf, pret):
               t[(t[0] == 0) & (t[k.name] == 0)].shape[0]]]
     prep = stats.chi2_contingency(table, correction=False)[1]
     if prep > pret:
-        print('\t'.join([str(x)
-                         for x in (k.name,
-                                   maf,
-                                   prep,
-                                   np.nan,
-                                   np.nan,
-                                   np.nan,
-                                   np.nan,
-                                   ','.join(sorted(k[k == 1].index)),
-                                   ','.join(sorted(k[k == 0].index)))]))
-        return
+        x = '\t'.join([str(x)
+                       for x in (k.name,
+                                 maf,
+                                 prep,
+                                 np.nan,
+                                 np.nan,
+                                 np.nan,
+                                 np.nan,
+                                 ','.join(sorted(k[k == 1].index)),
+                                 ','.join(sorted(k[k == 0].index)))])
+        return x
     
     # actual logistic regression
     v = np.concatenate((p.values.reshape(-1, 1),
@@ -167,6 +167,19 @@ def binary(p, k, m, maf, pret):
         res2 = mod2.fit(method='bfgs')
         if not res2.mle_retvals['converged']:
             res2 = mod2.fit(method='newton')
+    except np.linalg.linalg.LinAlgError:
+        # singular matrix error
+        x = '\t'.join([str(x)
+                       for x in (k.name,
+                                 maf,
+                                 prep,
+                                 np.nan,
+                                 np.nan,
+                                 np.nan,
+                                 np.nan,
+                                 ','.join(sorted(k[k == 1].index)),
+                                 ','.join(sorted(k[k == 0].index)))])
+        return x
     finally:
         sys.stdout.close()
         sys.stdout = old_stdout
@@ -181,16 +194,17 @@ def binary(p, k, m, maf, pret):
     lrstat = -2*(llf_restr - llf_full)
     lr_pvalue = stats.chi2.sf(lrstat, lrdf)
 
-    print('\t'.join([str(x)
-                     for x in (k.name,
-                               maf,
-                               prep,
-                               float(res1.wald_test('kmer = 0').pvalue),
-                               lr_pvalue,
-                               res1.params.kmer,
-                               res1.bse.kmer,
-                               ','.join(sorted(k[k == 1].index)),
-                               ','.join(sorted(k[k == 0].index)))]))
+    x = '\t'.join([str(x)
+                   for x in (k.name,
+                             maf,
+                             prep,
+                             float(res1.wald_test('kmer = 0').pvalue),
+                             lr_pvalue,
+                             res1.params.kmer,
+                             res1.bse.kmer,
+                             ','.join(sorted(k[k == 1].index)),
+                             ','.join(sorted(k[k == 0].index)))])
+    return x
 
 
 def continuous(p, k, m, maf, pret):
@@ -199,17 +213,17 @@ def continuous(p, k, m, maf, pret):
                            p.loc[p.index[k == 0]],
                            equal_var=False)[1]
     if prep > pret:
-        print('\t'.join([str(x)
-                         for x in (k.name,
-                                   maf,
-                                   prep,
-                                   np.nan,
-                                   np.nan,
-                                   np.nan,
-                                   np.nan,
-                                   ','.join(sorted(k[k == 1].index)),
-                                   ','.join(sorted(k[k == 0].index)))]))
-        return
+        x = '\t'.join([str(x)
+                       for x in (k.name,
+                                 maf,
+                                 prep,
+                                 np.nan,
+                                 np.nan,
+                                 np.nan,
+                                 np.nan,
+                                 ','.join(sorted(k[k == 1].index)),
+                                 ','.join(sorted(k[k == 0].index)))])
+        return x
     
     # actual linear regression
     v = np.concatenate((p.values.reshape(-1, 1),
@@ -232,20 +246,34 @@ def continuous(p, k, m, maf, pret):
     try:
         res1 = mod1.fit()
         res2 = mod2.fit()
+    except np.linalg.linalg.LinAlgError:
+        # singular matrix error
+        x = '\t'.join([str(x)
+                       for x in (k.name,
+                                 maf,
+                                 prep,
+                                 np.nan,
+                                 np.nan,
+                                 np.nan,
+                                 np.nan,
+                                 ','.join(sorted(k[k == 1].index)),
+                                 ','.join(sorted(k[k == 0].index)))])
+        return x
     finally:
         sys.stdout.close()
         sys.stdout = old_stdout
     
-    print('\t'.join([str(x)
-                     for x in (k.name,
-                               maf,
-                               prep,
-                               float(res1.wald_test('kmer = 0').pvalue),
-                               res1.compare_lr_test(res2)[1],
-                               res1.params.kmer,
-                               res1.bse.kmer,
-                               ','.join(sorted(k[k == 1].index)),
-                               ','.join(sorted(k[k == 0].index)))]))
+    x = '\t'.join([str(x)
+                   for x in (k.name,
+                             maf,
+                             prep,
+                             float(res1.wald_test('kmer = 0').pvalue),
+                             res1.compare_lr_test(res2)[1],
+                             res1.params.kmer,
+                             res1.bse.kmer,
+                             ','.join(sorted(k[k == 1].index)),
+                             ','.join(sorted(k[k == 0].index)))])
+    return x
     
 
 if __name__ == "__main__":
@@ -309,8 +337,12 @@ if __name__ == "__main__":
             ret = pool.starmap(continuous, itertools.islice(k_iter, options.cpu*1000))
             if not ret:
                 break
+            for x in ret:
+                print(x)
     else:
         while True:
             ret = pool.starmap(binary, itertools.islice(k_iter, options.cpu*1000))
             if not ret:
                 break
+            for x in ret:
+                print(x)
