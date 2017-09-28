@@ -13,14 +13,18 @@ def get_options():
     parser.add_argument('distances',
                         help='Strains distance square matrix')
     
+    parser.add_argument('--continuous',
+                        action='store_true',
+                        default=False,
+                        help='Continuous phenotype [Default: binary]')
     parser.add_argument('--min-maf',
                         type=float,
-                        default=0.2,
-                        help='Minimum MAF [Default: 0.2]')
+                        default=0.01,
+                        help='Minimum MAF [Default: 0.01]')
     parser.add_argument('--max-maf',
                         type=float,
-                        default=0.8,
-                        help='Maximum MAF [Default: 0.8]')
+                        default=0.99,
+                        help='Maximum MAF [Default: 0.99]')
     parser.add_argument('--filter-pvalue',
                         type=float,
                         default=1E-5,
@@ -29,6 +33,14 @@ def get_options():
                         type=int,
                         default=3,
                         help='Maximum number of dimensions to consider after MDS [Default: 3]')
+    parser.add_argument('--uncompressed',
+                        action='store_true',
+                        default=False,
+                        help='Uncompressed kmers file [Default: gzipped]')
+    parser.add_argument('--cpu',
+                        type=int,
+                        default=1,
+                        help='Processes [Default: 1]')
 
     return parser.parse_args()
 
@@ -81,60 +93,221 @@ def cmdscale(D):
     return Y, evals
 
 
+def iter_kmers(p, m, infile, all_strains, min_maf, max_maf, filter_pvalue):
+    for l in infile:
+        if not options.uncompressed:
+            l = l.decode()
+        kmer, strains = l.split()[0], l.rstrip().split()[2:]
+        maf = len(strains) / len(all_strains)
+        # filter by MAF
+        if maf < min_maf or maf > max_maf:
+            continue
+
+        k = {x.split(':')[0]: int(x.split(':')[1])
+             for x in strains}
+        for x in all_strains.difference({x.split(':')[0]
+                                         for x in strains}):
+            k[x] = 0
+
+        k = pd.Series(k, name=kmer)
+        k[np.isnan(k)] = 0.0
+        k[k >= 1] = 1.0
+        maf = k.sum() / k.shape[0]
+        yield p, k, m, maf, filter_pvalue
+
+
+def binary(p, k, m, maf, pret):
+    # pre-filtering
+    t = p.to_frame().join(k.to_frame(), how='inner')
+    table = [[t[(t[0] == 1) & (t[k.name] == 1)].shape[0],
+              t[(t[0] == 1) & (t[k.name] == 0)].shape[0]],
+             [t[(t[0] == 0) & (t[k.name] == 1)].shape[0],
+              t[(t[0] == 0) & (t[k.name] == 0)].shape[0]]]
+    prep = stats.chi2_contingency(table, correction=False)[1]
+    if prep > pret:
+        print('\t'.join([str(x)
+                         for x in (k.name,
+                                   maf,
+                                   prep,
+                                   np.nan,
+                                   np.nan,
+                                   np.nan,
+                                   np.nan,
+                                   ','.join(sorted(k[k == 1].index)),
+                                   ','.join(sorted(k[k == 0].index)))]))
+        return
+    
+    # actual logistic regression
+    v = np.concatenate((p.values.reshape(-1, 1),
+                        k.values.reshape(-1, 1),
+                        m.values),
+                       axis=1)
+    df = pd.DataFrame(v,
+                      columns=['phenotype', 'kmer'] +
+                              ['PC%d'%x for x in range(1, m.shape[1]+1)])
+    mod1 = smf.logit(formula='phenotype ~ kmer + ' +
+                             ' + '.join(['PC%d'%x for x in range(1, m.shape[1]+1)]),
+                     data=df)
+    mod2 = smf.logit(formula='phenotype ~ ' +
+                             ' + '.join(['PC%d'%x for x in range(1, m.shape[1]+1)]),
+                     data=df)
+    
+    # suppress annoying stdout messages
+    old_stdout = sys.stdout
+    sys.stdout = open(os.devnull, "w")
+    try:
+        # try first bfgs optimization
+        res1 = mod1.fit(method='bfgs')
+        if not res1.mle_retvals['converged']:
+            # fallback to Newton-Raphson
+            res1 = mod1.fit(method='newton')
+        res2 = mod2.fit(method='bfgs')
+        if not res2.mle_retvals['converged']:
+            res2 = mod2.fit(method='newton')
+    finally:
+        sys.stdout.close()
+        sys.stdout = old_stdout
+    
+    # lrt test for logit
+    # lifted from statsmodels code for linear regression
+    llf_full = res1.llf
+    llf_restr = res2.llf
+    df_full = res1.df_resid
+    df_restr = res2.df_resid
+    lrdf = (df_restr - df_full)
+    lrstat = -2*(llf_restr - llf_full)
+    lr_pvalue = stats.chi2.sf(lrstat, lrdf)
+
+    print('\t'.join([str(x)
+                     for x in (k.name,
+                               maf,
+                               prep,
+                               float(res1.wald_test('kmer = 0').pvalue),
+                               lr_pvalue,
+                               res1.params.kmer,
+                               res1.bse.kmer,
+                               ','.join(sorted(k[k == 1].index)),
+                               ','.join(sorted(k[k == 0].index)))]))
+
+
+def continuous(p, k, m, maf, pret):
+    # pre-filtering
+    prep = stats.ttest_ind(p.loc[p.index[k == 1]],
+                           p.loc[p.index[k == 0]],
+                           equal_var=False)[1]
+    if prep > pret:
+        print('\t'.join([str(x)
+                         for x in (k.name,
+                                   maf,
+                                   prep,
+                                   np.nan,
+                                   np.nan,
+                                   np.nan,
+                                   np.nan,
+                                   ','.join(sorted(k[k == 1].index)),
+                                   ','.join(sorted(k[k == 0].index)))]))
+        return
+    
+    # actual linear regression
+    v = np.concatenate((p.values.reshape(-1, 1),
+                        k.values.reshape(-1, 1),
+                        m.values),
+                       axis=1)
+    df = pd.DataFrame(v,
+                      columns=['phenotype', 'kmer'] +
+                      ['PC%d'%x for x in range(1, m.shape[1]+1)])
+    mod1 = smf.ols(formula='phenotype ~ kmer + ' +
+                           ' + '.join(['PC%d'%x for x in range(1, m.shape[1]+1)]),
+                   data=df)
+    mod2 = smf.ols(formula='phenotype ~ ' +
+                           ' + '.join(['PC%d'%x for x in range(1, m.shape[1]+1)]),
+                   data=df)
+    
+    # suppress annoying stdout messages
+    old_stdout = sys.stdout
+    sys.stdout = open(os.devnull, "w")
+    try:
+        res1 = mod1.fit()
+        res2 = mod2.fit()
+    finally:
+        sys.stdout.close()
+        sys.stdout = old_stdout
+    
+    print('\t'.join([str(x)
+                     for x in (k.name,
+                               maf,
+                               prep,
+                               float(res1.wald_test('kmer = 0').pvalue),
+                               res1.compare_lr_test(res2)[1],
+                               res1.params.kmer,
+                               res1.bse.kmer,
+                               ','.join(sorted(k[k == 1].index)),
+                               ','.join(sorted(k[k == 0].index)))]))
+    
+
 if __name__ == "__main__":
+    import sys
+    if sys.version_info[0] < 3:
+        sys.stderr.write('pyseer requires python version 3 or above\n')
+        sys.exit(1)
+    
     options = get_options()
 
-    import sys
+    import os
+    import gzip
+    import warnings
+    import itertools
     import numpy as np
     import pandas as pd
     from scipy import stats
-
+    from multiprocessing import Pool
     import statsmodels.formula.api as smf
 
-    p = pd.DataFrame([float(x.rstrip().split()[-1])
-                      for x in open(options.phenotypes)],
-                     index=[x.split()[0]
-                            for x in open(options.phenotypes)])
+    warnings.filterwarnings('ignore')
 
+    # reading phenotypes
+    p = pd.Series([float(x.rstrip().split()[-1])
+                   for x in open(options.phenotypes)],
+                  index=[x.split()[0]
+                         for x in open(options.phenotypes)])
+    
+    # reading genome distances
     m = pd.read_table(options.distances,
                       index_col=0)
-    # restrict to strains for which we have phenotypes
     m = m.loc[p.index, p.index]
+    # metric MDS scaling
     m = pd.DataFrame(cmdscale(m)[0][:, :options.max_dimensions],
                      index=m.index)
     for i in range(m.shape[1]):
         m[i] = m[i] / max(abs(m[i]))
 
-    k = {}
-    for l in open(options.kmers):
-        kmer, strains = l.split()[0], l.rstrip().split()[2:]
-        k[kmer] = {x.split(':')[0]: int(x.split(':')[1])
-                   for x in strains}
-    k = pd.DataFrame(k).T
-    k[np.isnan(k)] = 0.0
-    # obtain and filter by maf
-    ksum = k.T.sum() / k.shape[1]
-    k = k.loc[ksum[(ksum >= options.min_maf) & (ksum <= options.max_maf)].index]
+    all_strains = set(p.index)
 
-    # prefilter the kmers
-    fkmer = {kmer for kmer in k.index
-             if stats.ttest_ind(p.loc[p.index[k.loc[kmer] >= 1]],
-                                p.loc[p.index[k.loc[kmer] == 0]],
-                                equal_var=False)[1] <= options.filter_pvalue}
+    print('\t'.join(['kmer', 'maf', 'filter-pvalue',
+                     'wald-pvalue', 'lrt-pvalue', 'beta', 'beta-std-err',
+                     'k-samples', 'nk-samples']))
+    if options.uncompressed:
+        infile = open(options.kmers)
+    else:
+        infile = gzip.open(options.kmers, 'r')
 
-    reimp = []
-    for kmer in sorted(fkmer):
-        v = np.concatenate((p.values.reshape(-1, 1),
-                            k.loc[kmer].values.reshape(-1, 1),
-                            m.values),
-                           axis=1)
-        df = pd.DataFrame(v,
-                          columns=['expression', 'kmer', 'PC1', 'PC2', 'PC3'])
-        mod1 = smf.ols(formula='expression ~ kmer + PC1 + PC2 + PC3', data=df)
-        mod2 = smf.ols(formula='expression ~ PC1 + PC2 + PC3', data=df)
-        res1 = mod1.fit()
-        res2 = mod2.fit()
-        reimp.append((kmer, ksum.loc[kmer], res1.compare_lr_test(res2)[1], res1.params.kmer))
-    reimp = pd.DataFrame(reimp,
-                         columns=['kmer', 'maf', 'lrt', 'beta']).set_index('kmer')
-    reimp.to_csv(sys.stdout, sep='\t')
+    # multiprocessing setup
+    pool = Pool(options.cpu)
+    
+    # iterator over each kmer
+    # implements maf filtering
+    k_iter = iter_kmers(p, m, infile, all_strains,
+                        options.min_maf, options.max_maf,
+                        options.filter_pvalue)
+    # actual association test
+    # multiprocessing proceeds 1000 MAF-passing kmers per core at a time
+    if options.continuous:
+        while True:
+            ret = pool.starmap(continuous, itertools.islice(k_iter, options.cpu*1000))
+            if not ret:
+                break
+    else:
+        while True:
+            ret = pool.starmap(binary, itertools.islice(k_iter, options.cpu*1000))
+            if not ret:
+                break
