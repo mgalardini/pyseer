@@ -129,17 +129,7 @@ def binary(p, k, m, maf, pret):
               t[(t[0] == 0) & (t[k.name] == 0)].shape[0]]]
     prep = stats.chi2_contingency(table, correction=False)[1]
     if prep > pret:
-        x = '\t'.join([str(x)
-                       for x in (k.name,
-                                 maf,
-                                 prep,
-                                 np.nan,
-                                 np.nan,
-                                 np.nan,
-                                 np.nan,
-                                 ','.join(sorted(k[k == 1].index)),
-                                 ','.join(sorted(k[k == 0].index)))])
-        return x
+        return None
     
     # actual logistic regression
     v = np.concatenate((p.values.reshape(-1, 1),
@@ -214,17 +204,7 @@ def continuous(p, k, m, maf, pret):
                            p.loc[p.index[k == 0]],
                            equal_var=False)[1]
     if prep > pret:
-        x = '\t'.join([str(x)
-                       for x in (k.name,
-                                 maf,
-                                 prep,
-                                 np.nan,
-                                 np.nan,
-                                 np.nan,
-                                 np.nan,
-                                 ','.join(sorted(k[k == 1].index)),
-                                 ','.join(sorted(k[k == 0].index)))])
-        return x
+        return None
     
     # actual linear regression
     v = np.concatenate((p.values.reshape(-1, 1),
@@ -339,6 +319,8 @@ if __name__ == "__main__":
             if not ret:
                 break
             for x in ret:
+                if x is None:
+                    continue
                 print(x)
     else:
         while True:
@@ -346,4 +328,6 @@ if __name__ == "__main__":
             if not ret:
                 break
             for x in ret:
+                if x is None:
+                    continue
                 print(x)
