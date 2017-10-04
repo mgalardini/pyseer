@@ -83,6 +83,7 @@ SEER's features present in this script:
 * MAF filtering
 * kmers prefiltering
 * multi-threading
+* filtering of results based on LRT p-value
 
 Absent features:
 
@@ -91,13 +92,13 @@ Absent features:
 * user-defined covariates
 * betas for covariates are not present in output
 * reasons for failures are not reported
-* filtering of results based on LRT p-value
 
 Additional features:
 
 * Multidimensional scaling from squared [mash](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-016-0997-x) matrix
 * Uncompressed kmers input file is acceptable too
 * List of samples without the kmer are also outputed
+* LRT p-value threshold computed from genome size
 
 Copyright
 ---------
