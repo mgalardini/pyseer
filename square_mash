@@ -6,6 +6,11 @@ def get_options():
     description = 'Make a square matrix out of a mash stream'
     parser = argparse.ArgumentParser(description=description)
 
+    parser.add_argument('--classic',
+                        action='store_true',
+                        default=False,
+                        help='Output table in a format suitable for R_mds.pl')
+
     return parser.parse_args()
 
 if __name__ == "__main__":
@@ -27,5 +32,11 @@ if __name__ == "__main__":
         d[g2][g1] = dist
 
     m = pd.DataFrame(d)
-    m.to_csv(sys.stdout,
-             sep='\t')
+    if not options.classic:
+        m.to_csv(sys.stdout,
+                 sep='\t')
+    else:
+        m.to_csv(sys.stdout,
+                 index=False,
+                 header=False,
+                 sep=',')
