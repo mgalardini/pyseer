@@ -32,6 +32,14 @@ def get_options():
                         type=float,
                         default=1E-5,
                         help='Prefiltering t-test pvalue threshold [Default: 1E-5]')
+    parser.add_argument('--lrt-pvalue',
+                        type=float,
+                        default=1E-8,
+                        help='Likelihood ratio test pvalue threshold [Default: 1E-8]')
+    parser.add_argument('--genome-size',
+                        type=int,
+                        default=None,
+                        help='Reference genome size to estimate lrt p-value threshold (overwrites --lrt-pvalue)')
     parser.add_argument('--max-dimensions',
                         type=int,
                         default=3,
@@ -96,7 +104,9 @@ def cmdscale(D):
     return Y, evals
 
 
-def iter_kmers(p, m, infile, all_strains, min_maf, max_maf, filter_pvalue):
+def iter_kmers(p, m, infile, all_strains,
+               min_maf, max_maf,
+               filter_pvalue, lrt_pvalue):
     for l in infile:
         if not options.uncompressed:
             l = l.decode()
@@ -115,10 +125,10 @@ def iter_kmers(p, m, infile, all_strains, min_maf, max_maf, filter_pvalue):
         k = pd.Series(k, name=kmer)
         k[np.isnan(k)] = 0.0
         k[k >= 1] = 1.0
-        yield p, k, m, maf, filter_pvalue
+        yield p, k, m, maf, filter_pvalue, lrt_pvalue
 
 
-def binary(p, k, m, maf, pret):
+def binary(p, k, m, maf, pret, lrtt):
     # pre-filtering
     t = p.to_frame().join(k.to_frame(), how='inner')
     table = [[t[(t[0] == 1) & (t[k.name] == 1)].shape[0],
@@ -181,14 +191,17 @@ def binary(p, k, m, maf, pret):
     df_restr = res2.df_resid
     lrdf = (df_restr - df_full)
     lrstat = -2*(llf_restr - llf_full)
-    lr_pvalue = stats.chi2.sf(lrstat, lrdf)
+    lrt_pvalue = stats.chi2.sf(lrstat, lrdf)
 
+    if lrt_pvalue > lrtt:
+        return None
+    
     x = '\t'.join([str(x)
                    for x in (k.name,
                              maf,
                              prep,
                              float(res1.wald_test('kmer = 0').pvalue),
-                             lr_pvalue,
+                             lrt_pvalue,
                              res1.params.kmer,
                              res1.bse.kmer,
                              ','.join(sorted(k[k == 1].index)),
@@ -196,7 +209,7 @@ def binary(p, k, m, maf, pret):
     return x
 
 
-def continuous(p, k, m, maf, pret):
+def continuous(p, k, m, maf, pret, lrtt):
     # pre-filtering
     prep = stats.ttest_ind(p.loc[p.index[k == 1]],
                            p.loc[p.index[k == 0]],
@@ -242,12 +255,16 @@ def continuous(p, k, m, maf, pret):
         sys.stdout.close()
         sys.stdout = old_stdout
     
+    lrt_pvalue = res1.compare_lr_test(res2)[1]
+    if lrt_pvalue > lrtt:
+        return None
+
     x = '\t'.join([str(x)
                    for x in (k.name,
                              maf,
                              prep,
                              float(res1.wald_test('kmer = 0').pvalue),
-                             res1.compare_lr_test(res2)[1],
+                             lrt_pvalue,
                              res1.params.kmer,
                              res1.bse.kmer,
                              ','.join(sorted(k[k == 1].index)),
@@ -293,6 +310,14 @@ if __name__ == "__main__":
 
     all_strains = set(p.index)
 
+    # if genome size is provided
+    # compute estimate of lrt p-value threshold
+    if options.genome_size is not None:
+        options.lrt_pvalue = 1 / (options.genome_size * 3)
+        sys.stderr.write(
+            'Likelihood ratio test p-value threshold derived from genome size: %.3e\n' %
+            options.lrt_pvalue)
+
     print('\t'.join(['kmer', 'maf', 'filter-pvalue',
                      'wald-pvalue', 'lrt-pvalue', 'beta', 'beta-std-err',
                      'k-samples', 'nk-samples']))
@@ -308,7 +333,8 @@ if __name__ == "__main__":
     # implements maf filtering
     k_iter = iter_kmers(p, m, infile, all_strains,
                         options.min_maf, options.max_maf,
-                        options.filter_pvalue)
+                        options.filter_pvalue,
+                        options.lrt_pvalue)
     # actual association test
     # multiprocessing proceeds 1000 MAF-passing kmers per core at a time
     if options.continuous:
