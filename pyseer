@@ -168,17 +168,8 @@ def binary(p, k, m, maf, pret, lrtt):
             res2 = mod2.fit(method='newton')
     except np.linalg.linalg.LinAlgError:
         # singular matrix error
-        x = '\t'.join([str(x)
-                       for x in (k.name,
-                                 maf,
-                                 prep,
-                                 np.nan,
-                                 np.nan,
-                                 np.nan,
-                                 np.nan,
-                                 ','.join(sorted(k[k == 1].index)),
-                                 ','.join(sorted(k[k == 0].index)))])
-        return x
+        # TODO: return an error message
+        return None
     finally:
         sys.stdout.close()
         sys.stdout = old_stdout
@@ -240,17 +231,8 @@ def continuous(p, k, m, maf, pret, lrtt):
         res2 = mod2.fit()
     except np.linalg.linalg.LinAlgError:
         # singular matrix error
-        x = '\t'.join([str(x)
-                       for x in (k.name,
-                                 maf,
-                                 prep,
-                                 np.nan,
-                                 np.nan,
-                                 np.nan,
-                                 np.nan,
-                                 ','.join(sorted(k[k == 1].index)),
-                                 ','.join(sorted(k[k == 0].index)))])
-        return x
+        # TODO: return an error message
+        return None
     finally:
         sys.stdout.close()
         sys.stdout = old_stdout
