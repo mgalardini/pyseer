@@ -272,7 +272,9 @@ if __name__ == "__main__":
     from multiprocessing import Pool
     import statsmodels.formula.api as smf
 
+    # silence warnings
     warnings.filterwarnings('ignore')
+    #
 
     # reading phenotypes
     p = pd.Series([float(x.rstrip().split()[-1])
