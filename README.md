@@ -84,13 +84,13 @@ SEER's features present in this script:
 * kmers prefiltering
 * multi-threading
 * filtering of results based on LRT p-value
+* covariates and intercept betas are reported
 
 Absent features:
 
 * automatic determination of binary/continuous phenotypes
 * binary phenotypes: Firth regression upon failure of bfgs and Newton-Raphson
 * user-defined covariates
-* betas for covariates are not present in output
 * reasons for failures are not reported
 
 Additional features:
