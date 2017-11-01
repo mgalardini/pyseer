@@ -15,7 +15,7 @@ def get_options():
                         help='Phenotypes file')
     parser.add_argument('distances',
                         help='Strains distance square matrix')
-    
+
     parser.add_argument('--continuous',
                         action='store_true',
                         default=False,
@@ -102,7 +102,7 @@ def cmdscale(D):
 
 def iter_kmers(p, m, infile, all_strains,
                min_af, max_af,
-               filter_pvalue, lrt_pvalue):
+               filter_pvalue, lrt_pvalue, null_fit):
     for l in infile:
         if not options.uncompressed:
             l = l.decode()
@@ -121,10 +121,10 @@ def iter_kmers(p, m, infile, all_strains,
         k = pd.Series(k, name=kmer)
         k[np.isnan(k)] = 0.0
         k[k >= 1] = 1.0
-        yield p, k, m, af, filter_pvalue, lrt_pvalue
+        yield p, k, m, af, filter_pvalue, lrt_pvalue, null_fit
 
 
-def binary(p, k, m, af, pret, lrtt):
+def binary(p, k, m, af, pret, lrtt, null_res):
     # pre-filtering
     t = p.to_frame().join(k.to_frame(), how='inner')
     table = [[t[(t[0] == 1) & (t[k.name] == 1)].shape[0],
@@ -134,7 +134,7 @@ def binary(p, k, m, af, pret, lrtt):
     prep = stats.chi2_contingency(table, correction=False)[1]
     if prep > pret:
         return None
-    
+
     # actual logistic regression
     v = np.concatenate((p.values.reshape(-1, 1),
                         k.values.reshape(-1, 1),
@@ -146,10 +146,7 @@ def binary(p, k, m, af, pret, lrtt):
     mod1 = smf.logit(formula='phenotype ~ kmer + ' +
                              ' + '.join(['PC%d'%x for x in range(1, m.shape[1]+1)]),
                      data=df)
-    mod2 = smf.logit(formula='phenotype ~ ' +
-                             ' + '.join(['PC%d'%x for x in range(1, m.shape[1]+1)]),
-                     data=df)
-    
+
     # suppress annoying stdout messages
     old_stdout = sys.stdout
     sys.stdout = open(os.devnull, "w")
@@ -159,30 +156,27 @@ def binary(p, k, m, af, pret, lrtt):
         if not res1.mle_retvals['converged']:
             # fallback to Newton-Raphson
             res1 = mod1.fit(method='newton')
-        res2 = mod2.fit(method='bfgs')
-        if not res2.mle_retvals['converged']:
-            res2 = mod2.fit(method='newton')
     except np.linalg.linalg.LinAlgError:
         # singular matrix error
-        # TODO: return an error message
+        os.stderr.write("Matrix inversion error with kmer " + str(k))
         return None
     finally:
         sys.stdout.close()
         sys.stdout = old_stdout
-    
+
     # lrt test for logit
     # lifted from statsmodels code for linear regression
     llf_full = res1.llf
-    llf_restr = res2.llf
+    llf_restr = null_res.llf
     df_full = res1.df_resid
-    df_restr = res2.df_resid
+    df_restr = null_res.df_resid
     lrdf = (df_restr - df_full)
     lrstat = -2*(llf_restr - llf_full)
     lrt_pvalue = stats.chi2.sf(lrstat, lrdf)
 
     if lrt_pvalue > lrtt:
         return None
-    
+
     x = '\t'.join([str(x)
                    for x in [k.name,
                              af,
@@ -198,14 +192,14 @@ def binary(p, k, m, af, pret, lrtt):
     return x
 
 
-def continuous(p, k, m, af, pret, lrtt):
+def continuous(p, k, m, af, pret, lrtt, null_res):
     # pre-filtering
     prep = stats.ttest_ind(p.loc[p.index[k == 1]],
                            p.loc[p.index[k == 0]],
                            equal_var=False)[1]
     if prep > pret:
         return None
-    
+
     # actual linear regression
     v = np.concatenate((p.values.reshape(-1, 1),
                         k.values.reshape(-1, 1),
@@ -217,25 +211,21 @@ def continuous(p, k, m, af, pret, lrtt):
     mod1 = smf.ols(formula='phenotype ~ kmer + ' +
                            ' + '.join(['PC%d'%x for x in range(1, m.shape[1]+1)]),
                    data=df)
-    mod2 = smf.ols(formula='phenotype ~ ' +
-                           ' + '.join(['PC%d'%x for x in range(1, m.shape[1]+1)]),
-                   data=df)
-    
+
     # suppress annoying stdout messages
     old_stdout = sys.stdout
     sys.stdout = open(os.devnull, "w")
     try:
         res1 = mod1.fit()
-        res2 = mod2.fit()
     except np.linalg.linalg.LinAlgError:
         # singular matrix error
-        # TODO: return an error message
+        os.stderr.write("Matrix inversion error with kmer " + str(k))
         return None
     finally:
         sys.stdout.close()
         sys.stdout = old_stdout
-    
-    lrt_pvalue = res1.compare_lr_test(res2)[1]
+
+    lrt_pvalue = res1.compare_lr_test(null_res)[1]
     if lrt_pvalue > lrtt:
         return None
 
@@ -252,14 +242,53 @@ def continuous(p, k, m, af, pret, lrtt):
                              [','.join(sorted(k[k == 1].index)),
                              ','.join(sorted(k[k == 0].index))]])
     return x
-    
+
+# Fit the null model, regression without k-mer
+def fit_null(p, m, continuous):
+    v = np.concatenate((p.values.reshape(-1, 1),
+                        m.values),
+                       axis=1)
+    df = pd.DataFrame(v,
+                      columns=['phenotype'] +
+                      ['PC%d'%x for x in range(1, m.shape[1]+1)])
+    if continuous:
+        null_mod = smf.ols(formula='phenotype ~ ' +
+                           ' + '.join(['PC%d'%x for x in range(1, m.shape[1]+1)]),
+                   data=df)
+    else:
+        null_mod = smf.logit(formula='phenotype ~ ' +
+                             ' + '.join(['PC%d'%x for x in range(1, m.shape[1]+1)]),
+                     data=df)
+
+    # suppress annoying stdout messages
+    old_stdout = sys.stdout
+    sys.stdout = open(os.devnull, "w")
+    try:
+        if continuous:
+            null_res = null_mod.fit()
+        else:
+            null_res = null_mod.fit(method='bfgs')
+            if not null_res.mle_retvals['converged']:
+                # fallback to Newton-Raphson
+                res1 = null_mod.fit(method='newton')
+
+    except np.linalg.linalg.LinAlgError:
+        # singular matrix error
+        os.stderr.write("Matrix inversion error with kmer " + str(k))
+        return None
+    finally:
+        sys.stdout.close()
+        sys.stdout = old_stdout
+
+    return null_res
+
 
 if __name__ == "__main__":
     import sys
     if sys.version_info[0] < 3:
         sys.stderr.write('pyseer requires python version 3 or above\n')
         sys.exit(1)
-    
+
     options = get_options()
 
     import os
@@ -281,7 +310,7 @@ if __name__ == "__main__":
                    for x in open(options.phenotypes)],
                   index=[x.split()[0]
                          for x in open(options.phenotypes)])
-    
+
     # reading genome distances
     m = pd.read_table(options.distances,
                       index_col=0)
@@ -305,13 +334,17 @@ if __name__ == "__main__":
 
     # multiprocessing setup
     pool = Pool(options.cpu)
-    
+
+    # calculate null regressions once
+    null_fit = fit_null(p, m, options.continuous)
+
     # iterator over each kmer
     # implements maf filtering
     k_iter = iter_kmers(p, m, infile, all_strains,
                         options.min_af, options.max_af,
                         options.filter_pvalue,
-                        options.lrt_pvalue)
+                        options.lrt_pvalue, null_fit)
+
     # actual association test
     # multiprocessing proceeds 1000 MAF-passing kmers per core at a time
     if options.continuous:
