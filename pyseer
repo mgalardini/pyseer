@@ -152,7 +152,7 @@ def binary(p, k, m, af, pret, lrtt, null_res):
     sys.stdout = open(os.devnull, "w")
     try:
         # try first bfgs optimization
-        res1 = mod1.fit(method='newton')
+        res1 = mod1.fit(method='bfgs')
         if not res1.mle_retvals['converged']:
             # fallback to Newton-Raphson
             res1 = mod1.fit(method='newton')
