@@ -30,20 +30,16 @@ def get_options():
                         help='Maximum AF [Default: 0.99]')
     parser.add_argument('--filter-pvalue',
                         type=float,
-                        default=1E-5,
-                        help='Prefiltering t-test pvalue threshold [Default: 1E-5]')
+                        default=1,
+                        help='Prefiltering t-test pvalue threshold [Default: 1]')
     parser.add_argument('--lrt-pvalue',
                         type=float,
-                        default=1E-8,
-                        help='Likelihood ratio test pvalue threshold [Default: 1E-8]')
-    parser.add_argument('--genome-size',
-                        type=int,
-                        default=None,
-                        help='Reference genome size to estimate lrt p-value threshold (overwrites --lrt-pvalue)')
+                        default=1,
+                        help='Likelihood ratio test pvalue threshold [Default: 1]')
     parser.add_argument('--max-dimensions',
                         type=int,
-                        default=3,
-                        help='Maximum number of dimensions to consider after MDS [Default: 3]')
+                        default=10,
+                        help='Maximum number of dimensions to consider after MDS [Default: 10]')
     parser.add_argument('--uncompressed',
                         action='store_true',
                         default=False,
@@ -112,7 +108,7 @@ def iter_kmers(p, m, infile, all_strains,
             l = l.decode()
         kmer, strains = l.split()[0], l.rstrip().split()[2:]
         af = len(strains) / len(all_strains)
-        # filter by MAF
+        # filter by AF
         if af < min_af or af > max_af:
             continue
 
@@ -297,14 +293,6 @@ if __name__ == "__main__":
         m[i] = m[i] / max(abs(m[i]))
 
     all_strains = set(p.index)
-
-    # if genome size is provided
-    # compute estimate of lrt p-value threshold
-    if options.genome_size is not None:
-        options.lrt_pvalue = 1 / (options.genome_size * 3)
-        sys.stderr.write(
-            'Likelihood ratio test p-value threshold derived from genome size: %.3e\n' %
-            options.lrt_pvalue)
 
     print('\t'.join(['kmer', 'af', 'filter-pvalue',
                      'wald-pvalue', 'lrt-pvalue', 'beta', 'beta-std-err',
