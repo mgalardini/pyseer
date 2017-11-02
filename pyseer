@@ -40,6 +40,13 @@ def get_options():
                         type=int,
                         default=10,
                         help='Maximum number of dimensions to consider after MDS [Default: 10]')
+    parser.add_argument('--covariates',
+                        default=None,
+                        help='User-defined covariates file (tab-delimited)')
+    parser.add_argument('--use-covariates',
+                        default=None,
+                        help='Covariates to use. Format is 1,2q,3 (q for quantitative)'
+                             ' [Default: load covariates but don\'t use them]')
     parser.add_argument('--uncompressed',
                         action='store_true',
                         default=False,
@@ -323,6 +330,11 @@ if __name__ == "__main__":
 
     all_strains = set(p.index)
 
+    # read covariates
+    if options.covariates is not None:
+        pass
+    #
+
     print('\t'.join(['kmer', 'af', 'filter-pvalue',
                      'wald-pvalue', 'lrt-pvalue', 'beta', 'beta-std-err',
                      'intercept'] +
@@ -351,7 +363,9 @@ if __name__ == "__main__":
     # multiprocessing proceeds 1000 MAF-passing kmers per core at a time
     if options.continuous:
         while True:
-            ret = pool.starmap(continuous, itertools.islice(k_iter, options.cpu*1000))
+            ret = pool.starmap(continuous,
+                               itertools.islice(k_iter,
+                                                options.cpu*1000))
             if not ret:
                 break
             for x in ret:
@@ -360,7 +374,9 @@ if __name__ == "__main__":
                 print(x)
     else:
         while True:
-            ret = pool.starmap(binary, itertools.islice(k_iter, options.cpu*1000))
+            ret = pool.starmap(binary,
+                               itertools.islice(k_iter,
+                                                options.cpu*1000))
             if not ret:
                 break
             for x in ret:
