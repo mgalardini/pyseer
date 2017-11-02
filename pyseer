@@ -158,8 +158,10 @@ def binary(p, k, m, af, pret, lrtt, null_res):
     old_stdout = sys.stdout
     sys.stdout = open(os.devnull, "w")
     try:
-        # try first bfgs optimization
-        res1 = mod1.fit(method='bfgs')
+        # try first bfgs optimization, but only if it works in a few iterations
+        start_vec = np.ones(df.shape[1])
+        start_vec[0] = np.log(np.mean(p.values)/(1-np.mean(p.values)))
+        res1 = mod1.fit(start_params=start_vec, method='bfgs', maxiter=20)
         if not res1.mle_retvals['converged']:
             # fallback to Newton-Raphson
             res1 = mod1.fit(method='newton')
