@@ -158,7 +158,7 @@ def binary(p, k, m, af, pret, lrtt, null_res):
             res1 = mod1.fit(method='newton')
     except np.linalg.linalg.LinAlgError:
         # singular matrix error
-        sys.stderr.write("Matrix inversion error with kmer " + str(k.name))
+        sys.stderr.write('Matrix inversion error with kmer %s\n' % str(k.name))
         return None
     finally:
         sys.stdout.close()
@@ -220,7 +220,7 @@ def continuous(p, k, m, af, pret, lrtt, null_res):
         res1 = mod1.fit()
     except np.linalg.linalg.LinAlgError:
         # singular matrix error
-        sys.stderr.write("Matrix inversion error with kmer " + str(k.name))
+        sys.stderr.write('Matrix inversion error with kmer %s\n' % str(k.name))
         return None
     finally:
         sys.stdout.close()
@@ -273,7 +273,7 @@ def fit_null(p, m, continuous):
 
     except np.linalg.linalg.LinAlgError:
         # singular matrix error
-        sys.stderr.write("Matrix inversion error with kmer " + str(k.name))
+        sys.stderr.write('Matrix inversion error with kmer %s\n' % str(k.name))
         return None
     finally:
         sys.stdout.close()
