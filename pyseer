@@ -186,7 +186,8 @@ def binary(p, k, m, af, pret, lrtt, null_res):
                              res1.params.kmer,
                              res1.bse.kmer,
                              res1.params.Intercept] +
-                             [getattr(res1.params, 'PC%d'%x) for x in range(1, m.shape[1]+1)] +
+                             [getattr(res1.params, 'PC%d'%x)
+                              for x in range(1, m.shape[1]+1)] +
                              [','.join(sorted(k[k == 1].index)),
                               ','.join(sorted(k[k == 0].index))]])
     return x
@@ -238,7 +239,8 @@ def continuous(p, k, m, af, pret, lrtt, null_res):
                              res1.params.kmer,
                              res1.bse.kmer,
                              res1.params.Intercept] +
-                             [getattr(res1.params, 'PC%d'%x) for x in range(1, m.shape[1]+1)] +
+                             [getattr(res1.params, 'PC%d'%x)
+                              for x in range(1, m.shape[1]+1)] +
                              [','.join(sorted(k[k == 1].index)),
                              ','.join(sorted(k[k == 0].index))]])
     return x
@@ -323,7 +325,9 @@ if __name__ == "__main__":
 
     print('\t'.join(['kmer', 'af', 'filter-pvalue',
                      'wald-pvalue', 'lrt-pvalue', 'beta', 'beta-std-err',
-                     'intercept'] + ['covar_%d' % i for i in range(1, options.max_dimensions+1)] +
+                     'intercept'] +
+                     ['covar_%d' % i
+                      for i in range(1, options.max_dimensions+1)] +
                      ['k-samples', 'nk-samples']))
     if options.uncompressed:
         infile = open(options.kmers)
