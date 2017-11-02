@@ -15,35 +15,31 @@ def get_options():
                         help='Phenotypes file')
     parser.add_argument('distances',
                         help='Strains distance square matrix')
-    
+
     parser.add_argument('--continuous',
                         action='store_true',
                         default=False,
                         help='Continuous phenotype [Default: binary]')
-    parser.add_argument('--min-maf',
+    parser.add_argument('--min-af',
                         type=float,
                         default=0.01,
-                        help='Minimum MAF [Default: 0.01]')
-    parser.add_argument('--max-maf',
+                        help='Minimum AF [Default: 0.01]')
+    parser.add_argument('--max-af',
                         type=float,
                         default=0.99,
-                        help='Maximum MAF [Default: 0.99]')
+                        help='Maximum AF [Default: 0.99]')
     parser.add_argument('--filter-pvalue',
                         type=float,
-                        default=1E-5,
-                        help='Prefiltering t-test pvalue threshold [Default: 1E-5]')
+                        default=1,
+                        help='Prefiltering t-test pvalue threshold [Default: 1]')
     parser.add_argument('--lrt-pvalue',
                         type=float,
-                        default=1E-8,
-                        help='Likelihood ratio test pvalue threshold [Default: 1E-8]')
-    parser.add_argument('--genome-size',
-                        type=int,
-                        default=None,
-                        help='Reference genome size to estimate lrt p-value threshold (overwrites --lrt-pvalue)')
+                        default=1,
+                        help='Likelihood ratio test pvalue threshold [Default: 1]')
     parser.add_argument('--max-dimensions',
                         type=int,
-                        default=3,
-                        help='Maximum number of dimensions to consider after MDS [Default: 3]')
+                        default=10,
+                        help='Maximum number of dimensions to consider after MDS [Default: 10]')
     parser.add_argument('--uncompressed',
                         action='store_true',
                         default=False,
@@ -105,15 +101,15 @@ def cmdscale(D):
 
 
 def iter_kmers(p, m, infile, all_strains,
-               min_maf, max_maf,
-               filter_pvalue, lrt_pvalue):
+               min_af, max_af,
+               filter_pvalue, lrt_pvalue, null_fit):
     for l in infile:
         if not options.uncompressed:
             l = l.decode()
         kmer, strains = l.split()[0], l.rstrip().split()[2:]
-        maf = len(strains) / len(all_strains)
-        # filter by MAF
-        if maf < min_maf or maf > max_maf:
+        af = len(strains) / len(all_strains)
+        # filter by AF
+        if af < min_af or af > max_af:
             continue
 
         k = {x.split(':')[0]: int(x.split(':')[1])
@@ -125,10 +121,10 @@ def iter_kmers(p, m, infile, all_strains,
         k = pd.Series(k, name=kmer)
         k[np.isnan(k)] = 0.0
         k[k >= 1] = 1.0
-        yield p, k, m, maf, filter_pvalue, lrt_pvalue
+        yield p, k, m, af, filter_pvalue, lrt_pvalue, null_fit
 
 
-def binary(p, k, m, maf, pret, lrtt):
+def binary(p, k, m, af, pret, lrtt, null_res):
     # pre-filtering
     t = p.to_frame().join(k.to_frame(), how='inner')
     table = [[t[(t[0] == 1) & (t[k.name] == 1)].shape[0],
@@ -138,7 +134,7 @@ def binary(p, k, m, maf, pret, lrtt):
     prep = stats.chi2_contingency(table, correction=False)[1]
     if prep > pret:
         return None
-    
+
     # actual logistic regression
     v = np.concatenate((p.values.reshape(-1, 1),
                         k.values.reshape(-1, 1),
@@ -150,10 +146,7 @@ def binary(p, k, m, maf, pret, lrtt):
     mod1 = smf.logit(formula='phenotype ~ kmer + ' +
                              ' + '.join(['PC%d'%x for x in range(1, m.shape[1]+1)]),
                      data=df)
-    mod2 = smf.logit(formula='phenotype ~ ' +
-                             ' + '.join(['PC%d'%x for x in range(1, m.shape[1]+1)]),
-                     data=df)
-    
+
     # suppress annoying stdout messages
     old_stdout = sys.stdout
     sys.stdout = open(os.devnull, "w")
@@ -163,33 +156,30 @@ def binary(p, k, m, maf, pret, lrtt):
         if not res1.mle_retvals['converged']:
             # fallback to Newton-Raphson
             res1 = mod1.fit(method='newton')
-        res2 = mod2.fit(method='bfgs')
-        if not res2.mle_retvals['converged']:
-            res2 = mod2.fit(method='newton')
     except np.linalg.linalg.LinAlgError:
         # singular matrix error
-        # TODO: return an error message
+        os.stderr.write("Matrix inversion error with kmer " + str(k))
         return None
     finally:
         sys.stdout.close()
         sys.stdout = old_stdout
-    
+
     # lrt test for logit
     # lifted from statsmodels code for linear regression
     llf_full = res1.llf
-    llf_restr = res2.llf
+    llf_restr = null_res.llf
     df_full = res1.df_resid
-    df_restr = res2.df_resid
+    df_restr = null_res.df_resid
     lrdf = (df_restr - df_full)
     lrstat = -2*(llf_restr - llf_full)
     lrt_pvalue = stats.chi2.sf(lrstat, lrdf)
 
     if lrt_pvalue > lrtt:
         return None
-    
+
     x = '\t'.join([str(x)
                    for x in [k.name,
-                             maf,
+                             af,
                              prep,
                              float(res1.wald_test('kmer = 0').pvalue),
                              lrt_pvalue,
@@ -202,14 +192,14 @@ def binary(p, k, m, maf, pret, lrtt):
     return x
 
 
-def continuous(p, k, m, maf, pret, lrtt):
+def continuous(p, k, m, af, pret, lrtt, null_res):
     # pre-filtering
     prep = stats.ttest_ind(p.loc[p.index[k == 1]],
                            p.loc[p.index[k == 0]],
                            equal_var=False)[1]
     if prep > pret:
         return None
-    
+
     # actual linear regression
     v = np.concatenate((p.values.reshape(-1, 1),
                         k.values.reshape(-1, 1),
@@ -221,31 +211,27 @@ def continuous(p, k, m, maf, pret, lrtt):
     mod1 = smf.ols(formula='phenotype ~ kmer + ' +
                            ' + '.join(['PC%d'%x for x in range(1, m.shape[1]+1)]),
                    data=df)
-    mod2 = smf.ols(formula='phenotype ~ ' +
-                           ' + '.join(['PC%d'%x for x in range(1, m.shape[1]+1)]),
-                   data=df)
-    
+
     # suppress annoying stdout messages
     old_stdout = sys.stdout
     sys.stdout = open(os.devnull, "w")
     try:
         res1 = mod1.fit()
-        res2 = mod2.fit()
     except np.linalg.linalg.LinAlgError:
         # singular matrix error
-        # TODO: return an error message
+        os.stderr.write("Matrix inversion error with kmer " + str(k))
         return None
     finally:
         sys.stdout.close()
         sys.stdout = old_stdout
-    
-    lrt_pvalue = res1.compare_lr_test(res2)[1]
+
+    lrt_pvalue = res1.compare_lr_test(null_res)[1]
     if lrt_pvalue > lrtt:
         return None
 
     x = '\t'.join([str(x)
                    for x in [k.name,
-                             maf,
+                             af,
                              prep,
                              float(res1.wald_test('kmer = 0').pvalue),
                              lrt_pvalue,
@@ -256,14 +242,50 @@ def continuous(p, k, m, maf, pret, lrtt):
                              [','.join(sorted(k[k == 1].index)),
                              ','.join(sorted(k[k == 0].index))]])
     return x
-    
+
+# Fit the null model, regression without k-mer
+def fit_null(p, m, continuous):
+    v = np.concatenate((p.values.reshape(-1, 1),
+                        m.values),
+                       axis=1)
+    df = pd.DataFrame(v,
+                      columns=['phenotype'] +
+                      ['PC%d'%x for x in range(1, m.shape[1]+1)])
+    if continuous:
+        null_mod = smf.ols(formula='phenotype ~ ' +
+                           ' + '.join(['PC%d'%x for x in range(1, m.shape[1]+1)]),
+                   data=df)
+    else:
+        null_mod = smf.logit(formula='phenotype ~ ' +
+                             ' + '.join(['PC%d'%x for x in range(1, m.shape[1]+1)]),
+                     data=df)
+
+    # suppress annoying stdout messages
+    old_stdout = sys.stdout
+    sys.stdout = open(os.devnull, "w")
+    try:
+        if continuous:
+            null_res = null_mod.fit()
+        else:
+            null_res = null_mod.fit(method='newton')
+
+    except np.linalg.linalg.LinAlgError:
+        # singular matrix error
+        os.stderr.write("Matrix inversion error with kmer " + str(k))
+        return None
+    finally:
+        sys.stdout.close()
+        sys.stdout = old_stdout
+
+    return null_res
+
 
 if __name__ == "__main__":
     import sys
     if sys.version_info[0] < 3:
         sys.stderr.write('pyseer requires python version 3 or above\n')
         sys.exit(1)
-    
+
     options = get_options()
 
     import os
@@ -285,7 +307,7 @@ if __name__ == "__main__":
                    for x in open(options.phenotypes)],
                   index=[x.split()[0]
                          for x in open(options.phenotypes)])
-    
+
     # reading genome distances
     m = pd.read_table(options.distances,
                       index_col=0)
@@ -298,15 +320,7 @@ if __name__ == "__main__":
 
     all_strains = set(p.index)
 
-    # if genome size is provided
-    # compute estimate of lrt p-value threshold
-    if options.genome_size is not None:
-        options.lrt_pvalue = 1 / (options.genome_size * 3)
-        sys.stderr.write(
-            'Likelihood ratio test p-value threshold derived from genome size: %.3e\n' %
-            options.lrt_pvalue)
-
-    print('\t'.join(['kmer', 'maf', 'filter-pvalue',
+    print('\t'.join(['kmer', 'af', 'filter-pvalue',
                      'wald-pvalue', 'lrt-pvalue', 'beta', 'beta-std-err',
                      'intercept'] + ['covar_%d' % i for i in range(1, options.max_dimensions+1)] +
                      ['k-samples', 'nk-samples']))
@@ -317,13 +331,17 @@ if __name__ == "__main__":
 
     # multiprocessing setup
     pool = Pool(options.cpu)
-    
+
+    # calculate null regressions once
+    null_fit = fit_null(p, m, options.continuous)
+
     # iterator over each kmer
     # implements maf filtering
     k_iter = iter_kmers(p, m, infile, all_strains,
-                        options.min_maf, options.max_maf,
+                        options.min_af, options.max_af,
                         options.filter_pvalue,
-                        options.lrt_pvalue)
+                        options.lrt_pvalue, null_fit)
+
     # actual association test
     # multiprocessing proceeds 1000 MAF-passing kmers per core at a time
     if options.continuous:
