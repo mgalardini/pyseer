@@ -119,55 +119,49 @@ def iter_kmers(p, m, infile, all_strains,
         if af < min_af or af > max_af:
             continue
 
-        k = {x.split(':')[0]: int(x.split(':')[1])
+        d = {x.split(':')[0]: 1
              for x in strains}
-        for x in all_strains.difference({x.split(':')[0]
-                                         for x in strains}):
-            k[x] = 0
+        kstrains = sorted(d.keys())
+        nkstrains = sorted(all_strains.difference({x.split(':')[0] for x in strains}))
+        for x in nkstrains:
+            d[x] = 0
 
-        k = pd.Series(k, name=kmer)
-        k[np.isnan(k)] = 0.0
-        k[k >= 1] = 1.0
-        yield p, k, m, af, filter_pvalue, lrt_pvalue, null_fit
+        v = p.values
+        k = np.array([d[x] for x in p.index
+                      if x in d])
+        s = m.values
+        yield (kmer, v, k, s, af,
+               filter_pvalue, lrt_pvalue, null_fit,
+               kstrains, nkstrains)
 
 
-def binary(p, k, m, af, pret, lrtt, null_res):
+def binary(kmer, p, k, m, af,
+           pret, lrtt, null_res,
+           kstrains, nkstrains):
     # pre-filtering
-    t = p.to_frame().join(k.to_frame(), how='inner')
-    table = [[t[(t[0] == 1) & (t[k.name] == 1)].shape[0],
-              t[(t[0] == 1) & (t[k.name] == 0)].shape[0]],
-             [t[(t[0] == 0) & (t[k.name] == 1)].shape[0],
-              t[(t[0] == 0) & (t[k.name] == 0)].shape[0]]]
+    t = np.concatenate((p.reshape(-1, 1), k.reshape(-1, 1)), axis=1).T
+    table = [[t[0][(t[0] == 1) & (t[1] == 1)].shape[0],
+              t[0][(t[0] == 1) & (t[1] == 0)].shape[0]],
+             [t[0][(t[0] == 0) & (t[1] == 1)].shape[0],
+              t[0][(t[0] == 0) & (t[1] == 0)].shape[0]]]
     prep = stats.chi2_contingency(table, correction=False)[1]
     if prep > pret:
         return None
 
     # actual logistic regression
-    v = np.concatenate((p.values.reshape(-1, 1),
-                        k.values.reshape(-1, 1),
-                        m.values),
-                       axis=1)
-    df = pd.DataFrame(v,
-                      columns=['phenotype', 'kmer'] +
-                              ['PC%d'%x for x in range(1, m.shape[1]+1)])
-    mod1 = smf.logit(formula='phenotype ~ kmer + ' +
-                             ' + '.join(['PC%d'%x for x in range(1, m.shape[1]+1)]),
-                     data=df)
+    v = np.concatenate((np.ones(m.shape[0]).reshape(-1, 1),
+                        k.reshape(-1, 1),
+                        m), axis=1)
+    mod = smf.Logit(p, v)
 
     # suppress annoying stdout messages
     old_stdout = sys.stdout
     sys.stdout = open(os.devnull, "w")
     try:
-        # try first bfgs optimization, but only if it works in a few iterations
-        start_vec = np.ones(df.shape[1])
-        start_vec[0] = np.log(np.mean(p.values)/(1-np.mean(p.values)))
-        res1 = mod1.fit(start_params=start_vec, method='bfgs', maxiter=20)
-        if not res1.mle_retvals['converged']:
-            # fallback to Newton-Raphson
-            res1 = mod1.fit(method='newton')
+        res = mod.fit(method='newton')
     except np.linalg.linalg.LinAlgError:
         # singular matrix error
-        sys.stderr.write('Matrix inversion error with kmer %s\n' % str(k.name))
+        sys.stderr.write('Matrix inversion error with kmer %s\n' % str(kmer))
         return None
     finally:
         sys.stdout.close()
@@ -175,9 +169,9 @@ def binary(p, k, m, af, pret, lrtt, null_res):
 
     # lrt test for logit
     # lifted from statsmodels code for linear regression
-    llf_full = res1.llf
+    llf_full = res.llf
     llf_restr = null_res.llf
-    df_full = res1.df_resid
+    df_full = res.df_resid
     df_restr = null_res.df_resid
     lrdf = (df_restr - df_full)
     lrstat = -2*(llf_restr - llf_full)
@@ -187,71 +181,65 @@ def binary(p, k, m, af, pret, lrtt, null_res):
         return None
 
     x = '\t'.join([str(x)
-                   for x in [k.name,
+                   for x in [kmer,
                              af,
                              prep,
-                             float(res1.wald_test('kmer = 0').pvalue),
                              lrt_pvalue,
-                             res1.params.kmer,
-                             res1.bse.kmer,
-                             res1.params.Intercept] +
-                             [getattr(res1.params, 'PC%d'%x)
-                              for x in range(1, m.shape[1]+1)] +
-                             [','.join(sorted(k[k == 1].index)),
-                              ','.join(sorted(k[k == 0].index))]])
+                             res.params[1],
+                             res.bse[1],
+                             res.params[0]] +
+                             [res.params[x]
+                              for x in range(2, m.shape[1]+2)] +
+                             [','.join(kstrains),
+                              ','.join(nkstrains)]])
     return x
 
 
-def continuous(p, k, m, af, pret, lrtt, null_res):
+def continuous(kmer, p, k, m, af,
+               pret, lrtt, null_res,
+               kstrains, nkstrains):
     # pre-filtering
-    prep = stats.ttest_ind(p.loc[p.index[k == 1]],
-                           p.loc[p.index[k == 0]],
+    prep = stats.ttest_ind(p[k == 1],
+                           p[k == 1],
                            equal_var=False)[1]
     if prep > pret:
         return None
 
     # actual linear regression
-    v = np.concatenate((p.values.reshape(-1, 1),
-                        k.values.reshape(-1, 1),
-                        m.values),
-                       axis=1)
-    df = pd.DataFrame(v,
-                      columns=['phenotype', 'kmer'] +
-                      ['PC%d'%x for x in range(1, m.shape[1]+1)])
-    mod1 = smf.ols(formula='phenotype ~ kmer + ' +
-                           ' + '.join(['PC%d'%x for x in range(1, m.shape[1]+1)]),
-                   data=df)
+    v = np.concatenate((np.ones(m.shape[0]).reshape(-1, 1),
+                        k.reshape(-1, 1),
+                        m), axis=1)
+    mod = smf.OLS(p, v)
 
     # suppress annoying stdout messages
     old_stdout = sys.stdout
     sys.stdout = open(os.devnull, "w")
     try:
-        res1 = mod1.fit()
+        res = mod.fit()
     except np.linalg.linalg.LinAlgError:
         # singular matrix error
-        sys.stderr.write('Matrix inversion error with kmer %s\n' % str(k.name))
+        sys.stderr.write('Matrix inversion error with kmer %s\n' % str(kmer))
         return None
     finally:
         sys.stdout.close()
         sys.stdout = old_stdout
 
-    lrt_pvalue = res1.compare_lr_test(null_res)[1]
+    lrt_pvalue = res.compare_lr_test(null_res)[1]
     if lrt_pvalue > lrtt:
         return None
 
     x = '\t'.join([str(x)
-                   for x in [k.name,
+                   for x in [kmer,
                              af,
                              prep,
-                             float(res1.wald_test('kmer = 0').pvalue),
                              lrt_pvalue,
-                             res1.params.kmer,
-                             res1.bse.kmer,
-                             res1.params.Intercept] +
-                             [getattr(res1.params, 'PC%d'%x)
-                              for x in range(1, m.shape[1]+1)] +
-                             [','.join(sorted(k[k == 1].index)),
-                             ','.join(sorted(k[k == 0].index))]])
+                             res.params[1],
+                             res.bse[1],
+                             res.params[0]] +
+                             [res.params[x]
+                              for x in range(2, m.shape[1]+2)] +
+                             [','.join(kstrains),
+                              ','.join(nkstrains)]])
     return x
 
 # Fit the null model, regression without k-mer
@@ -338,7 +326,7 @@ if __name__ == "__main__":
     #
 
     print('\t'.join(['kmer', 'af', 'filter-pvalue',
-                     'wald-pvalue', 'lrt-pvalue', 'beta', 'beta-std-err',
+                     'lrt-pvalue', 'beta', 'beta-std-err',
                      'intercept'] +
                      ['covar_%d' % i
                       for i in range(1, options.max_dimensions+1)] +
