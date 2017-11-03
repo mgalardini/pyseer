@@ -20,6 +20,10 @@ def get_options():
                         action='store_true',
                         default=False,
                         help='Continuous phenotype [Default: binary]')
+    parser.add_argument('--print-samples',
+                        action='store_true',
+                        default=False,
+                        help='Print sample lists [Default: hide samples]')
     parser.add_argument('--min-af',
                         type=float,
                         default=0.01,
@@ -101,7 +105,7 @@ def cmdscale(D):
 
 
 def iter_kmers(p, m, infile, all_strains,
-               min_af, max_af,
+               min_af, max_af, print_samples,
                filter_pvalue, lrt_pvalue, null_fit):
     for l in infile:
         if not options.uncompressed:
@@ -121,10 +125,10 @@ def iter_kmers(p, m, infile, all_strains,
         k = pd.Series(k, name=kmer)
         k[np.isnan(k)] = 0.0
         k[k >= 1] = 1.0
-        yield p, k, m, af, filter_pvalue, lrt_pvalue, null_fit
+        yield p, k, m, af, print_samples, filter_pvalue, lrt_pvalue, null_fit
 
 
-def binary(p, k, m, af, pret, lrtt, null_res):
+def binary(p, k, m, af, print_samples, pret, lrtt, null_res):
     # pre-filtering
     t = p.to_frame().join(k.to_frame(), how='inner')
     table = [[t[(t[0] == 1) & (t[k.name] == 1)].shape[0],
@@ -133,13 +137,13 @@ def binary(p, k, m, af, pret, lrtt, null_res):
               t[(t[0] == 0) & (t[k.name] == 0)].shape[0]]]
 
     # check for small values
-    bad_chisq = 1
-    bad_entries =0
+    bad_chisq = 0
+    bad_entries = 0
     for row in table:
         for entry in row:
             if entry <= 1:
                 bad_chisq = 1
-            else if entry <= 5:
+            elif entry <= 5:
                 bad_entries += 1
     if bad_entries > 1:
         bad_chisq = 1
@@ -159,83 +163,87 @@ def binary(p, k, m, af, pret, lrtt, null_res):
     mod1 = smf.logit(formula='phenotype ~ kmer + ' +
                              ' + '.join(['PC%d'%x for x in range(1, m.shape[1]+1)]),
                      data=df)
+    start_vec = np.ones(df.shape[1])
+    start_vec[0] = np.log(np.mean(p.values)/(1-np.mean(p.values)))
+
 
     # suppress annoying stdout messages
-    old_stdout = sys.stdout
-    sys.stdout = open(os.devnull, "w")
+    #old_stdout = sys.stdout
+    #sys.stdout = open(os.devnull, "w")
     try:
         if not bad_chisq:
             # try first bfgs optimization
-            start_vec = np.ones(df.shape[1])
-            start_vec[0] = np.log(np.mean(p.values)/(1-np.mean(p.values)))
             res1 = mod1.fit(start_params=start_vec, method='bfgs', maxiter=20)
-            res1 = mod1.fit(method='bfgs')
             if not res1.mle_retvals['converged']:
                 # fallback to Newton-Raphson
                 res1 = mod1.fit(method='newton')
-            fitll = res1.llf
+
+            if res1.bse.kmer > 3:
+                bad_chisq = 1
+            else:
+                fitll = res1.llf
+                intercept = res1.params.Intercept
+                kbeta = res1.params.kmer
+                beta = [getattr(res1.params, 'PC%d'%x) for x in range(1, m.shape[1]+1)]
+                bse = res1.bse.kmer
+                waldp = float(res1.wald_test('kmer = 0').pvalue)
 
         # Fit Firth regression with large SE, or nearly separable values
-        if res1.bse.kmer > 3 or bad_chisq:
-            fitll, waldp = firth(df)
-        else:
-            waldp = float(res1.wald_test('kmer = 0').pvalue)
+        if bad_chisq:
+            firth_fit = firth(mod1, start_vec, k)
+            if firth_fit is None: # Firth failure
+                return None
+            else:
+                fitll = -firth_fit.fun
+                print(mod1.loglike(firth_fit.x))
+                print(null_res.llf)
+                print(fitll)
+                intercept = firth_fit.x[0]
+                kbeta = firth_fit.x[1]
+                beta = firth_fit.x[2:].tolist()
+                bse = math.sqrt(-mod1.hessian(firth_fit.x)[1,1])
+
+                # Calculate Wald p-value
+                wald = abs(kbeta/bse)
+                waldp = 2 * (1-stats.norm.cdf(wald))
+
     except np.linalg.linalg.LinAlgError:
         # singular matrix error
-        os.stderr.write("Matrix inversion error with kmer " + str(k))
+        sys.stderr.write("Matrix inversion error with kmer " + str(k.name))
         return None
-    finally:
-        sys.stdout.close()
-        sys.stdout = old_stdout
+    #finally:
+    #    sys.stdout.close()
+    #    sys.stdout = old_stdout
 
-    # lrt test for logit
-    df_full = res1.df_resid
-    df_null = null_res.df_resid
-    lrdf = (df_null - df_full)
+    # lrt test same for logit and firth
     lrstat = -2*(null_res.llf - fitll)
-    lrt_pvalue = stats.chi2.sf(lrstat, lrdf)
+    lrt_pvalue = stats.chi2.sf(lrstat, 1)
 
     if lrt_pvalue > lrtt:
         return None
 
-    x = '\t'.join([str(x)
-                   for x in [k.name,
-                             af,
-                             prep,
-                             waldp,
-                             lrt_pvalue,
-                             res1.params.kmer,
-                             res1.bse.kmer,
-                             res1.params.Intercept] +
-                             [getattr(res1.params, 'PC%d'%x) for x in range(1, m.shape[1]+1)] +
-                             [','.join(sorted(k[k == 1].index)),
-                              ','.join(sorted(k[k == 0].index))]])
+    output = [k.name, af, prep, waldp, lrt_pvalue, kbeta, bse, intercept] + beta
+    if print_samples:
+        output = output + [','.join(sorted(k[k == 1].index)),','.join(sorted(k[k == 0].index))]
+    x = '\t'.join(str(x) for x in output)
+
     return x
 
-def firth(df):
+# Do firth regression
+def firth(logit_model, start_vec, k):
+    sys.stderr.write("Firth on " + str(k.name) + "\n")
 
-    # Do firth regression
-    logit_model = smf.logit(formula='phenotype ~ kmer + ' +
-                             ' + '.join(['PC%d'%x for x in range(1, m.shape[1]+1)]),
-                     data=df)
-    #TODO
-    beta = optimise(firth_likelihood, logit_model)
+    # note -hessian = information. statsmodels has this function but it isn't implemented yet
+    firth_likelihood = lambda beta, logit: -(logit.loglike(beta) + 0.5*np.log(np.trace(-logit.hessian(beta))))
+    firth_result = optimize.minimize(firth_likelihood, start_vec, logit_model, method = 'Nelder-Mead', options={'disp': True, 'maxiter': 50000})
 
-    fitll = firth_likelihood(beta, logit_model)
+    if not firth_result.success:
+        sys.stderr.write("Firth regression failed on kmer " + str(k.name) + " with message:\n" + firth_result.message + "\n")
+        #firth_result = None
 
-    # Calculate Wald p-value
-    se = sqrt(logit.information(beta)[1])
-    wald = abs(beta[1]/se)
-    waldp = 2* (1-stats.norm.cdf(wald))
+    return firth_result
 
-    return fitll, waldp
-
-# This can be a lambda
-def firth_likelihood(beta, logit):
-    return logit.loglike(beta) + 0.5*np.log(np.trace(logit.information(beta)))
-
-
-def continuous(p, k, m, af, pret, lrtt, null_res):
+def continuous(p, k, m, af, print_samples, pret, lrtt, null_res):
     # pre-filtering
     prep = stats.ttest_ind(p.loc[p.index[k == 1]],
                            p.loc[p.index[k == 0]],
@@ -262,7 +270,7 @@ def continuous(p, k, m, af, pret, lrtt, null_res):
         res1 = mod1.fit()
     except np.linalg.linalg.LinAlgError:
         # singular matrix error
-        os.stderr.write("Matrix inversion error with kmer " + str(k))
+        sys.stderr.write("Matrix inversion error with kmer " + str(k.name))
         return None
     finally:
         sys.stdout.close()
@@ -272,18 +280,11 @@ def continuous(p, k, m, af, pret, lrtt, null_res):
     if lrt_pvalue > lrtt:
         return None
 
-    x = '\t'.join([str(x)
-                   for x in [k.name,
-                             af,
-                             prep,
-                             float(res1.wald_test('kmer = 0').pvalue),
-                             lrt_pvalue,
-                             res1.params.kmer,
-                             res1.bse.kmer,
-                             res1.params.Intercept] +
-                             [getattr(res1.params, 'PC%d'%x) for x in range(1, m.shape[1]+1)] +
-                             [','.join(sorted(k[k == 1].index)),
-                             ','.join(sorted(k[k == 0].index))]])
+    output = [k.name, af, prep, float(res1.wald_test('kmer = 0').pvalue), lrt_pvalue, res1.params.kmer, res1.bse.kmer, res1.params.Intercept]
+    if print_samples:
+        output = output + [getattr(res1.params, 'PC%d'%x) for x in range(1, m.shape[1]+1)]
+    x = '\t'.join(str(x) for x in output)
+
     return x
 
 # Fit the null model, regression without k-mer
@@ -314,7 +315,7 @@ def fit_null(p, m, continuous):
 
     except np.linalg.linalg.LinAlgError:
         # singular matrix error
-        os.stderr.write("Matrix inversion error with kmer " + str(k))
+        sys.stderr.write("Matrix inversion error with kmer " + str(k))
         return None
     finally:
         sys.stdout.close()
@@ -335,9 +336,11 @@ if __name__ == "__main__":
     import gzip
     import warnings
     import itertools
+    import math
     import numpy as np
     import pandas as pd
     from scipy import stats
+    from scipy import optimize
     from multiprocessing import Pool
     import statsmodels.formula.api as smf
 
@@ -382,7 +385,7 @@ if __name__ == "__main__":
     # implements maf filtering
     k_iter = iter_kmers(p, m, infile, all_strains,
                         options.min_af, options.max_af,
-                        options.filter_pvalue,
+                        options.print_samples, options.filter_pvalue,
                         options.lrt_pvalue, null_fit)
 
     # actual association test
@@ -398,7 +401,7 @@ if __name__ == "__main__":
                 print(x)
     else:
         while True:
-            ret = pool.starmap(binary, itertools.islice(k_iter, options.cpu*1000))
+            ret = itertools.starmap(binary, itertools.islice(k_iter, options.cpu*1000))
             if not ret:
                 break
             for x in ret:

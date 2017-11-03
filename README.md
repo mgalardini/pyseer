@@ -1,7 +1,8 @@
 pyseer
 ======
 
-[SEER](https://github.com/johnlees/seer), reimplemented in python
+[SEER](https://github.com/johnlees/seer), reimplemented in python by
+[Marco](https://github.com/mgalardini) and [John](https://github.com/johnlees)
 
     pyseer kmers.gz phenotypes.tsv structure.tsv --min-maf 0.01 --max-maf 0.99 --cpu 15 --filter-pvalue 1E-8
 
@@ -11,26 +12,18 @@ Motivation
 Kmers-based GWAS analysis is particularly well suited for bacterial samples,
 given their high genetic variability. This approach has been for the first
 time formally implemented by [Lees, Vehkala et al.](https://www.nature.com/articles/ncomms12797),
-in the form of the [SEER](https://github.com/johnlees/seer) software. While
-wrapping my head around SEER's algorithm I figured I could gain a better
-understanding if I tried to reimplement it in a language I'm
-very familiar with (python). This also allowed me to get around a
-few possible bugs related to low sample sizes.
+in the form of the [SEER](https://github.com/johnlees/seer) software.
 
-The reimplementation presented here is solely based on my interpretation
-of the methods section of the SEER paper, further constrained to what
-could be easily (~1-2 days) reimplemented in python. Based on (very) few
-tests I've run the results are going to be exactly the same to the
-C++ implementation. However, **no guarantee whatsoever is given that the
+The reimplementation presented here should be consistent with the
+current version of seer. Based on our few
+tests the results are going to be exactly the same to the
+C++ implementation, though approximation at low p-values may cause small
+differences. However, **no guarantee whatsoever is given that the
 script works in the same way as the original**, especially for corner cases
 and across millions of kmers.
 
 Citation
 --------
-
-As this script is a reimplementation of previously published work, if you end
-up using it you should cite the original paper. They did the hard work and
-they need to be recognized for it.
 
 ``Lees, John A., et al. "Sequence element enrichment analysis to determine
 the genetic basis of bacterial phenotypes." Nature communications 7 (2016): 12797.``
@@ -79,6 +72,7 @@ Notes
 SEER's features present in this script:
 
 * binary and continuos phenotypes
+* binary phenotypes: Firth regression upon failure of bfgs and Newton-Raphson
 * population structure correction
 * MAF filtering
 * kmers prefiltering
@@ -89,16 +83,13 @@ SEER's features present in this script:
 Absent features:
 
 * automatic determination of binary/continuous phenotypes
-* binary phenotypes: Firth regression upon failure of bfgs and Newton-Raphson
 * user-defined covariates
 * reasons for failures are not reported
 
 Additional features:
 
 * Multidimensional scaling from squared [mash](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-016-0997-x) matrix
-* Uncompressed kmers input file is acceptable too
 * List of samples without the kmer are also outputed
-* LRT p-value threshold computed from genome size
 
 Copyright
 ---------
