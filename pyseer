@@ -166,6 +166,9 @@ def binary(p, k, m, af, pret, lrtt, null_res):
     try:
         if not bad_chisq:
             # try first bfgs optimization
+            start_vec = np.ones(df.shape[1])
+            start_vec[0] = np.log(np.mean(p.values)/(1-np.mean(p.values)))
+            res1 = mod1.fit(start_params=start_vec, method='bfgs', maxiter=20)
             res1 = mod1.fit(method='bfgs')
             if not res1.mle_retvals['converged']:
                 # fallback to Newton-Raphson
