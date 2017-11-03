@@ -349,7 +349,8 @@ if __name__ == "__main__":
         infile = gzip.open(options.kmers, 'r')
 
     # multiprocessing setup
-    pool = Pool(options.cpu)
+    if options.cpu > 1:
+        pool = Pool(options.cpu)
 
     # calculate null regressions once
     null_fit = fit_null(p, m, options.continuous)
@@ -362,26 +363,36 @@ if __name__ == "__main__":
                         options.lrt_pvalue, null_fit)
 
     # actual association test
-    # multiprocessing proceeds 1000 MAF-passing kmers per core at a time
-    if options.continuous:
-        while True:
-            ret = pool.starmap(continuous,
-                               itertools.islice(k_iter,
-                                                options.cpu*1000))
-            if not ret:
-                break
-            for x in ret:
-                if x is None:
-                    continue
-                print(x)
+    if options.cpu > 1:
+        # multiprocessing proceeds 1000 MAF-passing kmers per core at a time
+        if options.continuous:
+            while True:
+                ret = pool.starmap(continuous,
+                                   itertools.islice(k_iter,
+                                                    options.cpu*1000))
+                if not ret:
+                    break
+                for x in ret:
+                    if x is None:
+                        continue
+                    print(x)
+        else:
+            while True:
+                ret = pool.starmap(binary,
+                                   itertools.islice(k_iter,
+                                                    options.cpu*1000))
+                if not ret:
+                    break
+                for x in ret:
+                    if x is None:
+                        continue
+                    print(x)
     else:
-        while True:
-            ret = pool.starmap(binary,
-                               itertools.islice(k_iter,
-                                                options.cpu*1000))
-            if not ret:
-                break
-            for x in ret:
-                if x is None:
-                    continue
-                print(x)
+        for data in k_iter:
+            if options.continuous:
+                ret = continuous(*data)
+            else:
+                ret = binary(*data)
+            if ret is None:
+                continue
+            print(ret)
