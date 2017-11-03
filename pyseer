@@ -131,6 +131,19 @@ def binary(p, k, m, af, pret, lrtt, null_res):
               t[(t[0] == 1) & (t[k.name] == 0)].shape[0]],
              [t[(t[0] == 0) & (t[k.name] == 1)].shape[0],
               t[(t[0] == 0) & (t[k.name] == 0)].shape[0]]]
+
+    # check for small values
+    bad_chisq = 1
+    bad_entries =0
+    for row in table:
+        for entry in row:
+            if entry <= 1:
+                bad_chisq = 1
+            else if entry <= 5:
+                bad_entries += 1
+    if bad_entries > 1:
+        bad_chisq = 1
+
     prep = stats.chi2_contingency(table, correction=False)[1]
     if prep > pret:
         return None
@@ -151,11 +164,19 @@ def binary(p, k, m, af, pret, lrtt, null_res):
     old_stdout = sys.stdout
     sys.stdout = open(os.devnull, "w")
     try:
-        # try first bfgs optimization
-        res1 = mod1.fit(method='bfgs')
-        if not res1.mle_retvals['converged']:
-            # fallback to Newton-Raphson
-            res1 = mod1.fit(method='newton')
+        if not bad_chisq:
+            # try first bfgs optimization
+            res1 = mod1.fit(method='bfgs')
+            if not res1.mle_retvals['converged']:
+                # fallback to Newton-Raphson
+                res1 = mod1.fit(method='newton')
+            fitll = res1.llf
+
+        # Fit Firth regression with large SE, or nearly separable values
+        if res1.bse.kmer > 3 or bad_chisq:
+            fitll, waldp = firth(df)
+        else:
+            waldp = float(res1.wald_test('kmer = 0').pvalue)
     except np.linalg.linalg.LinAlgError:
         # singular matrix error
         os.stderr.write("Matrix inversion error with kmer " + str(k))
@@ -165,13 +186,10 @@ def binary(p, k, m, af, pret, lrtt, null_res):
         sys.stdout = old_stdout
 
     # lrt test for logit
-    # lifted from statsmodels code for linear regression
-    llf_full = res1.llf
-    llf_restr = null_res.llf
     df_full = res1.df_resid
-    df_restr = null_res.df_resid
-    lrdf = (df_restr - df_full)
-    lrstat = -2*(llf_restr - llf_full)
+    df_null = null_res.df_resid
+    lrdf = (df_null - df_full)
+    lrstat = -2*(null_res.llf - fitll)
     lrt_pvalue = stats.chi2.sf(lrstat, lrdf)
 
     if lrt_pvalue > lrtt:
@@ -181,7 +199,7 @@ def binary(p, k, m, af, pret, lrtt, null_res):
                    for x in [k.name,
                              af,
                              prep,
-                             float(res1.wald_test('kmer = 0').pvalue),
+                             waldp,
                              lrt_pvalue,
                              res1.params.kmer,
                              res1.bse.kmer,
@@ -190,6 +208,28 @@ def binary(p, k, m, af, pret, lrtt, null_res):
                              [','.join(sorted(k[k == 1].index)),
                               ','.join(sorted(k[k == 0].index))]])
     return x
+
+def firth(df):
+
+    # Do firth regression
+    logit_model = smf.logit(formula='phenotype ~ kmer + ' +
+                             ' + '.join(['PC%d'%x for x in range(1, m.shape[1]+1)]),
+                     data=df)
+    #TODO
+    beta = optimise(firth_likelihood, logit_model)
+
+    fitll = firth_likelihood(beta, logit_model)
+
+    # Calculate Wald p-value
+    se = sqrt(logit.information(beta)[1])
+    wald = abs(beta[1]/se)
+    waldp = 2* (1-stats.norm.cdf(wald))
+
+    return fitll, waldp
+
+# This can be a lambda
+def firth_likelihood(beta, logit):
+    return logit.loglike(beta) + 0.5*np.log(np.trace(logit.information(beta)))
 
 
 def continuous(p, k, m, af, pret, lrtt, null_res):
