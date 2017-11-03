@@ -114,7 +114,7 @@ def iter_kmers(p, m, infile, all_strains,
         if not options.uncompressed:
             l = l.decode()
         kmer, strains = l.split()[0], l.rstrip().split()[2:]
-        af = len(strains) / len(all_strains)
+        af = float(len(strains)) / len(all_strains)
         # filter by AF
         if af < min_af or af > max_af:
             continue
@@ -292,13 +292,13 @@ def fit_null(p, m, continuous):
 
 
 if __name__ == "__main__":
-    import sys
-    if sys.version_info[0] < 3:
-        sys.stderr.write('pyseer requires python version 3 or above\n')
-        sys.exit(1)
-
     options = get_options()
 
+    import sys
+    if options.cpu > 1 and sys.version_info[0] < 3:
+        sys.stderr.write('pyseer requires python version 3 or above ' +
+                         'unless the number of threads is 1\n')
+        sys.exit(1)
     import os
     import sys
     import gzip
