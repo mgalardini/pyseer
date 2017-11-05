@@ -3,6 +3,8 @@
 
 Copyright 2017 Marco Galardini'''
 
+import contextlib
+
 def get_options():
     import argparse
 
@@ -57,6 +59,28 @@ def get_options():
                         help='Processes [Default: 1]')
 
     return parser.parse_args()
+
+
+# thanks to Laurent LAPORTE on SO
+@contextlib.contextmanager
+def set_env(**environ):
+    """
+    Temporarily set the process environment variables.
+
+    >>> with set_env(PLUGINS_DIR=u'test/plugins'):
+    ...   "PLUGINS_DIR" in os.environ
+    True
+
+    >>> "PLUGINS_DIR" in os.environ
+    False
+    """
+    old_environ = dict(os.environ)
+    os.environ.update(environ)
+    try:
+        yield
+    finally:
+        os.environ.clear()
+        os.environ.update(old_environ)
 
 
 # thanks to Francis Song for this function
@@ -288,99 +312,104 @@ if __name__ == "__main__":
                          'unless the number of threads is 1\n')
         sys.exit(1)
     import os
-    import sys
-    import gzip
-    import warnings
-    import itertools
-    import numpy as np
-    import pandas as pd
-    from scipy import stats
-    from multiprocessing import Pool
-    import statsmodels.formula.api as smf
 
-    # silence warnings
-    warnings.filterwarnings('ignore')
-    #
+    # avoid numpy taking up more than one thread
+    with set_env(MKL_NUM_THREADS='1',
+                 NUMEXPR_NUM_THREADS='1',
+                 OMP_NUM_THREADS='1'): 
+        import sys
+        import gzip
+        import warnings
+        import itertools
+        import numpy as np
+        import pandas as pd
+        from scipy import stats
+        from multiprocessing import Pool
+        import statsmodels.formula.api as smf
 
-    # reading phenotypes
-    p = pd.Series([float(x.rstrip().split()[-1])
-                   for x in open(options.phenotypes)],
-                  index=[x.split()[0]
-                         for x in open(options.phenotypes)])
+        # silence warnings
+        warnings.filterwarnings('ignore')
+        #
+        
+        # reading phenotypes
+        p = pd.Series([float(x.rstrip().split()[-1])
+                       for x in open(options.phenotypes)],
+                      index=[x.split()[0]
+                             for x in open(options.phenotypes)])
 
-    # reading genome distances
-    m = pd.read_table(options.distances,
-                      index_col=0)
-    m = m.loc[p.index, p.index]
-    # metric MDS scaling
-    m = pd.DataFrame(cmdscale(m)[0][:, :options.max_dimensions],
-                     index=m.index)
-    for i in range(m.shape[1]):
-        m[i] = m[i] / max(abs(m[i]))
+        # reading genome distances
+        m = pd.read_table(options.distances,
+                          index_col=0)
+        m = m.loc[p.index, p.index]
+        # metric MDS scaling
+        m = pd.DataFrame(cmdscale(m)[0][:, :options.max_dimensions],
+                         index=m.index)
+        for i in range(m.shape[1]):
+            m[i] = m[i] / max(abs(m[i]))
 
-    all_strains = set(p.index)
+        all_strains = set(p.index)
 
-    # read covariates
-    if options.covariates is not None:
-        pass
-    #
+        # read covariates
+        if options.covariates is not None:
+            pass
+        #
 
-    print('\t'.join(['kmer', 'af', 'filter-pvalue',
-                     'lrt-pvalue', 'beta', 'beta-std-err',
-                     'intercept'] +
-                     ['covar_%d' % i
-                      for i in range(1, options.max_dimensions+1)] +
-                     ['k-samples', 'nk-samples']))
-    if options.uncompressed:
-        infile = open(options.kmers)
-    else:
-        infile = gzip.open(options.kmers, 'r')
-
-    # multiprocessing setup
-    if options.cpu > 1:
-        pool = Pool(options.cpu)
-
-    # calculate null regressions once
-    null_fit = fit_null(p, m, options.continuous)
-
-    # iterator over each kmer
-    # implements maf filtering
-    k_iter = iter_kmers(p, m, infile, all_strains,
-                        options.min_af, options.max_af,
-                        options.filter_pvalue,
-                        options.lrt_pvalue, null_fit)
-
-    # actual association test
-    if options.cpu > 1:
-        # multiprocessing proceeds 1000 MAF-passing kmers per core at a time
-        if options.continuous:
-            while True:
-                ret = pool.starmap(continuous,
-                                   itertools.islice(k_iter,
-                                                    options.cpu*1000))
-                if not ret:
-                    break
-                for x in ret:
-                    if x is None:
-                        continue
-                    print(x)
+        print('\t'.join(['kmer', 'af', 'filter-pvalue',
+                         'lrt-pvalue', 'beta', 'beta-std-err',
+                         'intercept'] +
+                         ['covar_%d' % i
+                          for i in range(1, options.max_dimensions+1)] +
+                         ['k-samples', 'nk-samples']))
+        if options.uncompressed:
+            infile = open(options.kmers)
         else:
-            while True:
-                ret = pool.starmap(binary,
-                                   itertools.islice(k_iter,
-                                                    options.cpu*1000))
-                if not ret:
-                    break
-                for x in ret:
-                    if x is None:
-                        continue
-                    print(x)
-    else:
-        for data in k_iter:
+            infile = gzip.open(options.kmers, 'r')
+
+        # multiprocessing setup
+        if options.cpu > 1:
+            pool = Pool(options.cpu)
+
+        # calculate null regressions once
+        null_fit = fit_null(p, m, options.continuous)
+
+        # iterator over each kmer
+        # implements maf filtering
+        k_iter = iter_kmers(p, m, infile, all_strains,
+                            options.min_af, options.max_af,
+                            options.filter_pvalue,
+                            options.lrt_pvalue, null_fit)
+
+        # actual association test
+        if options.cpu > 1:
+            # multiprocessing proceeds 1000 MAF-passing kmers per core at a time
             if options.continuous:
-                ret = continuous(*data)
+                while True:
+                    ret = pool.starmap(continuous,
+                                       itertools.islice(k_iter,
+                                                        options.cpu*1000))
+                    if not ret:
+                        break
+                    for x in ret:
+                        if x is None:
+                            continue
+                        print(x)
             else:
-                ret = binary(*data)
-            if ret is None:
-                continue
-            print(ret)
+                while True:
+                    ret = pool.starmap(binary,
+                                       itertools.islice(k_iter,
+                                                        options.cpu*1000))
+                    if not ret:
+                        break
+                    for x in ret:
+                        if x is None:
+                            continue
+                        print(x)
+        else:
+            for data in k_iter:
+                if options.continuous:
+                    ret = continuous(*data)
+                else:
+                    ret = binary(*data)
+                if ret is None:
+                    continue
+                print(ret)
