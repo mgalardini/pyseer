@@ -52,6 +52,10 @@ def get_options():
                         type=int,
                         default=1,
                         help='Processes [Default: 1]')
+    parser.add_argument('--save-m',
+                        help='Prefix for saving matrix decomposition')
+    parser.add_argument('--load-m',
+                        help='Load an existing matrix decomposition')
 
     return parser.parse_args()
 
@@ -106,7 +110,7 @@ def cmdscale(D):
 
 def iter_kmers(p, m, infile, all_strains,
                min_af, max_af, print_samples,
-               filter_pvalue, lrt_pvalue, null_fit):
+               filter_pvalue, lrt_pvalue, null_fit, firth_null):
     for l in infile:
         if not options.uncompressed:
             l = l.decode()
@@ -125,10 +129,10 @@ def iter_kmers(p, m, infile, all_strains,
         k = pd.Series(k, name=kmer)
         k[np.isnan(k)] = 0.0
         k[k >= 1] = 1.0
-        yield p, k, m, af, print_samples, filter_pvalue, lrt_pvalue, null_fit
+        yield p, k, m, af, print_samples, filter_pvalue, lrt_pvalue, null_fit, firth_null
 
 
-def binary(p, k, m, af, print_samples, pret, lrtt, null_res):
+def binary(p, k, m, af, print_samples, pret, lrtt, null_res, null_firth):
     # pre-filtering
     t = p.to_frame().join(k.to_frame(), how='inner')
     table = [[t[(t[0] == 1) & (t[k.name] == 1)].shape[0],
@@ -155,7 +159,7 @@ def binary(p, k, m, af, print_samples, pret, lrtt, null_res):
     # actual logistic regression
     v = np.concatenate((p.values.reshape(-1, 1),
                         k.values.reshape(-1, 1),
-                        m.values),
+                        m),
                        axis=1)
     df = pd.DataFrame(v,
                       columns=['phenotype', 'kmer'] +
@@ -163,12 +167,13 @@ def binary(p, k, m, af, print_samples, pret, lrtt, null_res):
     mod1 = smf.logit(formula='phenotype ~ kmer + ' +
                              ' + '.join(['PC%d'%x for x in range(1, m.shape[1]+1)]),
                      data=df)
+
     start_vec = np.ones(df.shape[1])
     start_vec[0] = np.log(np.mean(p.values)/(1-np.mean(p.values)))
 
     # suppress annoying stdout messages
-    #old_stdout = sys.stdout
-    #sys.stdout = open(os.devnull, "w")
+    old_stdout = sys.stdout
+    sys.stdout = open(os.devnull, "w")
     try:
         if not bad_chisq:
             # try first bfgs optimization
@@ -180,8 +185,7 @@ def binary(p, k, m, af, print_samples, pret, lrtt, null_res):
             if res1.bse.kmer > 3:
                 bad_chisq = 1
             else:
-                fitll = res1.llf
-                lrstat = -2*(null_res.llf - fitll)
+                lrstat = -2*(null_res - res1.llf)
                 lrt_pvalue = stats.chi2.sf(lrstat, 1)
 
                 intercept = res1.params.Intercept
@@ -192,21 +196,26 @@ def binary(p, k, m, af, print_samples, pret, lrtt, null_res):
 
         # Fit Firth regression with large SE, or nearly separable values
         if bad_chisq:
-            firth_fit = firth(mod1, start_vec, k, p, m)
+            #sys.stderr.write("Firth on " + str(k.name) + "\n")
+            X = np.concatenate((np.ones((m.shape[0], 1)),
+                       k.values.reshape(-1, 1),
+                       m),
+                       axis=1)
+            firth_fit = fit_firth(mod1, start_vec, k.name, X, p.values)
             if firth_fit is None: # Firth failure
                 return None
             else:
-                intercept, kbeta, beta, bse, waldp, lrtp = firth_fit
+                intercept, kbeta, beta, bse, waldp, fitll = firth_fit
+                lrstat = -2*(null_firth - fitll)
+                lrt_pvalue = stats.chi2.sf(lrstat, 1)
 
     except np.linalg.linalg.LinAlgError:
         # singular matrix error
         sys.stderr.write("Matrix inversion error with kmer " + str(k.name))
         return None
-    #finally:
-    #    sys.stdout.close()
-    #    sys.stdout = old_stdout
-
-    # lrt test same for logit and firth
+    finally:
+        sys.stdout.close()
+        sys.stdout = old_stdout
 
     if lrt_pvalue > lrtt:
         return None
@@ -214,35 +223,33 @@ def binary(p, k, m, af, print_samples, pret, lrtt, null_res):
     output = [k.name, af, prep, waldp, lrt_pvalue, kbeta, bse, intercept] + beta
     if print_samples:
         output = output + [','.join(sorted(k[k == 1].index)),','.join(sorted(k[k == 0].index))]
-    x = '\t'.join(str(x) for x in output)
+    x = '\t'.join(format_output(x) for x in output)
 
     return x
 
+def firth_likelihood(beta, logit):
+    return -(logit.loglike(beta) + 0.5*np.log(np.linalg.det(-logit.hessian(beta))))
+
 # Do firth regression
 # Note information = -hessian, for some reason available but not implemented in statsmodels
-def firth(logit_model, start_vec, k, p, m, firth_null_ll, step_limit = 1000, convergence_limit = 0.0001):
-    sys.stderr.write("Firth on " + str(k.name) + "\n")
-    firth_likelihood = lambda beta, logit: -(logit.loglike(beta) + 0.5*np.log(np.linalg.det(-logit.hessian(beta))))
-
-    X = np.concatenate(np.ones(m.shape[0]),
-                       k.values.reshape(-1, 1),
-                       m.values),
-                       axis=1)
+def fit_firth(logit_model, start_vec, kmer_name, X, y, step_limit = 1000, convergence_limit = 0.0001):
 
     beta_iterations = []
     beta_iterations.append(start_vec)
     for i in range(0, step_limit):
         pi = logit_model.predict(beta_iterations[i])
+        W = np.diagflat(np.multiply(pi, 1-pi))
+        var_covar_mat = np.linalg.pinv(-logit_model.hessian(beta_iterations[i]))
 
         # build hat matrix
-        rootW = np.sqrt(np.diagflat(np.multiply(pi, 1-pi)))
-        H = np.multiply(np.transpose(X), np.transpose(rootW))
-        H = np.linalg.matmul(np.pinv(-logit.hessian(beta_iterations[i])), H)
-        H = np.linalg.matmul(np.multiply(rootW, X), H)
+        rootW = np.sqrt(W)
+        H = np.dot(np.transpose(X), np.transpose(rootW))
+        H = np.matmul(var_covar_mat, H)
+        H = np.matmul(np.dot(rootW, X), H)
 
         # penalised score
-        U = np.linalg.matmul(np.transpose(X), p.values - pi + np.multiply(np.diagonal(H), 0.5 - pi))
-        new_beta = beta_iterations[i] + np.linalg.matmul(np.pinv(-logit.hessian(start_vec)), U)
+        U = np.matmul(np.transpose(X), p.values - pi + np.multiply(np.diagonal(H), 0.5 - pi))
+        new_beta = beta_iterations[i] + np.matmul(var_covar_mat, U)
 
         # step halving
         j = 0
@@ -250,7 +257,7 @@ def firth(logit_model, start_vec, k, p, m, firth_null_ll, step_limit = 1000, con
             new_beta = beta_iterations[i] + 0.5*(new_beta - beta_iterations[i])
             j = j + 1
             if (j > step_limit):
-                sys.stderr.write("Firth regression failed on kmer " + str(k.name) + "\n")
+                sys.stderr.write("Firth regression failed on kmer " + str(kmer_name) + "\n")
                 return None
 
         beta_iterations.append(new_beta)
@@ -259,10 +266,10 @@ def firth(logit_model, start_vec, k, p, m, firth_null_ll, step_limit = 1000, con
 
     return_fit = None
     if np.linalg.norm(beta_iterations[i] - beta_iterations[i-1]) >= convergence_limit:
-        sys.stderr.write("Firth regression failed on kmer " + str(k.name) + "\n")
+        sys.stderr.write("Firth regression failed on kmer " + str(kmer_name) + "\n")
     else:
         # Calculate stats
-        fit_ll = firth_likelihood(beta_iterations[-1], logit_model)
+        fitll = -firth_likelihood(beta_iterations[-1], logit_model)
         intercept = beta_iterations[-1][0]
         kbeta = beta_iterations[-1][1]
         beta = beta_iterations[-1][2:].tolist()
@@ -272,10 +279,7 @@ def firth(logit_model, start_vec, k, p, m, firth_null_ll, step_limit = 1000, con
         wald = abs(kbeta/bse)
         waldp = 2 * (1-stats.norm.cdf(wald))
 
-        lrstat = -2*(null_llf - fit_ll)
-        lrtp = stats.chi2.sf(lrstat, 1)
-
-        return_fit = intercept, kbeta, beta, bse, waldp, lrtp
+        return_fit = intercept, kbeta, beta, bse, waldp, fitll
 
     return return_fit
 
@@ -291,7 +295,7 @@ def continuous(p, k, m, af, print_samples, pret, lrtt, null_res):
     # actual linear regression
     v = np.concatenate((p.values.reshape(-1, 1),
                         k.values.reshape(-1, 1),
-                        m.values),
+                        m),
                        axis=1)
     df = pd.DataFrame(v,
                       columns=['phenotype', 'kmer'] +
@@ -320,14 +324,14 @@ def continuous(p, k, m, af, print_samples, pret, lrtt, null_res):
     output = [k.name, af, prep, float(res1.wald_test('kmer = 0').pvalue), lrt_pvalue, res1.params.kmer, res1.bse.kmer, res1.params.Intercept]
     if print_samples:
         output = output + [getattr(res1.params, 'PC%d'%x) for x in range(1, m.shape[1]+1)]
-    x = '\t'.join(str(x) for x in output)
+    x = '\t'.join(format_output(x) for x in output)
 
     return x
 
 # Fit the null model, regression without k-mer
-def fit_null(p, m, continuous):
+def fit_null(p, m, continuous, firth = 0):
     v = np.concatenate((p.values.reshape(-1, 1),
-                        m.values),
+                        m),
                        axis=1)
     df = pd.DataFrame(v,
                       columns=['phenotype'] +
@@ -349,6 +353,10 @@ def fit_null(p, m, continuous):
             null_res = null_mod.fit()
         else:
             null_res = null_mod.fit(method='newton')
+            if firth:
+                null_res = -firth_likelihood(null_res.params, null_mod)
+            else:
+                null_res = null_res.llf
 
     except np.linalg.linalg.LinAlgError:
         # singular matrix error
@@ -360,6 +368,12 @@ def fit_null(p, m, continuous):
 
     return null_res
 
+def format_output (item):
+    formatted = str(item)
+    if type(item) is float or type(item) is np.float64:
+        formatted = '%.2E' % Decimal(item)
+
+    return formatted
 
 if __name__ == "__main__":
     import sys
@@ -378,6 +392,7 @@ if __name__ == "__main__":
     import pandas as pd
     from scipy import stats
     from scipy import optimize
+    from decimal import Decimal
     from multiprocessing import Pool
     import statsmodels.formula.api as smf
 
@@ -392,14 +407,23 @@ if __name__ == "__main__":
                          for x in open(options.phenotypes)])
 
     # reading genome distances
-    m = pd.read_table(options.distances,
-                      index_col=0)
-    m = m.loc[p.index, p.index]
-    # metric MDS scaling
-    m = pd.DataFrame(cmdscale(m)[0][:, :options.max_dimensions],
-                     index=m.index)
-    for i in range(m.shape[1]):
-        m[i] = m[i] / max(abs(m[i]))
+    if options.load_m and os.path.isfile(options.load_m):
+        m = pd.read_pickle(options.load_m)
+        m = m.loc[p.index]
+    else:
+        m = pd.read_table(options.distances,
+                          index_col=0)
+        m = m.loc[p.index, p.index]
+        # metric MDS scaling
+        m = pd.DataFrame(cmdscale(m)[0],
+                         index=m.index)
+        for i in range(m.shape[1]):
+            m[i] = m[i] / max(abs(m[i]))
+
+        if options.save_m:
+            m.to_pickle(options.save_m + ".pkl")
+    m = m.values[:, :options.max_dimensions]
+
 
     all_strains = set(p.index)
 
@@ -417,13 +441,15 @@ if __name__ == "__main__":
 
     # calculate null regressions once
     null_fit = fit_null(p, m, options.continuous)
+    if not options.continuous:
+        firth_null = fit_null(p, m, options.continuous, 1)
 
     # iterator over each kmer
     # implements maf filtering
     k_iter = iter_kmers(p, m, infile, all_strains,
                         options.min_af, options.max_af,
                         options.print_samples, options.filter_pvalue,
-                        options.lrt_pvalue, null_fit)
+                        options.lrt_pvalue, null_fit, firth_null)
 
     # actual association test
     # multiprocessing proceeds 1000 MAF-passing kmers per core at a time
