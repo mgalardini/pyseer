@@ -302,7 +302,7 @@ def fit_null(p, m, cov, continuous):
 
     except np.linalg.linalg.LinAlgError:
         # singular matrix error
-        sys.stderr.write('Matrix inversion error with kmer %s\n' % str(k.name))
+        sys.stderr.write('Matrix inversion error for null model\n')
         return None
     finally:
         sys.stdout.close()
@@ -407,7 +407,10 @@ if __name__ == "__main__":
             pool = Pool(options.cpu)
 
         # calculate null regressions once
-        null_fit = fit_null(p, m, options.continuous)
+        null_fit = fit_null(p, m, cov, options.continuous)
+        if null_fit is None:
+            sys.stderr.write('Could not fit null model, exiting\n')
+            sys.exit(1)
 
         # iterator over each kmer
         # implements maf filtering
