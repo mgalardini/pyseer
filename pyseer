@@ -237,7 +237,7 @@ def binary(kmer, p, k, m, af, print_samples,
 
     except np.linalg.linalg.LinAlgError:
         # singular matrix error
-        sys.stderr.write("Matrix inversion error with kmer " + str(kmer))
+        sys.stderr.write('Matrix inversion error with kmer %s\n' % str(kmer))
         return None
     finally:
         sys.stdout.close()
@@ -283,7 +283,7 @@ def fit_firth(logit_model, start_vec, kmer_name, X, y, step_limit = 1000, conver
             new_beta = beta_iterations[i] + 0.5*(new_beta - beta_iterations[i])
             j = j + 1
             if (j > step_limit):
-                sys.stderr.write("Firth regression failed on kmer " + str(kmer_name) + "\n")
+                sys.stderr.write('Firth regression failed on kmer %s' % str(kmer_name))
                 return None
 
         beta_iterations.append(new_beta)
@@ -292,7 +292,7 @@ def fit_firth(logit_model, start_vec, kmer_name, X, y, step_limit = 1000, conver
 
     return_fit = None
     if np.linalg.norm(beta_iterations[i] - beta_iterations[i-1]) >= convergence_limit:
-        sys.stderr.write("Firth regression failed on kmer " + str(kmer_name) + "\n")
+        sys.stderr.write('Firth regression failed on kmer %s \n' % str(kmer_name))
     else:
         # Calculate stats
         fitll = -firth_likelihood(beta_iterations[-1], logit_model)
@@ -510,7 +510,7 @@ if __name__ == "__main__":
         if not options.continuous:
             firth_null = fit_null(p, m, options.continuous, 1)
 
-        if ull_fit is None or firth_null is None:
+        if null_fit is None or firth_null is None:
             sys.stderr.write('Could not fit null model, exiting\n')
             sys.exit(1)
 
