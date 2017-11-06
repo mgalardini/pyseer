@@ -44,10 +44,12 @@ def get_options():
                         help='Maximum number of dimensions to consider after MDS [Default: 10]')
     parser.add_argument('--covariates',
                         default=None,
-                        help='User-defined covariates file (tab-delimited)')
+                        help='User-defined covariates file (tab-delimited, no header, ' +
+                             'first column contains sample names)')
     parser.add_argument('--use-covariates',
                         default=None,
-                        help='Covariates to use. Format is 1,2q,3 (q for quantitative)'
+                        nargs='*',
+                        help='Covariates to use. Format is "2 3q 4" (q for quantitative)'
                              ' [Default: load covariates but don\'t use them]')
     parser.add_argument('--uncompressed',
                         action='store_true',
@@ -131,7 +133,8 @@ def cmdscale(D):
     return Y, evals
 
 
-def iter_kmers(p, m, infile, all_strains,
+def iter_kmers(p, m, cov,
+               infile, all_strains,
                min_af, max_af,
                filter_pvalue, lrt_pvalue, null_fit):
     for l in infile:
@@ -154,12 +157,13 @@ def iter_kmers(p, m, infile, all_strains,
         k = np.array([d[x] for x in p.index
                       if x in d])
         s = m.values
-        yield (kmer, v, k, s, af,
+        c = cov.values
+        yield (kmer, v, k, s, c, af,
                filter_pvalue, lrt_pvalue, null_fit,
                kstrains, nkstrains)
 
 
-def binary(kmer, p, k, m, af,
+def binary(kmer, p, k, m, c, af,
            pret, lrtt, null_res,
            kstrains, nkstrains):
     # pre-filtering
@@ -175,7 +179,8 @@ def binary(kmer, p, k, m, af,
     # actual logistic regression
     v = np.concatenate((np.ones(m.shape[0]).reshape(-1, 1),
                         k.reshape(-1, 1),
-                        m), axis=1)
+                        m,
+                        c), axis=1)
     mod = smf.Logit(p, v)
 
     # suppress annoying stdout messages
@@ -212,14 +217,13 @@ def binary(kmer, p, k, m, af,
                              res.params[1],
                              res.bse[1],
                              res.params[0]] +
-                             [res.params[x]
-                              for x in range(2, m.shape[1]+2)] +
-                             [','.join(kstrains),
-                              ','.join(nkstrains)]])
+                            list(res.params[2:]) +
+                            [','.join(kstrains),
+                             ','.join(nkstrains)]])
     return x
 
 
-def continuous(kmer, p, k, m, af,
+def continuous(kmer, p, k, m, c, af,
                pret, lrtt, null_res,
                kstrains, nkstrains):
     # pre-filtering
@@ -232,7 +236,8 @@ def continuous(kmer, p, k, m, af,
     # actual linear regression
     v = np.concatenate((np.ones(m.shape[0]).reshape(-1, 1),
                         k.reshape(-1, 1),
-                        m), axis=1)
+                        m,
+                        c), axis=1)
     mod = smf.OLS(p, v)
 
     # suppress annoying stdout messages
@@ -260,28 +265,31 @@ def continuous(kmer, p, k, m, af,
                              res.params[1],
                              res.bse[1],
                              res.params[0]] +
-                             [res.params[x]
-                              for x in range(2, m.shape[1]+2)] +
-                             [','.join(kstrains),
-                              ','.join(nkstrains)]])
+                            list(res.params[2:]) +
+                            [','.join(kstrains),
+                             ','.join(nkstrains)]])
     return x
 
 # Fit the null model, regression without k-mer
-def fit_null(p, m, continuous):
+def fit_null(p, m, cov, continuous):
     v = np.concatenate((p.values.reshape(-1, 1),
-                        m.values),
+                        m.values,
+                        cov.values),
                        axis=1)
     df = pd.DataFrame(v,
                       columns=['phenotype'] +
-                      ['PC%d'%x for x in range(1, m.shape[1]+1)])
+                      ['PC%d'%x for x in range(1, m.shape[1]+1)] +
+                      list(cov.columns))
     if continuous:
         null_mod = smf.ols(formula='phenotype ~ ' +
-                           ' + '.join(['PC%d'%x for x in range(1, m.shape[1]+1)]),
-                   data=df)
+                                   ' + '.join(['PC%d'%x for x in range(1, m.shape[1]+1)]) + ' + ' +
+                                   ' + '.join(list(cov.columns)),
+                           data=df)
     else:
         null_mod = smf.logit(formula='phenotype ~ ' +
-                             ' + '.join(['PC%d'%x for x in range(1, m.shape[1]+1)]),
-                     data=df)
+                                     ' + '.join(['PC%d'%x for x in range(1, m.shape[1]+1)]) + ' + ' +
+                                     ' + '.join(list(cov.columns)),
+                             data=df)
 
     # suppress annoying stdout messages
     old_stdout = sys.stdout
@@ -351,14 +359,43 @@ if __name__ == "__main__":
 
         # read covariates
         if options.covariates is not None:
-            pass
-        #
-
+            c = pd.read_table(options.covariates,
+                              header=None,
+                              index_col=0)
+            c.columns = ['covariate%d' % (x+2) for x in range(c.shape[1])]
+            c = c.loc[p.index]
+            # which covariates to use?
+            if options.use_covariates is None:
+                cov = pd.DataFrame([])
+            else:
+                cov = []
+                for col in options.use_covariates:
+                    cnum = int(col.rstrip('q'))
+                    if cnum == 1 or cnum > c.shape[1] + 1:
+                        sys.stderr.write('Covariates columns values should be > 1 and lower ' +
+                                         'than total number of columns (%d)\n' % (c.shape[1] + 1))
+                        sys.exit(1)
+                    if col[-1] == 'q':
+                        # quantitative
+                        cov.append(c['covariate%d' % cnum])
+                    else:
+                        # categorical, dummy-encode it
+                        categories = set(c['covariate%d' % cnum])
+                        for i, categ in enumerate(categories):
+                            cov.append(pd.Series([1 if x == categ
+                                                  else 0
+                                                  for x in c['covariate%d' % cnum].values],
+                                                 index=c.index,
+                                                 name='covariate%d_%d' % (cnum, i)))
+                cov = pd.concat(cov, axis=1)
+            
         print('\t'.join(['kmer', 'af', 'filter-pvalue',
                          'lrt-pvalue', 'beta', 'beta-std-err',
                          'intercept'] +
-                         ['covar_%d' % i
+                         ['PC%d' % i
                           for i in range(1, options.max_dimensions+1)] +
+                         [x
+                          for x in cov.columns] +
                          ['k-samples', 'nk-samples']))
         if options.uncompressed:
             infile = open(options.kmers)
@@ -374,7 +411,8 @@ if __name__ == "__main__":
 
         # iterator over each kmer
         # implements maf filtering
-        k_iter = iter_kmers(p, m, infile, all_strains,
+        k_iter = iter_kmers(p, m, cov,
+                            infile, all_strains,
                             options.min_af, options.max_af,
                             options.filter_pvalue,
                             options.lrt_pvalue, null_fit)
