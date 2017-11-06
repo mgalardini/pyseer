@@ -166,7 +166,6 @@ def binary(p, k, m, af, print_samples, pret, lrtt, null_res):
     start_vec = np.ones(df.shape[1])
     start_vec[0] = np.log(np.mean(p.values)/(1-np.mean(p.values)))
 
-
     # suppress annoying stdout messages
     #old_stdout = sys.stdout
     #sys.stdout = open(os.devnull, "w")
@@ -182,6 +181,9 @@ def binary(p, k, m, af, print_samples, pret, lrtt, null_res):
                 bad_chisq = 1
             else:
                 fitll = res1.llf
+                lrstat = -2*(null_res.llf - fitll)
+                lrt_pvalue = stats.chi2.sf(lrstat, 1)
+
                 intercept = res1.params.Intercept
                 kbeta = res1.params.kmer
                 beta = [getattr(res1.params, 'PC%d'%x) for x in range(1, m.shape[1]+1)]
@@ -190,22 +192,11 @@ def binary(p, k, m, af, print_samples, pret, lrtt, null_res):
 
         # Fit Firth regression with large SE, or nearly separable values
         if bad_chisq:
-            firth_fit = firth(mod1, start_vec, k)
+            firth_fit = firth(mod1, start_vec, k, p, m)
             if firth_fit is None: # Firth failure
                 return None
             else:
-                fitll = -firth_fit.fun
-                print(mod1.loglike(firth_fit.x))
-                print(null_res.llf)
-                print(fitll)
-                intercept = firth_fit.x[0]
-                kbeta = firth_fit.x[1]
-                beta = firth_fit.x[2:].tolist()
-                bse = math.sqrt(-mod1.hessian(firth_fit.x)[1,1])
-
-                # Calculate Wald p-value
-                wald = abs(kbeta/bse)
-                waldp = 2 * (1-stats.norm.cdf(wald))
+                intercept, kbeta, beta, bse, waldp, lrtp = firth_fit
 
     except np.linalg.linalg.LinAlgError:
         # singular matrix error
@@ -216,8 +207,6 @@ def binary(p, k, m, af, print_samples, pret, lrtt, null_res):
     #    sys.stdout = old_stdout
 
     # lrt test same for logit and firth
-    lrstat = -2*(null_res.llf - fitll)
-    lrt_pvalue = stats.chi2.sf(lrstat, 1)
 
     if lrt_pvalue > lrtt:
         return None
@@ -230,18 +219,66 @@ def binary(p, k, m, af, print_samples, pret, lrtt, null_res):
     return x
 
 # Do firth regression
-def firth(logit_model, start_vec, k):
+# Note information = -hessian, for some reason available but not implemented in statsmodels
+def firth(logit_model, start_vec, k, p, m, firth_null_ll, step_limit = 1000, convergence_limit = 0.0001):
     sys.stderr.write("Firth on " + str(k.name) + "\n")
+    firth_likelihood = lambda beta, logit: -(logit.loglike(beta) + 0.5*np.log(np.linalg.det(-logit.hessian(beta))))
 
-    # note -hessian = information. statsmodels has this function but it isn't implemented yet
-    firth_likelihood = lambda beta, logit: -(logit.loglike(beta) + 0.5*np.log(np.trace(-logit.hessian(beta))))
-    firth_result = optimize.minimize(firth_likelihood, start_vec, logit_model, method = 'Nelder-Mead', options={'disp': True, 'maxiter': 50000})
+    X = np.concatenate(np.ones(m.shape[0]),
+                       k.values.reshape(-1, 1),
+                       m.values),
+                       axis=1)
 
-    if not firth_result.success:
-        sys.stderr.write("Firth regression failed on kmer " + str(k.name) + " with message:\n" + firth_result.message + "\n")
-        #firth_result = None
+    beta_iterations = []
+    beta_iterations.append(start_vec)
+    for i in range(0, step_limit):
+        pi = logit_model.predict(beta_iterations[i])
 
-    return firth_result
+        # build hat matrix
+        rootW = np.sqrt(np.diagflat(np.multiply(pi, 1-pi)))
+        H = np.multiply(np.transpose(X), np.transpose(rootW))
+        H = np.linalg.matmul(np.pinv(-logit.hessian(beta_iterations[i])), H)
+        H = np.linalg.matmul(np.multiply(rootW, X), H)
+
+        # penalised score
+        U = np.linalg.matmul(np.transpose(X), p.values - pi + np.multiply(np.diagonal(H), 0.5 - pi))
+        new_beta = beta_iterations[i] + np.linalg.matmul(np.pinv(-logit.hessian(start_vec)), U)
+
+        # step halving
+        j = 0
+        while firth_likelihood(new_beta, logit_model) > firth_likelihood(beta_iterations[i], logit_model):
+            new_beta = beta_iterations[i] + 0.5*(new_beta - beta_iterations[i])
+            j = j + 1
+            if (j > step_limit):
+                sys.stderr.write("Firth regression failed on kmer " + str(k.name) + "\n")
+                return None
+
+        beta_iterations.append(new_beta)
+        if i > 0 and (np.linalg.norm(beta_iterations[i] - beta_iterations[i-1]) < convergence_limit):
+            break
+
+    return_fit = None
+    if np.linalg.norm(beta_iterations[i] - beta_iterations[i-1]) >= convergence_limit:
+        sys.stderr.write("Firth regression failed on kmer " + str(k.name) + "\n")
+    else:
+        # Calculate stats
+        fit_ll = firth_likelihood(beta_iterations[-1], logit_model)
+        intercept = beta_iterations[-1][0]
+        kbeta = beta_iterations[-1][1]
+        beta = beta_iterations[-1][2:].tolist()
+        bse = math.sqrt(-logit_model.hessian(beta_iterations[-1])[1,1])
+
+        # Calculate p-values
+        wald = abs(kbeta/bse)
+        waldp = 2 * (1-stats.norm.cdf(wald))
+
+        lrstat = -2*(null_llf - fit_ll)
+        lrtp = stats.chi2.sf(lrstat, 1)
+
+        return_fit = intercept, kbeta, beta, bse, waldp, lrtp
+
+    return return_fit
+
 
 def continuous(p, k, m, af, print_samples, pret, lrtt, null_res):
     # pre-filtering
