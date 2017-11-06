@@ -170,7 +170,7 @@ def iter_kmers(p, m, cov, infile, all_strains,
                kstrains, nkstrains)
 
 
-def binary(kmer, p, k, m, af, print_samples,
+def binary(kmer, p, k, m, c, af, print_samples,
            pret, lrtt, null_res, null_firth,
            kstrains, nkstrains):
     # pre-filtering
@@ -197,10 +197,18 @@ def binary(kmer, p, k, m, af, print_samples,
         return None
 
     # actual logistic regression
-    v = np.concatenate((np.ones(m.shape[0]).reshape(-1, 1),
-                        k.reshape(-1, 1),
-                        m,
-                        c), axis=1)
+    if c.shape[0] == m.shape[0]:
+        v = np.concatenate((np.ones(m.shape[0]).reshape(-1, 1),
+                            p.reshape(-1, 1),
+                            m,
+                            c),
+                           axis=1)
+    else:
+        # no covariates
+        v = np.concatenate((np.ones(m.shape[0]).reshape(-1, 1),
+                            p.reshape(-1, 1),
+                            m),
+                           axis=1)
     mod = smf.Logit(p, v)
 
     start_vec = np.ones(v.shape[1])
@@ -317,10 +325,18 @@ def continuous(kmer, p, k, m, c, af, print_samples,
         return None
 
     # actual linear regression
-    v = np.concatenate((np.ones(m.shape[0]).reshape(-1, 1),
-                        k.reshape(-1, 1),
-                        m,
-                        c), axis=1)
+    if c.shape[0] == m.shape[0]:
+        v = np.concatenate((np.ones(m.shape[0]).reshape(-1, 1),
+                            p.values.reshape(-1, 1),
+                            m,
+                            c),
+                           axis=1)
+    else:
+        # no covariates
+        v = np.concatenate((np.ones(m.shape[0]).reshape(-1, 1),
+                            p.values.reshape(-1, 1),
+                            m),
+                           axis=1)
     mod = smf.OLS(p, v)
 
     # suppress annoying stdout messages
@@ -349,24 +365,36 @@ def continuous(kmer, p, k, m, c, af, print_samples,
     return x
 
 # Fit the null model, regression without k-mer
-def fit_null(p, m, cov, continuous, firth = 0):
-    v = np.concatenate((p.values.reshape(-1, 1),
-                        m,
-                        cov.values),
-                       axis=1)
+def fit_null(p, m, cov, continuous, firth=False):
+    if cov.shape[1] > 0:
+        v = np.concatenate((p.values.reshape(-1, 1),
+                            m,
+                            cov.values),
+                           axis=1)
+    else:
+        # no covariates
+        v = np.concatenate((p.values.reshape(-1, 1),
+                            m),
+                           axis=1)
+
     df = pd.DataFrame(v,
                       columns=['phenotype'] +
                       ['PC%d'%x for x in range(1, m.shape[1]+1)] +
                       list(cov.columns))
+
+    if cov.shape[1] > 0:
+        formula = ('phenotype ~ ' +
+                   ' + '.join(['PC%d'%x for x in range(1, m.shape[1]+1)]) + ' + ' +
+                   ' + '.join(list(cov.columns)))
+    else:
+        formula = ('phenotype ~ ' +
+                   ' + '.join(['PC%d'%x for x in range(1, m.shape[1]+1)]))
+
     if continuous:
-        null_mod = smf.ols(formula='phenotype ~ ' +
-                                   ' + '.join(['PC%d'%x for x in range(1, m.shape[1]+1)]) + ' + ' +
-                                   ' + '.join(list(cov.columns)),
+        null_mod = smf.ols(formula=formula,
                            data=df)
     else:
-        null_mod = smf.logit(formula='phenotype ~ ' +
-                                     ' + '.join(['PC%d'%x for x in range(1, m.shape[1]+1)]) + ' + ' +
-                                     ' + '.join(list(cov.columns)),
+        null_mod = smf.logit(formula=formula,
                              data=df)
 
     # suppress annoying stdout messages
@@ -392,7 +420,7 @@ def fit_null(p, m, cov, continuous, firth = 0):
 
     return null_res
 
-def format_output (item):
+def format_output(item):
     formatted = str(item)
     if type(item) is float or type(item) is np.float64:
         formatted = '%.2E' % Decimal(item)
@@ -486,6 +514,8 @@ if __name__ == "__main__":
                                                  index=c.index,
                                                  name='covariate%d_%d' % (cnum, i)))
                 cov = pd.concat(cov, axis=1)
+        else:
+            cov = pd.DataFrame([])
 
         header = ['kmer', 'af', 'filter-pvalue',
                          'lrt-pvalue', 'beta', 'beta-std-err',
@@ -508,7 +538,7 @@ if __name__ == "__main__":
         # calculate null regressions once
         null_fit = fit_null(p, m, cov, options.continuous)
         if not options.continuous:
-            firth_null = fit_null(p, m, options.continuous, 1)
+            firth_null = fit_null(p, m, cov, options.continuous, True)
 
         if null_fit is None or firth_null is None:
             sys.stderr.write('Could not fit null model, exiting\n')
