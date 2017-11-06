@@ -4,7 +4,7 @@ pyseer
 [SEER](https://github.com/johnlees/seer), reimplemented in python by
 [Marco](https://github.com/mgalardini) and [John](https://github.com/johnlees)
 
-    pyseer kmers.gz phenotypes.tsv structure.tsv --min-maf 0.01 --max-maf 0.99 --cpu 15 --filter-pvalue 1E-8
+    pyseer kmers.gz phenotypes.tsv structure.tsv --min-af 0.01 --max-af 0.99 --cpu 15 --filter-pvalue 1E-8
 
 Motivation
 ----------
@@ -49,7 +49,8 @@ make it executable (`chmod 755 pyseer`) and type:
 
     pyseer -h
 
-**Note:** this assumes that your default python's interpreter is at least version 3.
+**Note:** if you wish to use multithreading,
+the script assumes that your default python's interpreter is at least version 3.
 If that is not the case then edit the first line to:
 
     #!/usr/bin/env python3
@@ -72,18 +73,18 @@ Notes
 SEER's features present in this script:
 
 * binary and continuos phenotypes
-* binary phenotypes: Firth regression upon failure of bfgs and Newton-Raphson
+* binary phenotypes: Firth regression upon failure of Newton-Raphson
 * population structure correction
 * MAF filtering
 * kmers prefiltering
 * multi-threading
 * filtering of results based on LRT p-value
 * covariates and intercept betas are reported
+* user-defined covariates
 
 Absent features:
 
 * automatic determination of binary/continuous phenotypes
-* user-defined covariates
 * reasons for failures are not reported
 
 Additional features:
