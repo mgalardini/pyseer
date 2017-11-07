@@ -16,7 +16,7 @@ in the form of the [SEER](https://github.com/johnlees/seer) software.
 
 The reimplementation presented here should be consistent with the
 current version of seer. Based on our few
-tests the results are going to be exactly the same to the
+tests the results are going to be very similar to the
 C++ implementation, though approximation at low p-values may cause small
 differences. However, **no guarantee whatsoever is given that the
 script works in the same way as the original**, especially for corner cases
@@ -67,6 +67,14 @@ by piping the `mash dist` command into the provided `square_mash` script:
 **Note:** `square_mash` extracts the sample names as the string after the last `/` character
 and up to the first full stop (`.`).
 
+Testing
+-------
+
+While waiting on proper unit tests to be implemented, you can check that the script doesn't crash
+by running:
+
+    cd test/ && bash run_test.sh && cd ../
+
 Notes
 -----
 
@@ -80,7 +88,7 @@ SEER's features present in this script:
 * multi-threading
 * filtering of results based on LRT p-value
 * covariates and intercept betas are reported
-* user-defined covariates
+* user-defined covariates (NOTE: still experimental and possibly bugged)
 * automatic determination of binary/continuous phenotypes
 
 Absent features:
@@ -117,4 +125,3 @@ nor may pyseer appear in their names without prior written
 permission of the developers. You should have received a copy
 of the GNU General Public License along with this program.
 If not, see <http://www.gnu.org/licenses/>.
-
