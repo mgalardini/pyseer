@@ -199,14 +199,14 @@ def binary(kmer, p, k, m, c, af, print_samples,
     # actual logistic regression
     if c.shape[0] == m.shape[0]:
         v = np.concatenate((np.ones(m.shape[0]).reshape(-1, 1),
-                            p.reshape(-1, 1),
+                            k.reshape(-1, 1),
                             m,
                             c),
                            axis=1)
     else:
         # no covariates
         v = np.concatenate((np.ones(m.shape[0]).reshape(-1, 1),
-                            p.reshape(-1, 1),
+                            k.reshape(-1, 1),
                             m),
                            axis=1)
     mod = smf.Logit(p, v)
@@ -215,8 +215,8 @@ def binary(kmer, p, k, m, c, af, print_samples,
     start_vec[0] = np.log(np.mean(p)/(1-np.mean(p)))
 
     # suppress annoying stdout messages
-    old_stdout = sys.stdout
-    sys.stdout = open(os.devnull, "w")
+    #old_stdout = sys.stdout
+    #sys.stdout = open(os.devnull, "w")
     try:
         if not bad_chisq:
             try:
@@ -226,7 +226,9 @@ def binary(kmer, p, k, m, c, af, print_samples,
                     bad_chisq = True
                 else:
                     lrstat = -2*(null_res - res.llf)
-                    lrt_pvalue = stats.chi2.sf(lrstat, 1)
+                    lrt_pvalue = 1
+                    if lrstat > 0: # non-convergence
+                        lrt_pvalue = stats.chi2.sf(lrstat, 1)
 
                     intercept = res.params[0]
                     kbeta = res.params[1]
@@ -244,14 +246,16 @@ def binary(kmer, p, k, m, c, af, print_samples,
             else:
                 intercept, kbeta, beta, bse, fitll = firth_fit
                 lrstat = -2*(null_firth - fitll)
-                lrt_pvalue = stats.chi2.sf(lrstat, 1)
+                lrt_pvalue = 1
+                if lrstat > 0: # non-convergence
+                    lrt_pvalue = stats.chi2.sf(lrstat, 1)
     except np.linalg.linalg.LinAlgError:
         # singular matrix error
         sys.stderr.write('Matrix inversion error with kmer %s\n' % str(kmer))
         return None
-    finally:
-        sys.stdout.close()
-        sys.stdout = old_stdout
+    #finally:
+    #    sys.stdout.close()
+    #    sys.stdout = old_stdout
 
     if lrt_pvalue > lrtt:
         return None
@@ -332,14 +336,14 @@ def continuous(kmer, p, k, m, c, af, print_samples,
     # actual linear regression
     if c.shape[0] == m.shape[0]:
         v = np.concatenate((np.ones(m.shape[0]).reshape(-1, 1),
-                            p.values.reshape(-1, 1),
+                            k.values.reshape(-1, 1),
                             m,
                             c),
                            axis=1)
     else:
         # no covariates
         v = np.concatenate((np.ones(m.shape[0]).reshape(-1, 1),
-                            p.values.reshape(-1, 1),
+                            k.values.reshape(-1, 1),
                             m),
                            axis=1)
     mod = smf.OLS(p, v)
