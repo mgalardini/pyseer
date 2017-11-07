@@ -153,17 +153,20 @@ def iter_kmers(p, m, cov, infile, all_strains,
         if not options.uncompressed:
             l = l.decode()
         kmer, strains = l.split()[0], l.rstrip().split('|')[1].lstrip().split()
-        af = float(len(strains)) / len(all_strains)
-        # filter by AF
-        if af < min_af or af > max_af:
-            continue
 
         d = {x.split(':')[0]: 1
              for x in strains}
-        kstrains = sorted(d.keys())
-        nkstrains = sorted(all_strains.difference({x.split(':')[0] for x in strains}))
+        kstrains = sorted(set(d.keys()).intersection(all_strains))
+        nkstrains = sorted(all_strains.difference(
+                           all_strains.intersection(
+                           {x.split(':')[0] for x in strains})))
         for x in nkstrains:
             d[x] = 0
+
+        af = float(len(kstrains)) / len(all_strains)
+        # filter by AF
+        if af < min_af or af > max_af:
+            continue
 
         v = p.values
         k = np.array([d[x] for x in p.index
