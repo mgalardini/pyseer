@@ -337,7 +337,7 @@ def continuous(kmer, p, k, m, c, af, print_samples,
 
     # pre-filtering
     prep = stats.ttest_ind(p[k == 1],
-                           p[k == 1],
+                           p[k == 0],
                            equal_var=False)[1]
     if prep > pret:
         return None
