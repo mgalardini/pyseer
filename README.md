@@ -2,7 +2,7 @@ pyseer
 ======
 
 [SEER](https://github.com/johnlees/seer), reimplemented in python by
-[Marco](https://github.com/mgalardini) and [John](https://github.com/johnlees)
+[Marco Galardini](https://github.com/mgalardini) and [John Lees](https://github.com/johnlees)
 
     pyseer kmers.gz phenotypes.tsv structure.tsv --min-af 0.01 --max-af 0.99 --cpu 15 --filter-pvalue 1E-8
 
@@ -81,16 +81,16 @@ SEER's features present in this script:
 * filtering of results based on LRT p-value
 * covariates and intercept betas are reported
 * user-defined covariates
+* automatic determination of binary/continuous phenotypes
 
 Absent features:
 
-* automatic determination of binary/continuous phenotypes
 * reasons for failures are not reported
 
 Additional features:
 
 * Multidimensional scaling from squared [mash](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-016-0997-x) matrix
-* List of samples without the kmer are also outputed
+* List of samples without the kmer are also output
 
 Copyright
 ---------
