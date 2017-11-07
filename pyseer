@@ -21,7 +21,7 @@ def get_options():
     parser.add_argument('--continuous',
                         action='store_true',
                         default=False,
-                        help='Continuous phenotype [Default: binary]')
+                        help='Force continuous phenotype [Default: binary auto-detect]')
     parser.add_argument('--print-samples',
                         action='store_true',
                         default=False,
@@ -470,6 +470,14 @@ if __name__ == "__main__":
                        for x in open(options.phenotypes)],
                       index=[x.split()[0]
                              for x in open(options.phenotypes)])
+
+        # Check whether any non 0/1 phenotypes
+        if not options.continuous:
+            if p.values[(p.values != 0) & (p.values != 1)].size > 0:
+                options.continuous = True
+                sys.stderr.write("Detected continuous phenotype\n")
+            else:
+                sys.stderr.write("Detected binary phenotype\n")
 
         # reading genome distances
         if options.load_m and os.path.isfile(options.load_m):
