@@ -332,7 +332,7 @@ def fit_firth(logit_model, start_vec, kmer_name,
 
 
 def continuous(kmer, p, k, m, c, af, print_samples,
-               pret, lrtt, null_res,
+               pret, lrtt, null_res, null_firth,
                kstrains, nkstrains):
 
     # pre-filtering
@@ -345,14 +345,14 @@ def continuous(kmer, p, k, m, c, af, print_samples,
     # actual linear regression
     if c.shape[0] == m.shape[0]:
         v = np.concatenate((np.ones(m.shape[0]).reshape(-1, 1),
-                            k.values.reshape(-1, 1),
+                            k.reshape(-1, 1),
                             m,
                             c),
                            axis=1)
     else:
         # no covariates
         v = np.concatenate((np.ones(m.shape[0]).reshape(-1, 1),
-                            k.values.reshape(-1, 1),
+                            k.reshape(-1, 1),
                             m),
                            axis=1)
     mod = smf.OLS(p, v)
@@ -374,7 +374,9 @@ def continuous(kmer, p, k, m, c, af, print_samples,
     if lrt_pvalue > lrtt:
         return None
 
-    output = [k.name, af, prep, lrt_pvalue, res1.params[1], res1.bse[1], res1.params[0]] + [res.params[x] for x in range(2, m.shape[1]+2)]
+    output = [kmer, af, prep, lrt_pvalue,
+              res.params[1], res.bse[1], res.params[0]] + [res.params[x]
+              for x in range(2, m.shape[1]+2)]
     if print_samples:
         output = output + [','.join(kstrains), ','.join(nkstrains)]
     x = '\t'.join(format_output(x) for x in output)
@@ -568,6 +570,8 @@ if __name__ == "__main__":
         null_fit = fit_null(p, m, cov, options.continuous)
         if not options.continuous:
             firth_null = fit_null(p, m, cov, options.continuous, True)
+        else:
+            firth_null = True
 
         if null_fit is None or firth_null is None:
             sys.stderr.write('Could not fit null model, exiting\n')
