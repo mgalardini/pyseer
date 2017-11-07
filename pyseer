@@ -152,7 +152,7 @@ def iter_kmers(p, m, cov, infile, all_strains,
     for l in infile:
         if not options.uncompressed:
             l = l.decode()
-        kmer, strains = l.split()[0], l.rstrip().split()[2:]
+        kmer, strains = l.split()[0], l.rstrip().split('|')[1].lstrip().split()
         af = float(len(strains)) / len(all_strains)
         # filter by AF
         if af < min_af or af > max_af:
