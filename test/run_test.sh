@@ -12,6 +12,8 @@ die () {
 	exit 1
 }
 
+gunzip distances.tsv.gz
+
 ../pyseer kmers.gz subset.pheno distances.tsv --filter-pvalue 1E-5 --lrt-pvalue 1E-8 > 1.log 2> 1.err || die "Basic filters"
 ../pyseer kmers.gz example.pheno distances.tsv --filter-pvalue 1 --lrt-pvalue 1 --max-dimensions 3 > 2.log 2> 2.err || die "Binary phenotype"
 ../pyseer kmers.gz subset.cont.pheno distances.tsv --filter-pvalue 1 --lrt-pvalue 1 --max-dimensions 3 > 3.log 2> 3.err || die "Continuous phenotype"
