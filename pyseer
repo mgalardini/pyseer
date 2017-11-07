@@ -282,7 +282,8 @@ def firth_likelihood(beta, logit):
 
 # Do firth regression
 # Note information = -hessian, for some reason available but not implemented in statsmodels
-def fit_firth(logit_model, start_vec, kmer_name, X, y, step_limit = 1000, convergence_limit = 0.0001):
+def fit_firth(logit_model, start_vec, kmer_name,
+              X, y, step_limit=1000, convergence_limit=0.0001):
 
     beta_iterations = []
     beta_iterations.append(start_vec)
@@ -494,14 +495,14 @@ if __name__ == "__main__":
         # reading genome distances
         if options.load_m and os.path.isfile(options.load_m):
             m = pd.read_pickle(options.load_m)
-            m = m.loc[p.index]
+            m = m.loc[p.index, p.index]
         else:
             m = pd.read_table(options.distances,
                           index_col=0)
             m = m.loc[p.index, p.index]
             # metric MDS scaling
             m = pd.DataFrame(cmdscale(m)[0],
-                         index=m.index)
+                             index=m.index)
             for i in range(m.shape[1]):
                 m[i] = m[i] / max(abs(m[i]))
 
