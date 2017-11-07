@@ -497,7 +497,7 @@ if __name__ == "__main__":
         # reading genome distances
         if options.load_m and os.path.isfile(options.load_m):
             m = pd.read_pickle(options.load_m)
-            m = m.loc[p.index, p.index]
+            m = m.loc[p.index]
         else:
             m = pd.read_table(options.distances,
                           index_col=0)
