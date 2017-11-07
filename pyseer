@@ -215,8 +215,8 @@ def binary(kmer, p, k, m, c, af, print_samples,
     start_vec[0] = np.log(np.mean(p)/(1-np.mean(p)))
 
     # suppress annoying stdout messages
-    #old_stdout = sys.stdout
-    #sys.stdout = open(os.devnull, "w")
+    old_stdout = sys.stdout
+    sys.stdout = open(os.devnull, "w")
     try:
         if not bad_chisq:
             try:
@@ -253,9 +253,9 @@ def binary(kmer, p, k, m, c, af, print_samples,
         # singular matrix error
         sys.stderr.write('Matrix inversion error with kmer %s\n' % str(kmer))
         return None
-    #finally:
-    #    sys.stdout.close()
-    #    sys.stdout = old_stdout
+    finally:
+        sys.stdout.close()
+        sys.stdout = old_stdout
 
     if lrt_pvalue > lrtt:
         return None
