@@ -186,11 +186,11 @@ def binary(kmer, p, k, m, c, af, print_samples,
     for row in table:
         for entry in row:
             if entry <= 1:
-                bad_chisq = 1
+                bad_chisq = True
             elif entry <= 5:
                 bad_entries += 1
     if bad_entries > 1:
-        bad_chisq = 1
+        bad_chisq = True
 
     prep = stats.chi2_contingency(table, correction=False)[1]
     if prep > pret:
@@ -219,30 +219,32 @@ def binary(kmer, p, k, m, c, af, print_samples,
     sys.stdout = open(os.devnull, "w")
     try:
         if not bad_chisq:
-            res = mod.fit(start_params=start_vec, method='newton')
+            try:
+                res = mod.fit(start_params=start_vec, method='newton')
 
-            if res.bse[1] > 3:
-                bad_chisq = 1
-            else:
-                lrstat = -2*(null_res - res.llf)
-                lrt_pvalue = stats.chi2.sf(lrstat, 1)
+                if res.bse[1] > 3:
+                    bad_chisq = True
+                else:
+                    lrstat = -2*(null_res - res.llf)
+                    lrt_pvalue = stats.chi2.sf(lrstat, 1)
 
-                intercept = res.params[0]
-                kbeta = res.params[1]
-                beta = [res.params[x] for x in range(2, m.shape[1]+2)]
-                bse = res.bse[1]
+                    intercept = res.params[0]
+                    kbeta = res.params[1]
+                    beta = [res.params[x] for x in range(2, m.shape[1]+2)]
+                    bse = res.bse[1]
+            except statsmodels.tools.sm_exceptions.PerfectSeparationError:
+                bad_chisq = True
 
         # Fit Firth regression with large SE, or nearly separable values
         if bad_chisq:
-            #sys.stderr.write("Firth on " + str(k.name) + "\n")
             firth_fit = fit_firth(mod, start_vec, kmer, v, p)
             if firth_fit is None: # Firth failure
+                sys.stderr.write('Firth regression failure with kmer %s\n' % str(kmer))
                 return None
             else:
                 intercept, kbeta, beta, bse, fitll = firth_fit
                 lrstat = -2*(null_firth - fitll)
                 lrt_pvalue = stats.chi2.sf(lrstat, 1)
-
     except np.linalg.linalg.LinAlgError:
         # singular matrix error
         sys.stderr.write('Matrix inversion error with kmer %s\n' % str(kmer))
@@ -261,8 +263,10 @@ def binary(kmer, p, k, m, c, af, print_samples,
 
     return x
 
+
 def firth_likelihood(beta, logit):
     return -(logit.loglike(beta) + 0.5*np.log(np.linalg.det(-logit.hessian(beta))))
+
 
 # Do firth regression
 # Note information = -hessian, for some reason available but not implemented in statsmodels
@@ -313,6 +317,7 @@ def fit_firth(logit_model, start_vec, kmer_name, X, y, step_limit = 1000, conver
 
     return return_fit
 
+
 def continuous(kmer, p, k, m, c, af, print_samples,
                pret, lrtt, null_res,
                kstrains, nkstrains):
@@ -347,7 +352,6 @@ def continuous(kmer, p, k, m, c, af, print_samples,
     except np.linalg.linalg.LinAlgError:
         # singular matrix error
         sys.stderr.write('Matrix inversion error with kmer %s\n' % str(kmer))
-
         return None
     finally:
         sys.stdout.close()
@@ -363,6 +367,7 @@ def continuous(kmer, p, k, m, c, af, print_samples,
     x = '\t'.join(format_output(x) for x in output)
 
     return x
+
 
 # Fit the null model, regression without k-mer
 def fit_null(p, m, cov, continuous, firth=False):
@@ -420,12 +425,14 @@ def fit_null(p, m, cov, continuous, firth=False):
 
     return null_res
 
+
 def format_output(item):
     formatted = str(item)
     if type(item) is float or type(item) is np.float64:
         formatted = '%.2E' % Decimal(item)
 
     return formatted
+
 
 if __name__ == "__main__":
     options = get_options()
@@ -446,6 +453,7 @@ if __name__ == "__main__":
         import warnings
         import itertools
         import math
+        import statsmodels
         import numpy as np
         import pandas as pd
         from scipy import stats
@@ -526,8 +534,8 @@ if __name__ == "__main__":
             cov = pd.DataFrame([])
 
         header = ['kmer', 'af', 'filter-pvalue',
-                         'lrt-pvalue', 'beta', 'beta-std-err',
-                         'intercept'] + ['PC%d' % i for i in range(1, options.max_dimensions+1)]
+                  'lrt-pvalue', 'beta', 'beta-std-err',
+                  'intercept'] + ['PC%d' % i for i in range(1, options.max_dimensions+1)]
         if options.covariates is not None:
             header = header + [x for x in cov.columns]
         if options.print_samples:
@@ -594,4 +602,3 @@ if __name__ == "__main__":
                 if ret is None:
                     continue
                 print(ret)
-
