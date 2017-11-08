@@ -248,7 +248,7 @@ def binary(kmer, p, k, m, c, af,
                            axis=1)
     mod = smf.Logit(p, v)
 
-    start_vec = np.ones(v.shape[1])
+    start_vec = np.zeros(v.shape[1])
     start_vec[0] = np.log(np.mean(p)/(1-np.mean(p)))
 
     # suppress annoying stdout messages
@@ -381,7 +381,7 @@ def continuous(kmer, p, k, m, c, af,
                     np.nan, np.nan, np.nan, [],
                     kstrains, nkstrains,
                     notes, True, False)
-    
+
     # pre-filtering
     prep = stats.ttest_ind(p[k == 1],
                            p[k == 0],
@@ -607,6 +607,7 @@ if __name__ == "__main__":
                     else:
                         # categorical, dummy-encode it
                         categories = set(c['covariate%d' % cnum])
+                        categories.pop()
                         for i, categ in enumerate(categories):
                             cov.append(pd.Series([1 if x == categ
                                                   else 0
