@@ -6,6 +6,14 @@ Copyright 2017 Marco Galardini and John Lees'''
 __version__ = '0.1.0'
 
 import contextlib
+from collections import namedtuple
+
+Seer = namedtuple('Seer', ['kmer',
+                           'af', 'prep', 'lrt_pvalue',
+                           'kbeta', 'bse',
+                           'intercept', 'betas',
+                           'kstrains', 'nkstrains',
+                           'notes', 'filter'])
 
 def get_options():
     import argparse
@@ -202,7 +210,10 @@ def binary(kmer, p, k, m, c, af, print_samples,
 
     prep = stats.chi2_contingency(table, correction=False)[1]
     if prep > pret:
-        return None
+        return Seer(kmer, af, prep, np.nan,
+                    np.nan, np.nan, np.nan, [],
+                    kstrains, nkstrains,
+                    'pre-filtering failed', True)
 
     # actual logistic regression
     if c.shape[0] == m.shape[0]:
@@ -240,7 +251,7 @@ def binary(kmer, p, k, m, c, af, print_samples,
 
                     intercept = res.params[0]
                     kbeta = res.params[1]
-                    beta = [res.params[x] for x in range(2, m.shape[1]+2)]
+                    beta = res.params[2:]
                     bse = res.bse[1]
             except statsmodels.tools.sm_exceptions.PerfectSeparationError:
                 bad_chisq = True
@@ -249,8 +260,10 @@ def binary(kmer, p, k, m, c, af, print_samples,
         if bad_chisq:
             firth_fit = fit_firth(mod, start_vec, kmer, v, p)
             if firth_fit is None: # Firth failure
-                sys.stderr.write('Firth regression failure with kmer %s\n' % str(kmer))
-                return None
+                return Seer(kmer, af, prep, np.nan,
+                            np.nan, np.nan, np.nan, [],
+                            kstrains, nkstrains,
+                            'firth regression failed', True)
             else:
                 intercept, kbeta, beta, bse, fitll = firth_fit
                 lrstat = -2*(null_firth - fitll)
@@ -259,21 +272,24 @@ def binary(kmer, p, k, m, c, af, print_samples,
                     lrt_pvalue = stats.chi2.sf(lrstat, 1)
     except np.linalg.linalg.LinAlgError:
         # singular matrix error
-        sys.stderr.write('Matrix inversion error with kmer %s\n' % str(kmer))
-        return None
+        return Seer(kmer, af, prep, np.nan,
+                    np.nan, np.nan, np.nan, [],
+                    kstrains, nkstrains,
+                    'matrix inversion error', True)
     finally:
         sys.stdout.close()
         sys.stdout = old_stdout
 
     if lrt_pvalue > lrtt:
-        return None
+        return Seer(kmer, af, prep, lrt_pvalue,
+                    kbeta, bse, intercept, beta,
+                    kstrains, nkstrains,
+                    'LRT filtering failed', True)
 
-    output = [kmer, af, prep, lrt_pvalue, kbeta, bse, intercept] + beta
-    if print_samples:
-        output = output + [','.join(kstrains),','.join(nkstrains)]
-    x = '\t'.join(format_output(x) for x in output)
-
-    return x
+    return Seer(kmer, af, prep, lrt_pvalue,
+                kbeta, bse, intercept, beta,
+                kstrains, nkstrains,
+                '', False)
 
 
 def firth_likelihood(beta, logit):
@@ -308,7 +324,6 @@ def fit_firth(logit_model, start_vec, kmer_name,
             new_beta = beta_iterations[i] + 0.5*(new_beta - beta_iterations[i])
             j = j + 1
             if (j > step_limit):
-                sys.stderr.write('Firth regression failed on kmer %s' % str(kmer_name))
                 return None
 
         beta_iterations.append(new_beta)
@@ -317,7 +332,7 @@ def fit_firth(logit_model, start_vec, kmer_name,
 
     return_fit = None
     if np.linalg.norm(beta_iterations[i] - beta_iterations[i-1]) >= convergence_limit:
-        sys.stderr.write('Firth regression failed on kmer %s \n' % str(kmer_name))
+        pass
     else:
         # Calculate stats
         fitll = -firth_likelihood(beta_iterations[-1], logit_model)
@@ -340,7 +355,10 @@ def continuous(kmer, p, k, m, c, af, print_samples,
                            p[k == 0],
                            equal_var=False)[1]
     if prep > pret:
-        return None
+        return Seer(kmer, af, prep, np.nan,
+                    np.nan, np.nan, np.nan, [],
+                    kstrains, nkstrains,
+                    'pre-filtering failed', True)
 
     # actual linear regression
     if c.shape[0] == m.shape[0]:
@@ -362,26 +380,31 @@ def continuous(kmer, p, k, m, c, af, print_samples,
     sys.stdout = open(os.devnull, "w")
     try:
         res = mod.fit()
+        intercept = res.params[0]
+        kbeta = res.params[1]
+        beta = res.params[2:]
+        bse = res.bse[1]
     except np.linalg.linalg.LinAlgError:
         # singular matrix error
-        sys.stderr.write('Matrix inversion error with kmer %s\n' % str(kmer))
-        return None
+        return Seer(kmer, af, prep, np.nan,
+                    np.nan, np.nan, np.nan, [],
+                    kstrains, nkstrains,
+                    'matrix inversion error', True)
     finally:
         sys.stdout.close()
         sys.stdout = old_stdout
 
     lrt_pvalue = res.compare_lr_test(null_res)[1]
     if lrt_pvalue > lrtt:
-        return None
+        return Seer(kmer, af, prep, lrt_pvalue,
+                    kbeta, bse, intercept, beta,
+                    kstrains, nkstrains,
+                    'LRT filtering failed', True)
 
-    output = [kmer, af, prep, lrt_pvalue,
-              res.params[1], res.bse[1], res.params[0]] + [res.params[x]
-              for x in range(2, m.shape[1]+2)]
-    if print_samples:
-        output = output + [','.join(kstrains), ','.join(nkstrains)]
-    x = '\t'.join(format_output(x) for x in output)
-
-    return x
+    return Seer(kmer, af, prep, lrt_pvalue,
+                kbeta, bse, intercept, beta,
+                kstrains, nkstrains,
+                '', False)
 
 
 # Fit the null model, regression without k-mer
@@ -441,12 +464,22 @@ def fit_null(p, m, cov, continuous, firth=False):
     return null_res
 
 
-def format_output(item):
-    formatted = str(item)
-    if type(item) is float or type(item) is np.float64:
-        formatted = '%.2E' % Decimal(item)
-
-    return formatted
+def format_output(item, print_samples=False):
+    out = '%s' % item.kmer
+    out += '\t' + '\t'.join(['%.2E' % Decimal(x)
+                             for x in (item.af,
+                                       item.prep,
+                                       item.lrt_pvalue,
+                                       item.kbeta,
+                                       item.bse,
+                                       item.intercept)])
+    out += '\t' + '\t'.join(['%.2E' % x
+                             for x in item.betas])
+    if print_samples:
+        out += '\t' + '\t'.join((','.join(item.kstrains),
+                                 ','.join(item.nkstrains)))
+    out += '\t%s' % item.notes
+    return out
 
 
 if __name__ == "__main__":
@@ -555,6 +588,7 @@ if __name__ == "__main__":
             header = header + [x for x in cov.columns]
         if options.print_samples:
             header = header + ['k-samples', 'nk-samples']
+        header += ['notes']
         print('\t'.join(header))
 
         if options.uncompressed:
@@ -598,7 +632,9 @@ if __name__ == "__main__":
                     for x in ret:
                         if x is None:
                             continue
-                        print(x)
+                        if x.filter:
+                            continue
+                        print(format_output(x))
             else:
                 while True:
                     ret = pool.starmap(binary,
@@ -609,7 +645,9 @@ if __name__ == "__main__":
                     for x in ret:
                         if x is None:
                             continue
-                        print(x)
+                        if x.filter:
+                            continue
+                        print(format_output(x))
         else:
             for data in k_iter:
                 if options.continuous:
@@ -618,4 +656,6 @@ if __name__ == "__main__":
                     ret = binary(*data)
                 if ret is None:
                     continue
-                print(ret)
+                if ret.filter:
+                    continue
+                print(format_output(ret))
