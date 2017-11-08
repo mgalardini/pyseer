@@ -30,16 +30,16 @@ zcat distances.tsv.gz > distances.tsv
 
 # test all command line options (things that should fail or behave weirdly)
 ../pyseer kmers.txt subset.pheno distances.tsv --load-m pop_struct.pkl > /dev/null 2> /dev/null && die "Uncompressed kmers but no option"
-../pyseer kmers.gz subset.pheno distances.tsv --load-m pop_struct.pkl --max-dimensions 1000 > 12.log 2> 12.err && die "Too many dimensions requested"
-../pyseer kmers.gz subset.pheno distances.tsv --load-m pop_struct.pkl --max-dimensions 0 > 13.log 2> 13.err && die "Too few dimensions requested"
-../pyseer kmers.gz subset.pheno distances.tsv --load-m pop_struct.pkl --covariates covariates.txt --use-covariates 10 > 14.log 2> 14.err && die "Incorrect covariate column ID"
+../pyseer kmers.gz subset.pheno distances.tsv --load-m pop_struct.pkl --max-dimensions 1000 > /dev/null 2> /dev/null && die "Too many dimensions requested"
+../pyseer kmers.gz subset.pheno distances.tsv --load-m pop_struct.pkl --max-dimensions 0 > /dev/null 2> /dev/null && die "Too few dimensions requested"
+../pyseer kmers.gz subset.pheno distances.tsv --load-m pop_struct.pkl --covariates covariates.txt --use-covariates 10 > /dev/null 2> /dev/null && die "Incorrect covariate column ID"
 ../pyseer kmers.gz subset.pheno distances.tsv --load-m kmers.txt > /dev/null 2> /dev/null && die "Bogus population structure"
-../pyseer kmers.gz supersubset.pheno distances.tsv --load-m pop_struct.pkl > 15.log 2> 15.err && die "Null model failure"
-../pyseer kmers.gz supersubset.cont.pheno distances.tsv --load-m pop_struct.pkl > 16.log 2> 16.err || die "Weak results for continuous phenotype"
-../pyseer kmers.gz monosubset.pheno distances.tsv --load-m pop_struct.pkl > 17.log 2> 17.err && die "Extreme skewed in binary phenotypes"
+../pyseer kmers.gz supersubset.pheno distances.tsv --load-m pop_struct.pkl > /dev/null 2> /dev/null && die "Null model failure"
+../pyseer kmers.gz supersubset.cont.pheno distances.tsv --load-m pop_struct.pkl > /dev/null 2> /dev/null || die "Weak results for continuous phenotype"
+../pyseer kmers.gz monosubset.pheno distances.tsv --load-m pop_struct.pkl > /dev/null 2> /dev/null && die "Extreme skewed in binary phenotypes"
 
 # Now compare the outputs
-for t in $(seq 1 17);
+for t in $(seq 1 11);
 do
   python compare_tests $t.log $t.err baseline/$t.log baseline/$t.err || die "Baseline comparison failed for $t";
 done
