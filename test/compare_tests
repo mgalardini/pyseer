@@ -1,0 +1,30 @@
+#!/usr/bin/env python
+
+def get_options():
+    import argparse
+
+    description = 'Compare the tests output'
+    parser = argparse.ArgumentParser(description=description)
+
+    parser.add_argument('ilog',
+                        help='Input log')
+    parser.add_argument('ierr',
+                        help='Input error')
+    parser.add_argument('olog',
+                        help='Original log')
+    parser.add_argument('oerr',
+                        help='Original error')
+
+    return parser.parse_args()
+
+if __name__ == "__main__":
+    options = get_options()
+
+    import sys
+    from filecmp import cmp
+
+    if not cmp(options.ilog, options.olog, shallow=False):
+        sys.exit(1)
+    if not cmp(options.ierr, options.oerr, shallow=False):
+        sys.exit(1)
+

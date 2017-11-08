@@ -38,4 +38,10 @@ zcat distances.tsv.gz > distances.tsv
 ../pyseer kmers.gz supersubset.cont.pheno distances.tsv --load-m pop_struct.pkl > 18.log 2> 18.err || die "Weak results for continuous phenotype"
 ../pyseer kmers.gz monosubset.pheno distances.tsv --load-m pop_struct.pkl > 19.log 2> 19.err && die "Extreme skewed in binary phenotypes"
 
+# Now compare the outputs
+for t in $(seq 1 19);
+do
+  python compare_tests $t.log $t.err baseline/$t.log baseline/$t.err || die "Baseline comparison failed for $t";
+done
+
 echo -e $green"All good!"$reset
