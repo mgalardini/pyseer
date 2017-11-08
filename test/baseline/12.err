@@ -1,6 +1,6 @@
 Detected binary phenotype
 Traceback (most recent call last):
-  File "../pyseer", line 718, in <module>
+  File "../pyseer", line 719, in <module>
     for data in k_iter:
   File "../pyseer", line 161, in iter_kmers
     for l in infile:

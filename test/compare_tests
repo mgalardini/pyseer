@@ -21,10 +21,41 @@ if __name__ == "__main__":
     options = get_options()
 
     import sys
+    import numpy as np
+    import pandas as pd
     from filecmp import cmp
+    from scipy import stats
 
     if not cmp(options.ilog, options.olog, shallow=False):
-        sys.exit(1)
+        m1 = pd.read_table(options.ilog, index_col=0)
+        m2 = pd.read_table(options.olog, index_col=0)
+
+        if m1.shape != m2.shape:
+            sys.stderr.write('Different outputs shape\n')
+            sys.exit(1)
+
+        idx = set(m1.index).intersection(m2.index)
+        if len(idx) != m1.shape[0] or len(idx) != m2.shape[0]:
+            sys.stderr.write('Different number of kmers\n')
+            sys.exit(1)
+        m1 = m1.loc[idx]
+        m2 = m2.loc[idx]
+        for c in ['af',
+                  'beta',
+                  'beta-std-err',
+                  'intercept'] + [x for x in m1.columns
+                                  if x.startswith('PC')
+                                  or x.startswith('covariate')]:
+            corr = stats.pearsonr(m1[c], m2[c])[0]
+            if corr < 0.9:
+                sys.stderr.write('Column %s correlation below 0.9 (%.3f)\n' % (c, corr))
+                sys.exit(1)
+        for c in ['filter-pvalue',
+                  'lrt-pvalue']:
+            corr = stats.pearsonr(-np.log10(m1[c]), -np.log10(m2[c]))
+            if corr < 0.9:
+                sys.stderr.write('Column %s correlation below 0.9 (%.3f)\n' % (c, corr))
+                sys.exit(1)
     if not cmp(options.ierr, options.oerr, shallow=False):
         sys.exit(1)
 
