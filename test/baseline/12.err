@@ -1,0 +1,15 @@
+Detected binary phenotype
+Traceback (most recent call last):
+  File "../pyseer", line 718, in <module>
+    for data in k_iter:
+  File "../pyseer", line 161, in iter_kmers
+    for l in infile:
+  File "/usr/lib/python3.5/gzip.py", line 372, in readline
+    return self._buffer.readline(size)
+  File "/usr/lib/python3.5/_compression.py", line 68, in readinto
+    data = self.read(len(byte_view))
+  File "/usr/lib/python3.5/gzip.py", line 461, in read
+    if not self._read_gzip_header():
+  File "/usr/lib/python3.5/gzip.py", line 409, in _read_gzip_header
+    raise OSError('Not a gzipped file (%r)' % magic)
+OSError: Not a gzipped file (b'AA')
