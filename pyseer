@@ -3,7 +3,7 @@
 
 Copyright 2017 Marco Galardini and John Lees'''
 
-__version__ = '0.1.1'
+__version__ = '0.2.0'
 
 import contextlib
 from collections import namedtuple
