@@ -21,3 +21,5 @@ gunzip distances.tsv.gz
 ../pyseer kmers.gz subset.pheno distances.tsv --filter-pvalue 1 --lrt-pvalue 1 --max-dimensions 3 --print-samples > 5.log 2> 5.err || die "Print samples"
 ../pyseer kmers.gz subset.pheno distances.tsv --filter-pvalue 1 --lrt-pvalue 1 > 6.log 2> 6.err || die "Use whole population structure"
 ../pyseer kmers.gz subset.pheno distances.tsv --filter-pvalue 1 --lrt-pvalue 1 --max-dimensions 3 --covariates covariates.txt --use-covariates 2q 3 > 7.log 2> 7.err || die "Use covariates"
+
+gzip distances.tsv
