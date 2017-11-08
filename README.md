@@ -6,6 +6,8 @@ pyseer
 
     pyseer kmers.gz phenotypes.tsv structure.tsv --min-af 0.01 --max-af 0.99 --cpu 15 --filter-pvalue 1E-8
 
+[![Build Status](https://travis-ci.org/mgalardini/pyseer.svg?branch=master)](https://travis-ci.org/mgalardini/pyseer)
+
 Motivation
 ----------
 
