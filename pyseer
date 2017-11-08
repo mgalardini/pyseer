@@ -155,7 +155,7 @@ def cmdscale(D):
 
 
 def iter_kmers(p, m, cov, infile, all_strains,
-               min_af, max_af, print_samples,
+               min_af, max_af,
                filter_pvalue, lrt_pvalue, null_fit, firth_null):
     for l in infile:
         if not options.uncompressed:
@@ -181,12 +181,12 @@ def iter_kmers(p, m, cov, infile, all_strains,
                       if x in d])
         c = cov.values
 
-        yield (kmer, v, k, m, c, af, print_samples,
+        yield (kmer, v, k, m, c, af,
                filter_pvalue, lrt_pvalue, null_fit, firth_null,
                kstrains, nkstrains)
 
 
-def binary(kmer, p, k, m, c, af, print_samples,
+def binary(kmer, p, k, m, c, af,
            pret, lrtt, null_res, null_firth,
            kstrains, nkstrains):
     # pre-filtering
@@ -346,7 +346,7 @@ def fit_firth(logit_model, start_vec, kmer_name,
     return return_fit
 
 
-def continuous(kmer, p, k, m, c, af, print_samples,
+def continuous(kmer, p, k, m, c, af,
                pret, lrtt, null_res, null_firth,
                kstrains, nkstrains):
 
@@ -616,7 +616,7 @@ if __name__ == "__main__":
         k_iter = iter_kmers(p, m, cov,
                             infile, all_strains,
                             options.min_af, options.max_af,
-                            options.print_samples, options.filter_pvalue,
+                            options.filter_pvalue,
                             options.lrt_pvalue, null_fit, firth_null)
 
         # actual association test
