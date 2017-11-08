@@ -38,9 +38,9 @@ Prerequisites
 Between parenthesis the versions the script was tested against:
 
 * python 3+ (3.5.3)
-* numpy (1.13.1)
-* scipy (0.19.1)
-* pandas (0.20.3)
+* numpy (1.13.3)
+* scipy (1.0.0)
+* pandas (0.21.0)
 * statsmodels (0.8.0)
 
 Installation
