@@ -675,10 +675,11 @@ if __name__ == "__main__":
         # keep track of the number of the total number of kmers and tests
         prefilter = 0
         tested = 0
+        printed = 0
 
         # actual association test
         if options.cpu > 1:
-            # multiprocessing proceeds 1000 MAF-passing kmers per core at a time
+            # multiprocessing proceeds 1000 kmers per core at a time
             if options.continuous:
                 while True:
                     ret = pool.starmap(continuous,
@@ -693,7 +694,9 @@ if __name__ == "__main__":
                         tested += 1
                         if x.filter:
                             continue
-                        print(format_output(x))
+                        printed += 1
+                        print(format_output(x,
+                                            options.print_samples))
             else:
                 while True:
                     ret = pool.starmap(binary,
@@ -708,7 +711,9 @@ if __name__ == "__main__":
                         tested += 1
                         if x.filter:
                             continue
-                        print(format_output(x))
+                        printed += 1
+                        print(format_output(x,
+                                            options.print_samples))
         else:
             for data in k_iter:
                 if options.continuous:
@@ -721,8 +726,11 @@ if __name__ == "__main__":
                 tested += 1
                 if ret.filter:
                     continue
-                print(format_output(ret))
+                printed += 1
+                print(format_output(ret,
+                                    options.print_samples))
 
         sys.stderr.write('%d loaded kmers\n' % (prefilter + tested))
         sys.stderr.write('%d filtered kmers\n' % prefilter)
         sys.stderr.write('%d tested kmers\n' % tested)
+        sys.stderr.write('%d printed kmers\n' % printed)
