@@ -3,7 +3,7 @@
 
 Copyright 2017 Marco Galardini and John Lees'''
 
-__version__ = '0.1.1'
+__version__ = '0.2.0'
 
 import contextlib
 from collections import namedtuple
@@ -226,7 +226,7 @@ def binary(kmer, p, k, m, c, af,
         notes.add('bad-chisq')
 
     prep = stats.chi2_contingency(table, correction=False)[1]
-    if prep > pret:
+    if prep > pret or not np.isfinite(prep):
         notes.add('pre-filtering-failed')
         return Seer(kmer, af, prep, np.nan,
                     np.nan, np.nan, np.nan, [],
@@ -302,7 +302,7 @@ def binary(kmer, p, k, m, c, af,
         sys.stdout.close()
         sys.stdout = old_stdout
 
-    if lrt_pvalue > lrtt:
+    if lrt_pvalue > lrtt or not np.isfinite(lrt_pvalue) or not np.isfinite(kbeta):
         notes.add('lrt-filtering-failed')
         return Seer(kmer, af, prep, lrt_pvalue,
                     kbeta, bse, intercept, beta,
@@ -386,7 +386,7 @@ def continuous(kmer, p, k, m, c, af,
     prep = stats.ttest_ind(p[k == 1],
                            p[k == 0],
                            equal_var=False)[1]
-    if prep > pret:
+    if prep > pret or not np.isfinite(prep):
         notes.add('pre-filtering-failed')
         return Seer(kmer, af, prep, np.nan,
                     np.nan, np.nan, np.nan, [],
@@ -430,7 +430,7 @@ def continuous(kmer, p, k, m, c, af,
         sys.stdout = old_stdout
 
     lrt_pvalue = res.compare_lr_test(null_res)[1]
-    if lrt_pvalue > lrtt:
+    if lrt_pvalue > lrtt or not np.isfinite(lrt_pvalue) or not np.isfinite(kbeta):
         notes.add('lrt-filtering-failed')
         return Seer(kmer, af, prep, lrt_pvalue,
                     kbeta, bse, intercept, beta,
@@ -488,10 +488,13 @@ def fit_null(p, m, cov, continuous, firth=False):
                 null_res = -firth_likelihood(null_res.params, null_mod)
             else:
                 null_res = null_res.llf
-
     except np.linalg.linalg.LinAlgError:
         # singular matrix error
         sys.stderr.write('Matrix inversion error for null model\n')
+        return None
+    except statsmodels.tools.sm_exceptions.PerfectSeparationError:
+        # singular matrix error
+        sys.stderr.write('Perfetly separable data error for null model\n')
         return None
     finally:
         sys.stdout.close()
@@ -503,6 +506,8 @@ def fit_null(p, m, cov, continuous, firth=False):
 def format_output(item, print_samples=False):
     out = '%s' % item.kmer
     out += '\t' + '\t'.join(['%.2E' % Decimal(x)
+                             if np.isfinite(x)
+                             else ''
                              for x in (item.af,
                                        item.prep,
                                        item.lrt_pvalue,
@@ -510,6 +515,8 @@ def format_output(item, print_samples=False):
                                        item.bse,
                                        item.intercept)])
     out += '\t' + '\t'.join(['%.2E' % x
+                             if np.isfinite(x)
+                             else ''
                              for x in item.betas])
     if print_samples:
         out += '\t' + '\t'.join((','.join(item.kstrains),
@@ -522,6 +529,11 @@ if __name__ == "__main__":
     options = get_options()
 
     import sys
+
+    # check some arguments here
+    if options.max_dimensions < 1:
+        sys.stderr.write('Minimum number of dimensions after MDS scaling is 1\n')
+        sys.exit(1)
     if options.cpu > 1 and sys.version_info[0] < 3:
         sys.stderr.write('pyseer requires python version 3 or above ' +
                          'unless the number of threads is 1\n')
@@ -579,6 +591,11 @@ if __name__ == "__main__":
 
             if options.save_m:
                 m.to_pickle(options.save_m + ".pkl")
+        if options.max_dimensions > m.shape[1]:
+            sys.stderr.write('Population MDS scaling restricted to '+
+                             '%d dimensions instead of requested %d\n' % (m.shape[1],
+                                                                          options.max_dimensions))
+            options.max_dimensions = m.shape[1]
         m = m.values[:, :options.max_dimensions]
 
         all_strains = set(p.index)
@@ -659,10 +676,11 @@ if __name__ == "__main__":
         # keep track of the number of the total number of kmers and tests
         prefilter = 0
         tested = 0
+        printed = 0
 
         # actual association test
         if options.cpu > 1:
-            # multiprocessing proceeds 1000 MAF-passing kmers per core at a time
+            # multiprocessing proceeds 1000 kmers per core at a time
             if options.continuous:
                 while True:
                     ret = pool.starmap(continuous,
@@ -677,7 +695,9 @@ if __name__ == "__main__":
                         tested += 1
                         if x.filter:
                             continue
-                        print(format_output(x))
+                        printed += 1
+                        print(format_output(x,
+                                            options.print_samples))
             else:
                 while True:
                     ret = pool.starmap(binary,
@@ -692,7 +712,9 @@ if __name__ == "__main__":
                         tested += 1
                         if x.filter:
                             continue
-                        print(format_output(x))
+                        printed += 1
+                        print(format_output(x,
+                                            options.print_samples))
         else:
             for data in k_iter:
                 if options.continuous:
@@ -705,8 +727,11 @@ if __name__ == "__main__":
                 tested += 1
                 if ret.filter:
                     continue
-                print(format_output(ret))
+                printed += 1
+                print(format_output(ret,
+                                    options.print_samples))
 
         sys.stderr.write('%d loaded kmers\n' % (prefilter + tested))
         sys.stderr.write('%d filtered kmers\n' % prefilter)
         sys.stderr.write('%d tested kmers\n' % tested)
+        sys.stderr.write('%d printed kmers\n' % printed)

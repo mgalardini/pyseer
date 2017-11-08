@@ -12,12 +12,36 @@ die () {
 	exit 1
 }
 
+# unpack the test data
 zcat distances.tsv.gz > distances.tsv
 
-../pyseer kmers.gz subset.pheno distances.tsv --filter-pvalue 1E-5 --lrt-pvalue 1E-8 > 1.log 2> 1.err || die "Basic filters"
-../pyseer kmers.gz example.pheno distances.tsv --filter-pvalue 1 --lrt-pvalue 1 --max-dimensions 3 > 2.log 2> 2.err || die "Binary phenotype"
-../pyseer kmers.gz subset.cont.pheno distances.tsv --filter-pvalue 1 --lrt-pvalue 1 --max-dimensions 3 > 3.log 2> 3.err || die "Continuous phenotype"
-../pyseer kmers.gz subset.pheno distances.tsv --filter-pvalue 1 --lrt-pvalue 1 --max-dimensions 3 --continuous > 4.log 2> 4.err || die "Force continuous phenotype"
-../pyseer kmers.gz subset.pheno distances.tsv --filter-pvalue 1 --lrt-pvalue 1 --max-dimensions 3 --print-samples > 5.log 2> 5.err || die "Print samples"
-../pyseer kmers.gz subset.pheno distances.tsv --filter-pvalue 1 --lrt-pvalue 1 > 6.log 2> 6.err || die "Use whole population structure"
-../pyseer kmers.gz subset.pheno distances.tsv --filter-pvalue 1 --lrt-pvalue 1 --max-dimensions 3 --covariates covariates.txt --use-covariates 2q 3 > 7.log 2> 7.err || die "Use covariates"
+# test all command line options
+../pyseer kmers.gz subset.pheno distances.tsv --save-m pop_struct > 1.log 2> 1.err || die "Save population structure"
+../pyseer kmers.gz subset.pheno distances.tsv --load-m pop_struct.pkl > 2.log 2> 2.err || die "Load population structure"
+../pyseer kmers.gz subset.pheno distances.tsv --filter-pvalue 1E-5 --lrt-pvalue 1E-8 --load-m pop_struct.pkl > 3.log 2> 3.err || die "Basic filters"
+../pyseer kmers.gz example.pheno distances.tsv --max-dimensions 3 --min-af 0.4 --max-af 0.6 > 4.log 2> 4.err || die "Binary phenotype w/ AF filtering"
+../pyseer kmers.gz subset.cont.pheno distances.tsv --max-dimensions 3 --load-m pop_struct.pkl > 5.log 2> 5.err || die "Continuous phenotype"
+../pyseer kmers.gz subset.pheno distances.tsv --max-dimensions 3 --continuous --load-m pop_struct.pkl > 6.log 2> 6.err || die "Force continuous phenotype"
+../pyseer kmers.gz subset.pheno distances.tsv --max-dimensions 3 --print-samples --load-m pop_struct.pkl > 7.log 2> 7.err || die "Print samples"
+../pyseer kmers.gz subset.pheno distances.tsv --load-m pop_struct.pkl > 8.log 2> 8.err || die "Use whole population structure"
+../pyseer kmers.gz subset.pheno distances.tsv --max-dimensions 3 --covariates covariates.txt --use-covariates 2q 3 --load-m pop_struct.pkl > 9.log 2> 9.err || die "Use covariates"
+../pyseer kmers.txt subset.pheno distances.tsv --uncompressed --load-m pop_struct.pkl > 10.log 2> 10.err || die "Uncompressed kmers"
+../pyseer kmers.gz subset.pheno distances.tsv --cpu 2 --load-m pop_struct.pkl > 11.log 2> 11.err || die "Multiple cores"
+
+# test all command line options (things that should fail or behave weirdly)
+../pyseer kmers.txt subset.pheno distances.tsv --load-m pop_struct.pkl > 12.log 2> 12.err && die "Uncompressed kmers but no option"
+../pyseer kmers.gz subset.pheno distances.tsv --load-m pop_struct.pkl --max-dimensions 1000 > 13.log 2> 13.err && die "Too many dimensions requested"
+../pyseer kmers.gz subset.pheno distances.tsv --load-m pop_struct.pkl --max-dimensions 0 > 14.log 2> 14.err && die "Too few dimensions requested"
+../pyseer kmers.gz subset.pheno distances.tsv --load-m pop_struct.pkl --covariates covariates.txt --use-covariates 10 > 15.log 2> 15.err && die "Incorrect covariate column ID"
+../pyseer kmers.gz subset.pheno distances.tsv --load-m kmers.txt > 16.log 2> 16.err && die "Bogus population structure"
+../pyseer kmers.gz supersubset.pheno distances.tsv --load-m pop_struct.pkl > 17.log 2> 17.err && die "Null model failure"
+../pyseer kmers.gz supersubset.cont.pheno distances.tsv --load-m pop_struct.pkl > 18.log 2> 18.err || die "Weak results for continuous phenotype"
+../pyseer kmers.gz monosubset.pheno distances.tsv --load-m pop_struct.pkl > 19.log 2> 19.err && die "Extreme skewed in binary phenotypes"
+
+# Now compare the outputs
+for t in $(seq 1 19);
+do
+  python compare_tests $t.log $t.err baseline/$t.log baseline/$t.err || die "Baseline comparison failed for $t";
+done
+
+echo -e $green"All good!"$reset
