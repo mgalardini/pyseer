@@ -7,6 +7,7 @@ pyseer
     pyseer kmers.gz phenotypes.tsv structure.tsv --min-af 0.01 --max-af 0.99 --cpu 15 --filter-pvalue 1E-8
 
 [![Build Status](https://travis-ci.org/mgalardini/pyseer.svg?branch=master)](https://travis-ci.org/mgalardini/pyseer)
+[![PyPI version](https://badge.fury.io/py/pyseer.svg)](https://badge.fury.io/py/pyseer)
 
 Motivation
 ----------
@@ -46,7 +47,16 @@ Between parenthesis the versions the script was tested against:
 Installation
 ------------
 
-Since everything fits in a script (`pyseer`), you can just place it in your `$PATH`,
+The easiest way to install `pysee` is through `pip`:
+
+    pip install pyseer
+
+If you want multithreading:
+
+    pip3 install pyseer
+
+**Alternatively**, since everything fits in a script (`pyseer`),
+you can just place it in your `$PATH`,
 make it executable (`chmod 755 pyseer`) and type:
 
     pyseer -h
@@ -90,12 +100,8 @@ SEER's features present in this script:
 * multi-threading
 * filtering of results based on LRT p-value
 * covariates and intercept betas are reported
-* user-defined covariates (NOTE: still experimental and possibly bugged)
+* user-defined covariates
 * automatic determination of binary/continuous phenotypes
-
-Absent features:
-
-* reasons for failures are not reported
 
 Additional features:
 
