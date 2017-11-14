@@ -3,7 +3,7 @@
 
 Copyright 2017 Marco Galardini and John Lees'''
 
-__version__ = '0.2.0'
+__version__ = '0.2.1'
 
 import contextlib
 from collections import namedtuple
@@ -76,8 +76,13 @@ def get_options():
                         help='Processes [Default: 1]')
     parser.add_argument('--save-m',
                         help='Prefix for saving matrix decomposition')
-    parser.add_argument('--load-m',
+    scree_group = parser.add_mutually_exclusive_group()
+    scree_group.add_argument('--load-m',
                         help='Load an existing matrix decomposition')
+    scree_group.add_argument('--scree-plot',
+                        action='store_true',
+                        default=False,
+                        help='Output MDS eigenvalues for a scree plot (exits without performing associations)')
 
     parser.add_argument('--version', action='version',
                         version='%(prog)s '+__version__)
@@ -152,7 +157,7 @@ def cmdscale(D):
     V  = evecs[:,w]
     Y  = V.dot(L)
 
-    return Y, evals
+    return Y, evals[evals > 0]
 
 
 def iter_kmers(p, m, cov, infile, all_strains,
@@ -584,13 +589,21 @@ if __name__ == "__main__":
                           index_col=0)
             m = m.loc[p.index, p.index]
             # metric MDS scaling
-            m = pd.DataFrame(cmdscale(m)[0],
+            projection, evals = cmdscale(m)
+            m = pd.DataFrame(projection,
                              index=m.index)
             for i in range(m.shape[1]):
                 m[i] = m[i] / max(abs(m[i]))
 
             if options.save_m:
                 m.to_pickle(options.save_m + ".pkl")
+
+            if options.scree_plot:
+                print('PC\teigenvalue')
+                for i, e in enumerate(evals):
+                    print('PC%d\t%.5f' % (i+1, e))
+                sys.stderr.write('Exiting without performing associations\n')
+                sys.exit(0)
         if options.max_dimensions > m.shape[1]:
             sys.stderr.write('Population MDS scaling restricted to '+
                              '%d dimensions instead of requested %d\n' % (m.shape[1],

@@ -39,10 +39,12 @@ Prerequisites
 Between parenthesis the versions the script was tested against:
 
 * python 3+ (3.5.3)
-* numpy (1.13.3)
-* scipy (1.0.0)
-* pandas (0.21.0)
-* statsmodels (0.8.0)
+* `numpy` (1.13.3)
+* `scipy` (1.0.0)
+* `pandas` (0.21.0)
+* `statsmodels` (0.8.0)
+
+If you would like to use the `scree_plot` script you will also need to have `matplotlib` installed
 
 Installation
 ------------
@@ -78,6 +80,34 @@ by piping the `mash dist` command into the provided `square_mash` script:
 
 **Note:** `square_mash` extracts the sample names as the string after the last `/` character
 and up to the first full stop (`.`).
+
+To pick the appropriate number of dimensions to use after MDS on the population structure you can
+run `pyseer` using the `--scree-plot` option:
+
+    pyseer kmers.gz phenotypes.tsv structure.tsv --scree-plot > scree.tsv
+
+Which will print to file something like this:
+
+```
+PC      eigenvalue
+PC1     0.00433
+PC2     0.00194
+PC3     0.00173
+PC4     0.00149
+PC5     0.00107
+PC6     0.00096
+PC7     0.00077
+PC8     0.00070
+PC9     0.00068
+PC10    0.00065
+[...]
+```
+
+Which can be plotted using the provided `scree_plot` script (note: not installed through pip)
+
+    python scree_plot scree.tsv
+
+Which generates a file named `scree_plot.png`
 
 Testing
 -------
