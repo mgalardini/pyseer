@@ -27,7 +27,7 @@ zcat distances.tsv.gz > distances.tsv
 ../pyseer kmers.gz subset.pheno distances.tsv --max-dimensions 3 --covariates covariates.txt --use-covariates 2q 3 --load-m pop_struct.pkl > 9.log 2> 9.err || die "Use covariates"
 ../pyseer kmers.txt subset.pheno distances.tsv --uncompressed --load-m pop_struct.pkl > 10.log 2> 10.err || die "Uncompressed kmers"
 ../pyseer kmers.gz subset.pheno distances.tsv --cpu 2 --load-m pop_struct.pkl > 11.log 2> 11.err || die "Multiple cores"
-../pyseer kmers.gz subset.pheno distances.tsv --scree-plot > 12.log 2> 12.err || die "Scree plot"
+../pyseer kmers.gz subset.pheno distances.tsv --scree-plot > /dev/null 2> /dev/null || die "Scree plot"
 
 # test all command line options (things that should fail or behave weirdly)
 ../pyseer kmers.txt subset.pheno distances.tsv --load-m pop_struct.pkl > /dev/null 2> /dev/null && die "Uncompressed kmers but no option"
@@ -41,7 +41,7 @@ zcat distances.tsv.gz > distances.tsv
 ../pyseer kmers.gz subset.pheno distances.tsv --scree-plot --load-m pop_struct.pkl > /dev/null 2> /dev/null && die "Conflicting options"
 
 # Now compare the outputs
-for t in $(seq 1 12);
+for t in $(seq 1 11);
 do
   python compare_tests $t.log $t.err baseline/$t.log baseline/$t.err || die "Baseline comparison failed for $t";
 done
