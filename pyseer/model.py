@@ -154,7 +154,6 @@ def binary(kmer, p, k, m, c, af,
 def firth_likelihood(beta, logit):
     return -(logit.loglike(beta) + 0.5*np.log(np.linalg.det(-logit.hessian(beta))))
 
-
 # Do firth regression
 # Note information = -hessian, for some reason available but not implemented in statsmodels
 def fit_firth(logit_model, start_vec, kmer_name,
@@ -282,35 +281,22 @@ def continuous(kmer, p, k, m, c, af,
 # Fit the null model, regression without k-mer
 def fit_null(p, m, cov, continuous, firth=False):
     if cov.shape[1] > 0:
-        v = np.concatenate((p.values.reshape(-1, 1),
+        v = np.concatenate((np.ones(m.shape[0]).reshape(-1, 1),
                             m,
                             cov.values),
                            axis=1)
     else:
         # no covariates
-        v = np.concatenate((p.values.reshape(-1, 1),
+        v = np.concatenate((np.ones(m.shape[0]).reshape(-1, 1),
                             m),
                            axis=1)
 
-    df = pd.DataFrame(v,
-                      columns=['phenotype'] +
-                      ['PC%d'%x for x in range(1, m.shape[1]+1)] +
-                      list(cov.columns))
-
-    if cov.shape[1] > 0:
-        formula = ('phenotype ~ ' +
-                   ' + '.join(['PC%d'%x for x in range(1, m.shape[1]+1)]) + ' + ' +
-                   ' + '.join(list(cov.columns)))
-    else:
-        formula = ('phenotype ~ ' +
-                   ' + '.join(['PC%d'%x for x in range(1, m.shape[1]+1)]))
-
     if continuous:
-        null_mod = smf.ols(formula=formula,
-                           data=df)
+        null_mod = mod = smf.OLS(p.values, v)
     else:
-        null_mod = smf.logit(formula=formula,
-                             data=df)
+        start_vec = np.zeros(v.shape[1])
+        start_vec[0] = np.log(np.mean(p)/(1-np.mean(p)))
+        null_mod = smf.Logit(p, v)
 
     # suppress annoying stdout messages
     old_stdout = sys.stdout
@@ -319,10 +305,11 @@ def fit_null(p, m, cov, continuous, firth=False):
         if continuous:
             null_res = null_mod.fit()
         else:
-            null_res = null_mod.fit(method='newton')
             if firth:
-                null_res = -firth_likelihood(null_res.params, null_mod)
+                (intercept, kbeta, beta, bse, fitll) = fit_firth(null_mod, start_vec, "null", v, p)
+                null_res = fitll
             else:
+                null_res = null_mod.fit(start_params=start_vec, method='newton')
                 null_res = null_res.llf
     except np.linalg.linalg.LinAlgError:
         # singular matrix error

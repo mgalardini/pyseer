@@ -23,7 +23,7 @@ from .input import load_structure
 from .input import load_phenotypes
 from .input import load_covariates
 
-from .model import binary  
+from .model import binary
 from .model import fit_null
 from .model import continuous
 
@@ -106,7 +106,7 @@ def get_options():
 
 def main():
     options = get_options()
-    
+
     # check some arguments here
     if options.max_dimensions < 1:
         sys.stderr.write('Minimum number of dimensions after MDS scaling is 1\n')
@@ -119,7 +119,7 @@ def main():
     # silence warnings
     warnings.filterwarnings('ignore')
     #
-    
+
     # reading phenotypes
     p = load_phenotypes(options.phenotypes)
 
@@ -185,9 +185,9 @@ def main():
         pool = Pool(options.cpu)
 
     # calculate null regressions once
-    null_fit = fit_null(p, m, cov, options.continuous)
+    null_fit = fit_null(p.values, m, cov, options.continuous)
     if not options.continuous:
-        firth_null = fit_null(p, m, cov, options.continuous, True)
+        firth_null = fit_null(p.values, m, cov, options.continuous, True)
     else:
         firth_null = True
 
