@@ -57,26 +57,18 @@ If you want multithreading:
 
     pip3 install pyseer
 
-**Alternatively**, since everything fits in a script (`pyseer`),
-you can just place it in your `$PATH`,
-make it executable (`chmod 755 pyseer`) and type:
+**For the impatient**, just clone/download this repository and run:
 
-    pyseer -h
-
-**Note:** if you wish to use multithreading,
-the script assumes that your default python's interpreter is at least version 3.
-If that is not the case then edit the first line to:
-
-    #!/usr/bin/env python3
+    python pyseer-runner.py
 
 Population structure
 --------------------
 
 `pyseer` accepts as input a tab-delimited square matrix of distances between samples, with
 the first row and column listing sample names. Such a square matrix can be easily obtained
-by piping the `mash dist` command into the provided `square_mash` script:
+by piping the `mash dist` command into the provided `square_mash` command (also installed with `pyseer`):
 
-    mash dist samples.msh samples.msh | python square_mash > mash.tsv
+    mash dist samples.msh samples.msh | square_mash > mash.tsv
 
 **Note:** `square_mash` extracts the sample names as the string after the last `/` character
 and up to the first full stop (`.`).
@@ -105,7 +97,7 @@ PC10    0.00065
 
 Which can be plotted using the provided `scree_plot` script (note: not installed through pip)
 
-    python scree_plot scree.tsv
+    python scripts/scree_plot scree.tsv
 
 Which generates a file named `scree_plot.png`
 

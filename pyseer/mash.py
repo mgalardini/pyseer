@@ -1,24 +1,33 @@
-#!/usr/bin/env python
+# Copyright 2017 Marco Galardini and John Lees
+
+'''Square a Mash distance matrix'''
+
+import os
+import sys
+import pandas as pd
+
+from .__init__ import __version__
 
 def get_options():
     import argparse
 
     description = 'Make a square matrix out of a mash stream'
-    parser = argparse.ArgumentParser(description=description)
+    parser = argparse.ArgumentParser(description=description,
+                                     prog='square_mash')
 
     parser.add_argument('--classic',
                         action='store_true',
                         default=False,
                         help='Output table in a format suitable for R_mds.pl')
 
+    parser.add_argument('--version', action='version',
+                        version='%(prog)s '+__version__)
+    
     return parser.parse_args()
 
-if __name__ == "__main__":
-    options = get_options()
 
-    import os
-    import sys
-    import pandas as pd
+def main():
+    options = get_options()
 
     d = {}
     for l in sys.stdin:
@@ -40,3 +49,8 @@ if __name__ == "__main__":
                  index=False,
                  header=False,
                  sep=',')
+
+
+if __name__ == "__main__":
+    main()
+

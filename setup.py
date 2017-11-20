@@ -27,7 +27,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='pyseer',
-    version=find_version("pyseer"),
+    version=find_version("pyseer/__init__.py"),
     description='Sequence Elements Enrichment Analysis (SEER), python implementation',
     long_description=long_description,
     url='https://github.com/mgalardini/pyseer',
@@ -45,9 +45,13 @@ setup(
         'Programming Language :: Python :: 3.6',
     ],
     keywords='gwas bacteria k-mer',
-    # TODO: use entry_points instead
-    scripts=['pyseer', 'square_mash'],
-    #
+    packages = ["pyseer"],
+    entry_points = {
+        "console_scripts": [
+            'pyseer = pyseer.__main__:main',
+            'square_mash = pyseer.mash:main'
+            ]
+    },
     install_requires=['numpy',
                       'scipy',
                       'pandas',
