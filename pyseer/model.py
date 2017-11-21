@@ -292,7 +292,7 @@ def fit_null(p, m, cov, continuous, firth=False):
                            axis=1)
 
     if continuous:
-        null_mod = mod = smf.OLS(p.values, v)
+        null_mod = mod = smf.OLS(p, v)
     else:
         start_vec = np.zeros(v.shape[1])
         start_vec[0] = np.log(np.mean(p)/(1-np.mean(p)))
