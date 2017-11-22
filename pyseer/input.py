@@ -10,6 +10,7 @@ with set_env(MKL_NUM_THREADS='1',
              OMP_NUM_THREADS='1'):
     import numpy as np
 import pandas as pd
+from sklearn import manifold
 
 def load_phenotypes(infile):
     p = pd.Series([float(x.rstrip().split()[-1])
@@ -19,65 +20,31 @@ def load_phenotypes(infile):
     return p
 
 
-# thanks to Francis Song for this function
-# source: http://www.nervouscomputer.com/hfs/cmdscale-in-python/
-def cmdscale(D):
-    """
-    Classical multidimensional scaling (MDS)
+def load_structure(infile, p, max_dimensions, mds_type = "metric", n_cpus = 1):
+    from .cmdscale import cmdscale
 
-    Parameters
-    ----------
-    D : (n, n) array
-        Symmetric distance matrix.
-
-    Returns
-    -------
-    Y : (n, p) array
-        Configuration matrix. Each column represents a dimension. Only the
-        p dimensions corresponding to positive eigenvalues of B are returned.
-        Note that each dimension is only determined up to an overall sign,
-        corresponding to a reflection.
-
-    e : (n,) array
-        Eigenvalues of B.
-    """
-    # Number of points
-    n = len(D)
-
-    # Centering matrix
-    H = np.eye(n) - np.ones((n, n))/n
-
-    # YY^T
-    B = -H.dot(D**2).dot(H)/2
-
-    # Diagonalize
-    evals, evecs = np.linalg.eigh(B)
-
-    # Sort by eigenvalue in descending order
-    idx   = np.argsort(evals)[::-1]
-    evals = evals[idx]
-    evecs = evecs[:,idx]
-
-    # Compute the coordinates using positive-eigenvalued components only
-    w, = np.where(evals > 0)
-    L  = np.diag(np.sqrt(evals[w]))
-    V  = evecs[:,w]
-    Y  = V.dot(L)
-
-    return Y, evals[evals > 0]
-
-
-def load_structure(infile, p):
     m = pd.read_table(infile,
                       index_col=0)
     m = m.loc[p.index, p.index]
-    # metric MDS scaling
-    projection, evals = cmdscale(m)
+
+    # MDS
+    if mds_type is "classic":
+        projection, evals = cmdscale(m)
+    else:
+        metric_mds = True
+        if mds_type is "non-metric":
+            metric_mds = False
+        elif mds_type is not "metric":
+            sys.stderr.write("Unsupported mds type chosen. Assuming metric\n")
+
+        mds = manifold.MDS(max_dimensions, metric_mds, n_jobs = n_cpus, dissimilarity='precomputed')
+        projection = mds.fit_transform(m.values)
+
     m = pd.DataFrame(projection,
                      index=m.index)
     for i in range(m.shape[1]):
         m[i] = m[i] / max(abs(m[i]))
-    return m, evals
+    return m
 
 
 def load_covariates(infile, covariates, p):

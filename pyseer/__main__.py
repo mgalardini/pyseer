@@ -7,7 +7,6 @@ import sys
 import gzip
 import warnings
 import itertools
-import re
 from .utils import set_env
 # avoid numpy taking up more than one thread
 with set_env(MKL_NUM_THREADS='1',
@@ -15,6 +14,7 @@ with set_env(MKL_NUM_THREADS='1',
              OMP_NUM_THREADS='1'):
     import numpy as np
 import pandas as pd
+from sklearn import manifold
 from multiprocessing import Pool
 from pysam import VariantFile
 
@@ -40,8 +40,6 @@ def get_options():
 
     parser.add_argument('phenotypes',
                         help='Phenotypes file')
-    parser.add_argument('distances',
-                        help='Strains distance square matrix')
 
     variant_group = parser.add_mutually_exclusive_group()
     variant_group.add_argument('--kmers',
@@ -53,6 +51,12 @@ def get_options():
     variant_group.add_argument('--pres',
                         default=None,
                         help='Presence/absence .Rtab matrix as produced by roary and piggy')
+
+    distance_group = parser.add_mutually_exclusive_group()
+    distance_group.add_argument('--distances',
+                        help='Strains distance square matrix')
+    distance_group.add_argument('--load-m',
+                        help='Load an existing matrix decomposition')
 
     parser.add_argument('--continuous',
                         action='store_true',
@@ -82,6 +86,9 @@ def get_options():
                         type=int,
                         default=10,
                         help='Maximum number of dimensions to consider after MDS [Default: 10]')
+    parser.add_argument('--mds',
+                        default="classic",
+                        help='Type of multidimensional scaling. Either "classic", "metric", or "non-metric"')
     parser.add_argument('--covariates',
                         default=None,
                         help='User-defined covariates file (tab-delimited, no header, ' +
@@ -101,13 +108,6 @@ def get_options():
                         help='Processes [Default: 1]')
     parser.add_argument('--save-m',
                         help='Prefix for saving matrix decomposition')
-    scree_group = parser.add_mutually_exclusive_group()
-    scree_group.add_argument('--load-m',
-                        help='Load an existing matrix decomposition')
-    scree_group.add_argument('--scree-plot',
-                        action='store_true',
-                        default=False,
-                        help='Output MDS eigenvalues for a scree plot (exits without performing associations)')
 
     parser.add_argument('--version', action='version',
                         version='%(prog)s '+__version__)
@@ -128,6 +128,9 @@ def main():
         sys.exit(1)
     if not options.kmers and not options.vcf and not options.pres:
         sys.stderr.write('At least one type of input variant is required\n')
+        sys.exit(1)
+    if not options.distances and not options.load_m:
+        sys.stderr.write('Either distances, or a precalculated projection with --load-m are required\n')
         sys.exit(1)
 
     # silence warnings
@@ -150,16 +153,10 @@ def main():
         m = pd.read_pickle(options.load_m)
         m = m.loc[p.index]
     else:
-        m, evals = load_structure(options.distances, p)
+        m = load_structure(options.distances, p, options.max_dimensions, options.mds, options.cpu)
         if options.save_m:
             m.to_pickle(options.save_m + ".pkl")
 
-        if options.scree_plot:
-            print('PC\teigenvalue')
-            for i, e in enumerate(evals):
-                print('PC%d\t%.5f' % (i+1, e))
-            sys.stderr.write('Exiting without performing associations\n')
-            sys.exit(0)
     if options.max_dimensions > m.shape[1]:
         sys.stderr.write('Population MDS scaling restricted to '+
                          '%d dimensions instead of requested %d\n' % (m.shape[1],

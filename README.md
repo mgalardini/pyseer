@@ -42,6 +42,7 @@ Between parenthesis the versions the script was tested against:
 * `numpy` (1.13.3)
 * `scipy` (1.0.0)
 * `pandas` (0.21.0)
+* `scikit-learn` (0.19.1)
 * `statsmodels` (0.8.0)
 * `pysam` (0.13)
 
