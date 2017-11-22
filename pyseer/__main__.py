@@ -7,6 +7,7 @@ import sys
 import gzip
 import warnings
 import itertools
+import re
 from .utils import set_env
 # avoid numpy taking up more than one thread
 with set_env(MKL_NUM_THREADS='1',
@@ -15,15 +16,16 @@ with set_env(MKL_NUM_THREADS='1',
     import numpy as np
 import pandas as pd
 from multiprocessing import Pool
+from pysam import VariantFile
 
 from .__init__ import __version__
 
-from .input import iter_kmers
+from .input import iter_variants
 from .input import load_structure
 from .input import load_phenotypes
 from .input import load_covariates
 
-from .model import binary  
+from .model import binary
 from .model import fit_null
 from .model import continuous
 
@@ -36,12 +38,21 @@ def get_options():
     parser = argparse.ArgumentParser(description=description,
                                      prog='pyseer')
 
-    parser.add_argument('kmers',
-                        help='Kmers file')
     parser.add_argument('phenotypes',
                         help='Phenotypes file')
     parser.add_argument('distances',
                         help='Strains distance square matrix')
+
+    variant_group = parser.add_mutually_exclusive_group()
+    variant_group.add_argument('--kmers',
+                        default=None,
+                        help='Kmers file')
+    variant_group.add_argument('--vcf',
+                        default=None,
+                        help='VCF file. Will filter any non \'PASS\' sites')
+    variant_group.add_argument('--pres',
+                        default=None,
+                        help='Presence/absence .Rtab matrix as produced by roary and piggy')
 
     parser.add_argument('--continuous',
                         action='store_true',
@@ -115,6 +126,9 @@ def main():
         sys.stderr.write('pyseer requires python version 3 or above ' +
                          'unless the number of threads is 1\n')
         sys.exit(1)
+    if not options.kmers and not options.vcf and not options.pres:
+        sys.stderr.write('At least one type of input variant is required\n')
+        sys.exit(1)
 
     # silence warnings
     warnings.filterwarnings('ignore')
@@ -165,7 +179,7 @@ def main():
     else:
         cov = pd.DataFrame([])
 
-    header = ['kmer', 'af', 'filter-pvalue',
+    header = ['variant', 'af', 'filter-pvalue',
               'lrt-pvalue', 'beta', 'beta-std-err',
               'intercept'] + ['PC%d' % i for i in range(1, options.max_dimensions+1)]
     if options.covariates is not None:
@@ -174,11 +188,6 @@ def main():
         header = header + ['k-samples', 'nk-samples']
     header += ['notes']
     print('\t'.join(header))
-
-    if options.uncompressed:
-        infile = open(options.kmers)
-    else:
-        infile = gzip.open(options.kmers, 'r')
 
     # multiprocessing setup
     if options.cpu > 1:
@@ -197,8 +206,25 @@ def main():
 
     # iterator over each kmer
     # implements maf filtering
-    k_iter = iter_kmers(p, m, cov,
-                        infile, all_strains,
+    sample_order = []
+    if options.kmers:
+        var_type = "kmers"
+        if options.uncompressed:
+            infile = open(options.kmers)
+        else:
+            infile = gzip.open(options.kmers, 'r')
+    elif options.vcf:
+        var_type = "vcf"
+        infile = VariantFile(options.vcf)
+    else:
+        # Rtab files have a header, rather than sample names accessible by row
+        var_type = "Rtab"
+        infile = open(options.pres)
+        header = infile.readline().rstrip()
+        sample_order = header.split()[1:]
+
+    k_iter = iter_variants(p, m, cov, var_type,
+                        infile, all_strains, sample_order,
                         options.min_af, options.max_af,
                         options.filter_pvalue,
                         options.lrt_pvalue, null_fit, firth_null,
@@ -262,10 +288,10 @@ def main():
             print(format_output(ret,
                                 options.print_samples))
 
-    sys.stderr.write('%d loaded kmers\n' % (prefilter + tested))
-    sys.stderr.write('%d filtered kmers\n' % prefilter)
-    sys.stderr.write('%d tested kmers\n' % tested)
-    sys.stderr.write('%d printed kmers\n' % printed)
+    sys.stderr.write('%d loaded variants\n' % (prefilter + tested))
+    sys.stderr.write('%d filtered variants\n' % prefilter)
+    sys.stderr.write('%d tested variants\n' % tested)
+    sys.stderr.write('%d printed variants\n' % printed)
 
 
 if __name__ == "__main__":

@@ -43,6 +43,7 @@ Between parenthesis the versions the script was tested against:
 * `scipy` (1.0.0)
 * `pandas` (0.21.0)
 * `statsmodels` (0.8.0)
+* `pysam` (0.13)
 
 If you would like to use the `scree_plot` script you will also need to have `matplotlib` installed
 

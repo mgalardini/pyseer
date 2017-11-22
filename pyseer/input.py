@@ -2,6 +2,7 @@
 
 '''Functions to read data into pyseer and iterate over instances'''
 
+import sys
 from .utils import set_env
 # avoid numpy taking up more than one thread
 with set_env(MKL_NUM_THREADS='1',
@@ -9,7 +10,6 @@ with set_env(MKL_NUM_THREADS='1',
              OMP_NUM_THREADS='1'):
     import numpy as np
 import pandas as pd
-
 
 def load_phenotypes(infile):
     p = pd.Series([float(x.rstrip().split()[-1])
@@ -114,21 +114,68 @@ def load_covariates(infile, covariates, p):
     return cov
 
 
-def iter_kmers(p, m, cov, infile, all_strains,
+def iter_variants(p, m, cov, var_type, infile, all_strains, sample_order,
                min_af, max_af,
                filter_pvalue, lrt_pvalue, null_fit, firth_null,
                uncompressed):
-    for l in infile:
-        if not uncompressed:
-            l = l.decode()
-        kmer, strains = l.split()[0], l.rstrip().split('|')[1].lstrip().split()
+    while True:
+        if var_type is "vcf":
+            l = next(infile)
+        else:
+            l = infile.readline()
 
-        d = {x.split(':')[0]: 1
-             for x in strains}
+        # check for EOF
+        if not l:
+            raise StopIteration
+
+        # Parse depending on input file type. Need to end with a variant name and pres/abs dictionary
+        d = {}
+        if var_type == "kmers":
+            if not uncompressed:
+                l = l.decode()
+            var_name, strains = l.split()[0], l.rstrip().split('|')[1].lstrip().split()
+
+            d = {x.split(':')[0]: 1
+                 for x in strains}
+
+        elif var_type == "vcf":
+            # Do not support multiple alleles. Use 'bcftools norm' to split these
+            if len(l.alts) > 1:
+                sys.stderr.write("Multiple alleles at " + l.contig + "_" + str(l.pos) + ". Skipping\n")
+                yield (None, None, None, None, None, None,
+                   None, None, None, None,
+                   None, None)
+                continue
+            elif "PASS" not in l.filter.keys() and "." not in l.filter.keys():
+                yield (None, None, None, None, None, None,
+                   None, None, None, None,
+                   None, None)
+                continue
+
+            var_name = "_".join([l.contig, str(l.pos)] + [str(allele) for allele in l.alleles])
+            for sample, call in l.samples.items():
+                # This is dominant encoding. Any instance of '1' will count as present
+                # Could change to additive, summing instances, or reccessive only counting
+                # when all instances are 1.
+                # Shouldn't matter for bacteria, but some people call hets
+                for haplotype in call['GT']:
+                    if str(haplotype) is not "." and haplotype != 0:
+                        d[sample] = 1
+                        break
+
+        elif var_type == "Rtab":
+            split_line = l.rstrip().split()
+            var_name, strains = split_line[0], split_line[1:]
+            for present, sample in zip(strains, sample_order):
+                if present is not '0':
+                    d[sample] = 1
+
+        # Use common dictionary to format design matrix etc
         kstrains = sorted(set(d.keys()).intersection(all_strains))
-        nkstrains = sorted(all_strains.difference(
-                           all_strains.intersection(
-                           {x.split(':')[0] for x in strains})))
+        nkstrains = sorted(all_strains.difference(set(kstrains)))
+
+        # default for missing samples is absent kmer
+        # currently up to user to be careful about matching pheno and var files
         for x in nkstrains:
             d[x] = 0
 
@@ -136,7 +183,7 @@ def iter_kmers(p, m, cov, infile, all_strains,
         # filter by AF
         if af < min_af or af > max_af:
             # pass it to the actual tests to keep track
-            yield (kmer, None, None, None, None, af,
+            yield (var_name, None, None, None, None, af,
                    None, None, None, None,
                    kstrains, nkstrains)
             continue
@@ -146,7 +193,8 @@ def iter_kmers(p, m, cov, infile, all_strains,
                       if x in d])
         c = cov.values
 
-        yield (kmer, v, k, m, c, af,
+        yield (var_name, v, k, m, c, af,
                filter_pvalue, lrt_pvalue, null_fit, firth_null,
                kstrains, nkstrains)
+
 
