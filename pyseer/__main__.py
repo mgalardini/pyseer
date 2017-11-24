@@ -7,6 +7,8 @@ import sys
 import gzip
 import warnings
 import itertools
+import re
+from collections import deque
 from .utils import set_env
 # avoid numpy taking up more than one thread
 with set_env(MKL_NUM_THREADS='1',
@@ -24,6 +26,7 @@ from .input import iter_variants
 from .input import load_structure
 from .input import load_phenotypes
 from .input import load_covariates
+from .input import load_burden
 
 from .model import binary
 from .model import fit_null
@@ -38,10 +41,16 @@ def get_options():
     parser = argparse.ArgumentParser(description=description,
                                      prog='pyseer')
 
-    parser.add_argument('phenotypes',
+    phenotypes = parser.add_argument_group('Phenotype')
+    phenotypes.add_argument('--phenotypes',
                         help='Phenotypes file')
+    phenotypes.add_argument('--phenotype_col',
+                            type=int,
+                            default=3,
+                            help='Phenotype file column to use [Default: 3]')
 
-    variant_group = parser.add_mutually_exclusive_group()
+    variants = parser.add_argument_group('Variants')
+    variant_group = variants.add_mutually_exclusive_group(required=True)
     variant_group.add_argument('--kmers',
                         default=None,
                         help='Kmers file')
@@ -52,64 +61,74 @@ def get_options():
                         default=None,
                         help='Presence/absence .Rtab matrix as produced by roary and piggy')
 
-    distance_group = parser.add_mutually_exclusive_group()
+    distances = parser.add_argument_group('Distances')
+    distance_group = distances.add_mutually_exclusive_group(required=True)
     distance_group.add_argument('--distances',
                         help='Strains distance square matrix')
     distance_group.add_argument('--load-m',
                         help='Load an existing matrix decomposition')
-
-    parser.add_argument('--continuous',
-                        action='store_true',
-                        default=False,
-                        help='Force continuous phenotype [Default: binary auto-detect]')
-    parser.add_argument('--print-samples',
-                        action='store_true',
-                        default=False,
-                        help='Print sample lists [Default: hide samples]')
-    parser.add_argument('--min-af',
-                        type=float,
-                        default=0.01,
-                        help='Minimum AF [Default: 0.01]')
-    parser.add_argument('--max-af',
-                        type=float,
-                        default=0.99,
-                        help='Maximum AF [Default: 0.99]')
-    parser.add_argument('--filter-pvalue',
-                        type=float,
-                        default=1,
-                        help='Prefiltering t-test pvalue threshold [Default: 1]')
-    parser.add_argument('--lrt-pvalue',
-                        type=float,
-                        default=1,
-                        help='Likelihood ratio test pvalue threshold [Default: 1]')
-    parser.add_argument('--max-dimensions',
+    distances.add_argument('--save-m',
+                        help='Prefix for saving matrix decomposition')
+    distances.add_argument('--mds',
+                        default="classic",
+                        help='Type of multidimensional scaling. Either "classic", "metric", or "non-metric"')
+    distances.add_argument('--max-dimensions',
                         type=int,
                         default=10,
                         help='Maximum number of dimensions to consider after MDS [Default: 10]')
-    parser.add_argument('--mds',
-                        default="classic",
-                        help='Type of multidimensional scaling. Either "classic", "metric", or "non-metric"')
-    parser.add_argument('--covariates',
+
+    association = parser.add_argument_group('Association options')
+    association.add_argument('--continuous',
+                        action='store_true',
+                        default=False,
+                        help='Force continuous phenotype [Default: binary auto-detect]')
+    association.add_argument('--burden',
+                             help='VCF regions to group variants by for burden testing (requires --vcf). Requires vcf to be indexed')
+
+    filtering = parser.add_argument_group('Filtering options')
+    filtering.add_argument('--min-af',
+                        type=float,
+                        default=0.01,
+                        help='Minimum AF [Default: 0.01]')
+    filtering.add_argument('--max-af',
+                        type=float,
+                        default=0.99,
+                        help='Maximum AF [Default: 0.99]')
+    filtering.add_argument('--filter-pvalue',
+                        type=float,
+                        default=1,
+                        help='Prefiltering t-test pvalue threshold [Default: 1]')
+    filtering.add_argument('--lrt-pvalue',
+                        type=float,
+                        default=1,
+                        help='Likelihood ratio test pvalue threshold [Default: 1]')
+
+    covariates = parser.add_argument_group('Covariates')
+    covariates.add_argument('--covariates',
                         default=None,
                         help='User-defined covariates file (tab-delimited, no header, ' +
                              'first column contains sample names)')
-    parser.add_argument('--use-covariates',
+    covariates.add_argument('--use-covariates',
                         default=None,
                         nargs='*',
                         help='Covariates to use. Format is "2 3q 4" (q for quantitative)'
                              ' [Default: load covariates but don\'t use them]')
-    parser.add_argument('--uncompressed',
+
+    other = parser.add_argument_group('Other')
+    other.add_argument('--print-samples',
+                        action='store_true',
+                        default=False,
+                        help='Print sample lists [Default: hide samples]')
+    other.add_argument('--uncompressed',
                         action='store_true',
                         default=False,
                         help='Uncompressed kmers file [Default: gzipped]')
-    parser.add_argument('--cpu',
+    other.add_argument('--cpu',
                         type=int,
                         default=1,
                         help='Processes [Default: 1]')
-    parser.add_argument('--save-m',
-                        help='Prefix for saving matrix decomposition')
 
-    parser.add_argument('--version', action='version',
+    other.add_argument('--version', action='version',
                         version='%(prog)s '+__version__)
 
     return parser.parse_args()
@@ -117,7 +136,7 @@ def get_options():
 
 def main():
     options = get_options()
-    
+
     # check some arguments here
     if options.max_dimensions < 1:
         sys.stderr.write('Minimum number of dimensions after MDS scaling is 1\n')
@@ -126,19 +145,19 @@ def main():
         sys.stderr.write('pyseer requires python version 3 or above ' +
                          'unless the number of threads is 1\n')
         sys.exit(1)
-    if not options.kmers and not options.vcf and not options.pres:
-        sys.stderr.write('At least one type of input variant is required\n')
+    if not options.phenotypes:
+        sys.stderr.write('A phenotype file is required\n')
         sys.exit(1)
-    if not options.distances and not options.load_m:
-        sys.stderr.write('Either distances, or a precalculated projection with --load-m are required\n')
+    if options.burden and not options.vcf:
+        sys.stderr.write('Burden test can only be performed with VCF input\n')
         sys.exit(1)
 
     # silence warnings
     warnings.filterwarnings('ignore')
     #
-    
+
     # reading phenotypes
-    p = load_phenotypes(options.phenotypes)
+    p = load_phenotypes(options.phenotypes, options.phenotype_col)
 
     # Check whether any non 0/1 phenotypes
     if not options.continuous:
@@ -204,6 +223,9 @@ def main():
     # iterator over each kmer
     # implements maf filtering
     sample_order = []
+    burden_regions = deque([])
+    burden = False
+
     if options.kmers:
         var_type = "kmers"
         if options.uncompressed:
@@ -213,6 +235,9 @@ def main():
     elif options.vcf:
         var_type = "vcf"
         infile = VariantFile(options.vcf)
+        if options.burden:
+            burden = True
+            load_burden(options.burden, burden_regions)
     else:
         # Rtab files have a header, rather than sample names accessible by row
         var_type = "Rtab"
@@ -220,7 +245,7 @@ def main():
         header = infile.readline().rstrip()
         sample_order = header.split()[1:]
 
-    k_iter = iter_variants(p, m, cov, var_type,
+    k_iter = iter_variants(p, m, cov, var_type, burden, burden_regions,
                         infile, all_strains, sample_order,
                         options.min_af, options.max_af,
                         options.filter_pvalue,

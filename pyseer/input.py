@@ -4,6 +4,7 @@
 
 import sys
 from .utils import set_env
+import re
 # avoid numpy taking up more than one thread
 with set_env(MKL_NUM_THREADS='1',
              NUMEXPR_NUM_THREADS='1',
@@ -12,11 +13,13 @@ with set_env(MKL_NUM_THREADS='1',
 import pandas as pd
 from sklearn import manifold
 
-def load_phenotypes(infile):
-    p = pd.Series([float(x.rstrip().split()[-1])
+def load_phenotypes(infile, column):
+    p = pd.Series([float(x.rstrip().split()[column-1])
                    for x in open(infile)],
                   index=[x.split()[0]
                          for x in open(infile)])
+    # Remove missing values
+    p = p[p.notna()]
     return p
 
 
@@ -81,14 +84,29 @@ def load_covariates(infile, covariates, p):
     return cov
 
 
-def iter_variants(p, m, cov, var_type, infile, all_strains, sample_order,
-               min_af, max_af,
+def load_burden(infile, burden_regions):
+    with open(infile, "r") as region_file:
+        for region in region_file:
+            (name, region) = region.rstrip().split()
+            burden_regions.append((name, region))
+
+def iter_variants(p, m, cov, var_type, burden, burden_regions, infile,
+               all_strains, sample_order, min_af, max_af,
                filter_pvalue, lrt_pvalue, null_fit, firth_null,
                uncompressed):
     while True:
         if var_type is "vcf":
-            l = next(infile)
+            # burden tests read through regions and slice vcf
+            if burden:
+                if len(burden_regions) > 0:
+                    l = burden_regions.popleft()
+                else: # Last; to raise exception on next loop
+                    l = None
+            # read single vcf line
+            else:
+                l = next(infile)
         else:
+            # kmers and Rtab plain text files
             l = infile.readline()
 
         # check for EOF
@@ -106,29 +124,27 @@ def iter_variants(p, m, cov, var_type, infile, all_strains, sample_order,
                  for x in strains}
 
         elif var_type == "vcf":
-            # Do not support multiple alleles. Use 'bcftools norm' to split these
-            if len(l.alts) > 1:
-                sys.stderr.write("Multiple alleles at " + l.contig + "_" + str(l.pos) + ". Skipping\n")
-                yield (None, None, None, None, None, None,
-                   None, None, None, None,
-                   None, None)
-                continue
-            elif "PASS" not in l.filter.keys() and "." not in l.filter.keys():
-                yield (None, None, None, None, None, None,
-                   None, None, None, None,
-                   None, None)
-                continue
-
-            var_name = "_".join([l.contig, str(l.pos)] + [str(allele) for allele in l.alleles])
-            for sample, call in l.samples.items():
-                # This is dominant encoding. Any instance of '1' will count as present
-                # Could change to additive, summing instances, or reccessive only counting
-                # when all instances are 1.
-                # Shouldn't matter for bacteria, but some people call hets
-                for haplotype in call['GT']:
-                    if str(haplotype) is not "." and haplotype != 0:
-                        d[sample] = 1
-                        break
+            if not burden:
+                var_name = read_vcf_var(l, d)
+                if var_name is None:
+                    yield (None, None, None, None, None, None,
+                       None, None, None, None,
+                       None, None)
+                    continue
+            else:
+                # burden test. Regions are named contig:start-end. Start is non-inclusive, so start one before to include
+                (var_name, region) = l
+                region = re.match('^(.+):(\d+)-(\d+)$', region)
+                if region:
+                    # Adds presence to d for every variant observation in region
+                    for variant in infile.fetch(region.group(1), int(region.group(2)) - 1, int(region.group(3))):
+                        region_var_name = read_vcf_var(variant, d)
+                else: # stop trying to make 'fetch' happen
+                    sys.stderr.write("Could not parse region " + str(region) + "\n")
+                    yield (None, None, None, None, None, None,
+                       None, None, None, None,
+                       None, None)
+                    continue
 
         elif var_type == "Rtab":
             split_line = l.rstrip().split()
@@ -164,4 +180,28 @@ def iter_variants(p, m, cov, var_type, infile, all_strains, sample_order,
                filter_pvalue, lrt_pvalue, null_fit, firth_null,
                kstrains, nkstrains)
 
+
+# Parses vcf variants from pysam. Returns None if filtered variant. Mutates passed dictionary d
+def read_vcf_var(variant, d):
+
+    var_name = "_".join([variant.contig, str(variant.pos)] + [str(allele) for allele in variant.alleles])
+
+    # Do not support multiple alleles. Use 'bcftools norm' to split these
+    if len(variant.alts) > 1:
+        sys.stderr.write("Multiple alleles at " + variant.contig + "_" + str(variant.pos) + ". Skipping\n")
+        var_name = None
+    elif "PASS" not in variant.filter.keys() and "." not in variant.filter.keys():
+        var_name = None
+    else:
+        for sample, call in variant.samples.items():
+            # This is dominant encoding. Any instance of '1' will count as present
+            # Could change to additive, summing instances, or reccessive only counting
+            # when all instances are 1.
+            # Shouldn't matter for bacteria, but some people call hets
+            for haplotype in call['GT']:
+                if str(haplotype) is not "." and haplotype != 0:
+                    d[sample] = 1
+                    break
+
+    return(var_name)
 
