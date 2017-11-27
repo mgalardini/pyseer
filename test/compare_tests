@@ -56,7 +56,7 @@ if __name__ == "__main__":
                 sys.exit(1)
         for c in ['filter-pvalue',
                   'lrt-pvalue']:
-            corr = stats.pearsonr(-np.log10(m1[c]), -np.log10(m2[c]))
+            corr = stats.pearsonr(-np.log10(m1[c]), -np.log10(m2[c]))[0]
             if corr < 0.9:
                 sys.stderr.write('Column %s correlation below 0.9 (%.3f)\n' % (c, corr))
                 sys.exit(1)

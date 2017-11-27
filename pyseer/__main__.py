@@ -242,9 +242,9 @@ def main():
         pool = Pool(options.cpu)
 
     # calculate null regressions once
-    null_fit = fit_null(p, m, cov, options.continuous)
+    null_fit = fit_null(p.values, m, cov, options.continuous)
     if not options.continuous:
-        firth_null = fit_null(p, m, cov, options.continuous, True)
+        firth_null = fit_null(p.values, m, cov, options.continuous, True)
     else:
         firth_null = True
 
