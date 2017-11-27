@@ -12,6 +12,8 @@ with set_env(MKL_NUM_THREADS='1',
     import numpy as np
 import pandas as pd
 from sklearn import manifold
+from .cmdscale import cmdscale
+
 
 def load_phenotypes(infile, column):
     p = pd.Series([float(x.rstrip().split()[column-1])
@@ -19,13 +21,11 @@ def load_phenotypes(infile, column):
                   index=[x.split()[0]
                          for x in open(infile)])
     # Remove missing values
-    p = p[p.notna()]
+    p = p.dropna()
     return p
 
 
-def load_structure(infile, p, max_dimensions, mds_type = "metric", n_cpus = 1):
-    from .cmdscale import cmdscale
-
+def load_structure(infile, p, max_dimensions, mds_type="metric", n_cpus=1):
     m = pd.read_table(infile,
                       index_col=0)
     m = m.loc[p.index, p.index]
@@ -40,7 +40,8 @@ def load_structure(infile, p, max_dimensions, mds_type = "metric", n_cpus = 1):
         elif mds_type is not "metric":
             sys.stderr.write("Unsupported mds type chosen. Assuming metric\n")
 
-        mds = manifold.MDS(max_dimensions, metric_mds, n_jobs = n_cpus, dissimilarity='precomputed')
+        mds = manifold.MDS(max_dimensions, metric_mds, n_jobs=n_cpus,
+                           dissimilarity='precomputed')
         projection = mds.fit_transform(m.values)
 
     m = pd.DataFrame(projection,
@@ -64,8 +65,9 @@ def load_covariates(infile, covariates, p):
         for col in covariates:
             cnum = int(col.rstrip('q'))
             if cnum == 1 or cnum > c.shape[1] + 1:
-                sys.stderr.write('Covariates columns values should be > 1 and lower ' +
-                                 'than total number of columns (%d)\n' % (c.shape[1] + 1))
+                sys.stderr.write('Covariates columns values should be '
+                                 '> 1 and lower than total number of ' +
+                                 'columns (%d)\n' % (c.shape[1] + 1))
                 return None
             if col[-1] == 'q':
                 # quantitative
@@ -77,7 +79,8 @@ def load_covariates(infile, covariates, p):
                 for i, categ in enumerate(categories):
                     cov.append(pd.Series([1 if x == categ
                                           else 0
-                                          for x in c['covariate%d' % cnum].values],
+                                          for x in
+                                          c['covariate%d' % cnum].values],
                                          index=c.index,
                                          name='covariate%d_%d' % (cnum, i)))
         cov = pd.concat(cov, axis=1)
@@ -90,17 +93,18 @@ def load_burden(infile, burden_regions):
             (name, region) = region.rstrip().split()
             burden_regions.append((name, region))
 
+
 def iter_variants(p, m, cov, var_type, burden, burden_regions, infile,
-               all_strains, sample_order, min_af, max_af,
-               filter_pvalue, lrt_pvalue, null_fit, firth_null,
-               uncompressed):
+                  all_strains, sample_order, min_af, max_af,
+                  filter_pvalue, lrt_pvalue, null_fit, firth_null,
+                  uncompressed):
     while True:
         if var_type is "vcf":
             # burden tests read through regions and slice vcf
             if burden:
                 if len(burden_regions) > 0:
                     l = burden_regions.popleft()
-                else: # Last; to raise exception on next loop
+                else:  # Last; to raise exception on next loop
                     l = None
             # read single vcf line
             else:
@@ -113,12 +117,14 @@ def iter_variants(p, m, cov, var_type, burden, burden_regions, infile,
         if not l:
             raise StopIteration
 
-        # Parse depending on input file type. Need to end with a variant name and pres/abs dictionary
+        # Parse depending on input file type. Need to end with a variant name
+        # and pres/abs dictionary
         d = {}
         if var_type == "kmers":
             if not uncompressed:
                 l = l.decode()
-            var_name, strains = l.split()[0], l.rstrip().split('|')[1].lstrip().split()
+            var_name, strains = (l.split()[0],
+                                 l.rstrip().split('|')[1].lstrip().split())
 
             d = {x.split(':')[0]: 1
                  for x in strains}
@@ -128,22 +134,27 @@ def iter_variants(p, m, cov, var_type, burden, burden_regions, infile,
                 var_name = read_vcf_var(l, d)
                 if var_name is None:
                     yield (None, None, None, None, None, None,
-                       None, None, None, None,
-                       None, None)
+                           None, None, None, None,
+                           None, None)
                     continue
             else:
-                # burden test. Regions are named contig:start-end. Start is non-inclusive, so start one before to include
+                # burden test. Regions are named contig:start-end.
+                # Start is non-inclusive, so start one before to include
                 (var_name, region) = l
                 region = re.match('^(.+):(\d+)-(\d+)$', region)
                 if region:
-                    # Adds presence to d for every variant observation in region
-                    for variant in infile.fetch(region.group(1), int(region.group(2)) - 1, int(region.group(3))):
+                    # Adds presence to d for every variant
+                    # observation in region
+                    for variant in infile.fetch(region.group(1),
+                                                int(region.group(2)) - 1,
+                                                int(region.group(3))):
                         region_var_name = read_vcf_var(variant, d)
-                else: # stop trying to make 'fetch' happen
-                    sys.stderr.write("Could not parse region " + str(region) + "\n")
+                else:  # stop trying to make 'fetch' happen
+                    sys.stderr.write("Could not parse region %s\n" %
+                                     str(region))
                     yield (None, None, None, None, None, None,
-                       None, None, None, None,
-                       None, None)
+                           None, None, None, None,
+                           None, None)
                     continue
 
         elif var_type == "Rtab":
@@ -181,14 +192,17 @@ def iter_variants(p, m, cov, var_type, burden, burden_regions, infile,
                kstrains, nkstrains)
 
 
-# Parses vcf variants from pysam. Returns None if filtered variant. Mutates passed dictionary d
+# Parses vcf variants from pysam. Returns None if filtered variant.
+# Mutates passed dictionary d
 def read_vcf_var(variant, d):
 
-    var_name = "_".join([variant.contig, str(variant.pos)] + [str(allele) for allele in variant.alleles])
+    var_name = "_".join([variant.contig, str(variant.pos)] +
+                        [str(allele) for allele in variant.alleles])
 
     # Do not support multiple alleles. Use 'bcftools norm' to split these
     if len(variant.alts) > 1:
-        sys.stderr.write("Multiple alleles at " + variant.contig + "_" + str(variant.pos) + ". Skipping\n")
+        sys.stderr.write("Multiple alleles at %s_%s. Skipping\n" %
+                         (variant.contig, str(variant.pos)))
         var_name = None
     elif "PASS" not in variant.filter.keys() and "." not in variant.filter.keys():
         var_name = None
@@ -204,4 +218,3 @@ def read_vcf_var(variant, d):
                     break
 
     return(var_name)
-

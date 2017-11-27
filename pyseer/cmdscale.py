@@ -9,6 +9,7 @@ with set_env(MKL_NUM_THREADS='1',
              OMP_NUM_THREADS='1'):
     import numpy as np
 
+
 # thanks to Francis Song for this function
 # source: http://www.nervouscomputer.com/hfs/cmdscale-in-python/
 def cmdscale(D):
@@ -44,15 +45,14 @@ def cmdscale(D):
     evals, evecs = np.linalg.eigh(B)
 
     # Sort by eigenvalue in descending order
-    idx   = np.argsort(evals)[::-1]
+    idx = np.argsort(evals)[::-1]
     evals = evals[idx]
-    evecs = evecs[:,idx]
+    evecs = evecs[:, idx]
 
     # Compute the coordinates using positive-eigenvalued components only
     w, = np.where(evals > 0)
-    L  = np.diag(np.sqrt(evals[w]))
-    V  = evecs[:,w]
-    Y  = V.dot(L)
+    L = np.diag(np.sqrt(evals[w]))
+    V = evecs[:, w]
+    Y = V.dot(L)
 
     return Y, evals[evals > 0]
-
