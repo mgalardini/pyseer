@@ -53,22 +53,22 @@ def load_structure(infile, p, max_dimensions, mds_type="metric", n_cpus=1):
 
 # Loads custom cluster/lineage definitions
 def load_lineage(infile, p):
-    lin = pd.Series([float(x.rstrip().split()[1])
+    lin = pd.Series([x.rstrip().split()[1]
                    for x in open(infile)],
                   index=[x.split()[0]
                          for x in open(infile)])
     lin = lin.loc[p.index]
     lineages = set(lin.values)
-    #categories.pop()
+    lineages.pop()
 
     lineage_design_mat = []
     lineage_assign = []
-    for i, categ in enumerate(categories):
+    for categ in lineages:
         lineage_design_mat.append(pd.Series([1 if x == categ
                                           else 0
                                           for x in lin.values],
                                          index=lin.index))
-        lineage_assign[i] = categ
+        lineage_assign.append(categ)
     lineage_design_mat = pd.concat(lineage_design_mat, axis=1)
 
     return(lineage_design_mat, lineage_assign)
@@ -157,7 +157,7 @@ def iter_variants(p, m, cov, var_type, burden, burden_regions, infile,
                 var_name = read_vcf_var(l, d)
                 if var_name is None:
                     yield (None, None, None, None, None, None,
-                           None, None, None, None,
+                           None, None, None, None, None, None,
                            None, None)
                     continue
             else:
@@ -176,7 +176,7 @@ def iter_variants(p, m, cov, var_type, burden, burden_regions, infile,
                     sys.stderr.write("Could not parse region %s\n" %
                                      str(region))
                     yield (None, None, None, None, None, None,
-                           None, None, None, None,
+                           None, None, None, None, None, None,
                            None, None)
                     continue
 
@@ -201,7 +201,7 @@ def iter_variants(p, m, cov, var_type, burden, burden_regions, infile,
         if af < min_af or af > max_af:
             # pass it to the actual tests to keep track
             yield (var_name, None, None, None, None, af,
-                   None, None, None, None,
+                   None, None, None, None, None, None,
                    kstrains, nkstrains)
             continue
 
@@ -211,7 +211,7 @@ def iter_variants(p, m, cov, var_type, burden, burden_regions, infile,
         c = cov.values
 
         lin = None
-        if lineage_clusters:
+        if lineage_clusters is not None:
             lin = lineage_clusters.values
 
         yield (var_name, v, k, m, c, af,

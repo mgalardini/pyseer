@@ -7,6 +7,7 @@ import sys
 import gzip
 import warnings
 import itertools
+import operator
 import re
 from collections import deque
 from .utils import set_env
@@ -24,6 +25,7 @@ from .__init__ import __version__
 
 from .input import iter_variants
 from .input import load_structure
+from .input import load_lineage
 from .input import load_phenotypes
 from .input import load_covariates
 from .input import load_burden
@@ -91,10 +93,15 @@ def get_options():
                              help='Force continuous phenotype '
                                   '[Default: binary auto-detect]')
     association.add_argument('--lineage',
-                             help='Report lineage effects ')
+                             action='store_true',
+                             help='Report lineage effects')
     association.add_argument('--lineage_clusters',
                              help='Custom clusters to use as lineages '
                                   '[Default: MDS components]')
+    association.add_argument('--lineage_file',
+                             default="lineage_effects.txt",
+                             help='File to write lineage association to'
+                                  '[Default: lineage_effects.txt]')
     association.add_argument('--burden',
                              help='VCF regions to group variants by for burden'
                                   ' testing (requires --vcf). '
@@ -214,16 +221,6 @@ def main():
     else:
         cov = pd.DataFrame([])
 
-    # lineage effects - read BAPS clusters
-    if options.lineage
-        if options.lineage_clusters:
-            lineage_clusters, lineage_dict = load_lineage(options.lineage_clusters, p)
-        else:
-            lineage_dict = ["MDS" + str(i) for x in options.max_dimensions]
-            lineage_clusters = None
-
-        run_lineage_regression(lineage_clusters, p.values, cov.values, continuous)
-
     header = ['variant', 'af', 'filter-pvalue',
               'lrt-pvalue', 'beta', 'beta-std-err',
               'intercept'] + ['PC%d' % i
@@ -251,6 +248,30 @@ def main():
     if null_fit is None or firth_null is None:
         sys.stderr.write('Could not fit null model, exiting\n')
         sys.exit(1)
+
+    # lineage effects using null model - read BAPS clusters and fit pheno ~ lineage
+    lineage_clusters = None
+    lineage_dict = []
+    if options.lineage:
+        if options.lineage_clusters:
+            lineage_clusters, lineage_dict = load_lineage(options.lineage_clusters, p)
+            lineage_fit = fit_null(p.values, lineage_clusters, cov, options.continuous)
+        else:
+            lineage_dict = ["MDS" + str(i+1) for i in range(options.max_dimensions)]
+            lineage_clusters = None
+            lineage_fit = null_fit
+
+        # Calculate, sort and print lineage effects
+        lineage_wald = {}
+        for lineage, slope, se in zip(lineage_dict, lineage_fit.params[1:], lineage_fit.bse[1:]):
+            lineage_wald[lineage] = np.absolute(slope)/se
+        with open(options.lineage_file, 'w') as lineage_out:
+            for lineage, wald in sorted(lineage_wald.items(), key=operator.itemgetter(1), reverse=True):
+                lineage_out.write("\t".join([lineage, str(wald)]) + "\n")
+
+    # binary regression takes LLF as null, not full model fit
+    if not options.continuous:
+        null_fit = null_fit.llf
 
     # iterator over each kmer
     # implements maf filtering
@@ -343,6 +364,7 @@ def main():
                 continue
             printed += 1
             print(format_output(ret,
+                                lineage_dict,
                                 options.print_samples))
 
     sys.stderr.write('%d loaded variants\n' % (prefilter + tested))

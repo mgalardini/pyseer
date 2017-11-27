@@ -51,8 +51,11 @@ def format_output(item, lineage_dict, print_samples=False):
                              if np.isfinite(x)
                              else ''
                              for x in item.betas])
-    if item.max_lineage:
-        out += '\t' + lineage_dict[item.max_lineage]
+    if item.max_lineage is not None:
+        if item.max_lineage is not "NA":
+            out += '\t' + lineage_dict[item.max_lineage]
+        else:
+            out += '\tNA'
     if print_samples:
         out += '\t' + '\t'.join((','.join(item.kstrains),
                                  ','.join(item.nkstrains)))

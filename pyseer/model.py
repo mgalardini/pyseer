@@ -22,7 +22,7 @@ Seer = namedtuple('Seer', ['kmer',
                            'af', 'prep', 'lrt_pvalue',
                            'kbeta', 'bse',
                            'intercept', 'betas',
-                           'lineage',
+                           'max_lineage',
                            'kstrains', 'nkstrains',
                            'notes',
                            'prefilter', 'filter'])
@@ -39,7 +39,7 @@ def binary(kmer, p, k, m, c, af,
         notes.add('af-filter')
         return Seer(kmer, af, np.nan, np.nan,
                     np.nan, np.nan, np.nan, [],
-                    kstrains, nkstrains,
+                    np.nan, kstrains, nkstrains,
                     notes, True, False)
 
     # pre-filtering
@@ -68,7 +68,7 @@ def binary(kmer, p, k, m, c, af,
         notes.add('pre-filtering-failed')
         return Seer(kmer, af, prep, np.nan,
                     np.nan, np.nan, np.nan, [],
-                    kstrains, nkstrains,
+                    np.nan, kstrains, nkstrains,
                     notes, True, False)
 
     # actual logistic regression
@@ -89,13 +89,10 @@ def binary(kmer, p, k, m, c, af,
     start_vec = np.zeros(v.shape[1])
     start_vec[0] = np.log(np.mean(p)/(1-np.mean(p)))
 
-    # suppress annoying stdout messages
-    old_stdout = sys.stdout
-    sys.stdout = open(os.devnull, "w")
     try:
         if not bad_chisq:
             try:
-                res = mod.fit(start_params=start_vec, method='newton')
+                res = mod.fit(start_params=start_vec, method='newton', disp=False)
 
                 if res.bse[1] > 3:
                     bad_chisq = True
@@ -132,7 +129,7 @@ def binary(kmer, p, k, m, c, af,
 
         max_lineage = None
         if lineage_effects:
-            if not lin:
+            if lin is None:
                 lin = m
             if c.shape[0] == m.shape[0]:
                 X = np.concatenate((np.ones(lin.shape[0]).reshape(-1, 1),
@@ -147,21 +144,23 @@ def binary(kmer, p, k, m, c, af,
             lineage_mod = smf.Logit(k, X)
             start_vec = np.zeros(X.shape[1])
             start_vec[0] = np.log(np.mean(k)/(1-np.mean(k)))
-            lineage_res = mod.fit(start_params=start_vec, method='newton')
 
-            wald_test = np.divide(lineage_res.params, lineage_res.bse)
-            max_lineage = np.argmax(wald_test[-1]) + 1 # excluding intercept
+            try:
+                lineage_res = lineage_mod.fit(start_params=start_vec, method='newton', disp=False)
+
+                wald_test = np.divide(np.absolute(lineage_res.params), lineage_res.bse)
+                max_lineage = np.argmax(wald_test[1:lin.shape[1]+1]) # excluding intercept and covariates
+            # In case regression fails
+            except statsmodels.tools.sm_exceptions.PerfectSeparationError:
+                max_lineage = None
 
     except np.linalg.linalg.LinAlgError:
         # singular matrix error
         notes.add('matrix-inversion-error')
         return Seer(kmer, af, prep, np.nan,
                     np.nan, np.nan, np.nan, [],
-                    kstrains, nkstrains,
+                    np.nan, kstrains, nkstrains,
                     notes, False, True)
-    finally:
-        sys.stdout.close()
-        sys.stdout = old_stdout
 
     if lrt_pvalue > lrtt or not np.isfinite(lrt_pvalue) or not np.isfinite(kbeta):
         notes.add('lrt-filtering-failed')
@@ -246,7 +245,7 @@ def continuous(kmer, p, k, m, c, af,
         notes.add('af-filter')
         return Seer(kmer, af, np.nan, np.nan,
                     np.nan, np.nan, np.nan, [],
-                    kstrains, nkstrains,
+                    np.nan, kstrains, nkstrains,
                     notes, True, False)
 
     # pre-filtering
@@ -257,7 +256,7 @@ def continuous(kmer, p, k, m, c, af,
         notes.add('pre-filtering-failed')
         return Seer(kmer, af, prep, np.nan,
                     np.nan, np.nan, np.nan, [],
-                    kstrains, nkstrains,
+                    np.nan, kstrains, nkstrains,
                     notes, True, False)
 
     # actual linear regression
@@ -275,9 +274,6 @@ def continuous(kmer, p, k, m, c, af,
                            axis=1)
     mod = smf.OLS(p, v)
 
-    # suppress annoying stdout messages
-    old_stdout = sys.stdout
-    sys.stdout = open(os.devnull, "w")
     try:
         res = mod.fit()
         intercept = res.params[0]
@@ -287,7 +283,7 @@ def continuous(kmer, p, k, m, c, af,
 
         max_lineage = None
         if lineage_effects:
-            if not lin:
+            if lin is None:
                 lin = m
             if c.shape[0] == m.shape[0]:
                 X = np.concatenate((np.ones(lin.shape[0]).reshape(-1, 1),
@@ -301,10 +297,10 @@ def continuous(kmer, p, k, m, c, af,
 
 
             lineage_mod = smf.OLS(k, X)
-            lineage_res = mod.fit()
+            lineage_res = lineage_mod.fit(disp=False)
 
-            wald_test = np.divide(lineage_res.params, np.sqrt(np.diagonal(lineage_res.cov_params)))
-            max_lineage = np.argmax(wald_test[-1]) + 1
+            wald_test = np.divide(np.absolute(lineage_res.params), lineage_res.bse)
+            max_lineage = np.argmax(wald_test[1:]) + 1
 
     except np.linalg.linalg.LinAlgError:
         # singular matrix error
@@ -312,11 +308,8 @@ def continuous(kmer, p, k, m, c, af,
         notes.add('matrix-inversion-error')
         return Seer(kmer, af, prep, np.nan,
                     np.nan, np.nan, np.nan, [],
-                    kstrains, nkstrains,
+                    np.nan, kstrains, nkstrains,
                     notes, False, True)
-    finally:
-        sys.stdout.close()
-        sys.stdout = old_stdout
 
     lrt_pvalue = res.compare_lr_test(null_res)[1]
     if lrt_pvalue > lrtt or not np.isfinite(lrt_pvalue) or not np.isfinite(kbeta):
@@ -352,19 +345,15 @@ def fit_null(p, m, cov, continuous, firth=False):
         start_vec[0] = np.log(np.mean(p)/(1-np.mean(p)))
         null_mod = smf.Logit(p, v)
 
-    # suppress annoying stdout messages
-    old_stdout = sys.stdout
-    sys.stdout = open(os.devnull, "w")
     try:
         if continuous:
-            null_res = null_mod.fit()
+            null_res = null_mod.fit(disp=False)
         else:
             if firth:
                 (intercept, kbeta, beta, bse, fitll) = fit_firth(null_mod, start_vec, "null", v, p)
                 null_res = fitll
             else:
-                null_res = null_mod.fit(start_params=start_vec, method='newton')
-                null_res = null_res.llf
+                null_res = null_mod.fit(start_params=start_vec, method='newton', disp=False)
     except np.linalg.linalg.LinAlgError:
         # singular matrix error
         sys.stderr.write('Matrix inversion error for null model\n')
@@ -373,8 +362,5 @@ def fit_null(p, m, cov, continuous, firth=False):
         # singular matrix error
         sys.stderr.write('Perfetly separable data error for null model\n')
         return None
-    finally:
-        sys.stdout.close()
-        sys.stdout = old_stdout
 
     return null_res
