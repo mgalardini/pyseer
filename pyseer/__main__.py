@@ -82,6 +82,10 @@ def get_options():
                         action='store_true',
                         default=False,
                         help='Force continuous phenotype [Default: binary auto-detect]')
+    association.add_argument('--lineage',
+                        help='Report lineage effects (doi:10.1038/nmicrobiol.2016.41)')
+    association.add_argument('--lineage_clusters',
+                        help='Custom clusters to use as linages [Default: MDS components]')
     association.add_argument('--burden',
                              help='VCF regions to group variants by for burden testing (requires --vcf). Requires vcf to be indexed')
 
@@ -195,11 +199,23 @@ def main():
     else:
         cov = pd.DataFrame([])
 
+    # lineage effects - read BAPS clusters
+    if options.lineage
+        if options.lineage_clusters:
+            lineage_clusters, lineage_dict = load_lineage(options.lineage_clusters, p)
+        else:
+            lineage_dict = ["MDS" + str(i) for x in options.max_dimensions]
+            lineage_clusters = None
+
+        run_lineage_regression(lineage_clusters, p.values, cov.values, continuous)
+
     header = ['variant', 'af', 'filter-pvalue',
               'lrt-pvalue', 'beta', 'beta-std-err',
               'intercept'] + ['PC%d' % i for i in range(1, options.max_dimensions+1)]
     if options.covariates is not None:
         header = header + [x for x in cov.columns]
+    if options.lineage:
+        header = header + ['lineage']
     if options.print_samples:
         header = header + ['k-samples', 'nk-samples']
     header += ['notes']
@@ -247,6 +263,7 @@ def main():
 
     k_iter = iter_variants(p, m, cov, var_type, burden, burden_regions,
                         infile, all_strains, sample_order,
+                        options.lineage, lineage_clusters,
                         options.min_af, options.max_af,
                         options.filter_pvalue,
                         options.lrt_pvalue, null_fit, firth_null,
@@ -276,6 +293,7 @@ def main():
                         continue
                     printed += 1
                     print(format_output(x,
+                                        lineage_dict,
                                         options.print_samples))
         else:
             while True:
@@ -293,6 +311,7 @@ def main():
                         continue
                     printed += 1
                     print(format_output(x,
+                                        lineage_dict,
                                         options.print_samples))
     else:
         for data in k_iter:

@@ -22,12 +22,14 @@ Seer = namedtuple('Seer', ['kmer',
                            'af', 'prep', 'lrt_pvalue',
                            'kbeta', 'bse',
                            'intercept', 'betas',
+                           'lineage',
                            'kstrains', 'nkstrains',
                            'notes',
                            'prefilter', 'filter'])
 
 
 def binary(kmer, p, k, m, c, af,
+           lineage_effects, lin,
            pret, lrtt, null_res, null_firth,
            kstrains, nkstrains):
     notes = set()
@@ -125,8 +127,31 @@ def binary(kmer, p, k, m, c, af,
                 intercept, kbeta, beta, bse, fitll = firth_fit
                 lrstat = -2*(null_firth - fitll)
                 lrt_pvalue = 1
-                if lrstat > 0: # non-convergence
+                if lrstat > 0: # check for non-convergence
                     lrt_pvalue = stats.chi2.sf(lrstat, 1)
+
+        max_lineage = None
+        if lineage_effects:
+            if not lin:
+                lin = m
+            if c.shape[0] == m.shape[0]:
+                X = np.concatenate((np.ones(lin.shape[0]).reshape(-1, 1),
+                                lin,
+                                c),
+                                axis=1)
+            else:
+                X = np.concatenate((np.ones(lin.shape[0]).reshape(-1, 1),
+                                lin),
+                                axis=1)
+
+            lineage_mod = smf.Logit(k, X)
+            start_vec = np.zeros(X.shape[1])
+            start_vec[0] = np.log(np.mean(k)/(1-np.mean(k)))
+            lineage_res = mod.fit(start_params=start_vec, method='newton')
+
+            wald_test = np.divide(lineage_res.params, lineage_res.bse)
+            max_lineage = np.argmax(wald_test[-1]) + 1 # excluding intercept
+
     except np.linalg.linalg.LinAlgError:
         # singular matrix error
         notes.add('matrix-inversion-error')
@@ -142,12 +167,12 @@ def binary(kmer, p, k, m, c, af,
         notes.add('lrt-filtering-failed')
         return Seer(kmer, af, prep, lrt_pvalue,
                     kbeta, bse, intercept, beta,
-                    kstrains, nkstrains,
+                    max_lineage, kstrains, nkstrains,
                     notes, False, True)
 
     return Seer(kmer, af, prep, lrt_pvalue,
                 kbeta, bse, intercept, beta,
-                kstrains, nkstrains,
+                max_lineage, kstrains, nkstrains,
                 notes, False, False)
 
 
@@ -206,6 +231,7 @@ def fit_firth(logit_model, start_vec, kmer_name,
 
 
 def continuous(kmer, p, k, m, c, af,
+               lineage_effects, lin,
                pret, lrtt, null_res, null_firth,
                kstrains, nkstrains):
     notes = set()
@@ -253,6 +279,28 @@ def continuous(kmer, p, k, m, c, af,
         kbeta = res.params[1]
         beta = res.params[2:]
         bse = res.bse[1]
+
+        max_lineage = None
+        if lineage_effects:
+            if not lin:
+                lin = m
+            if c.shape[0] == m.shape[0]:
+                X = np.concatenate((np.ones(lin.shape[0]).reshape(-1, 1),
+                                lin,
+                                c),
+                                axis=1)
+            else:
+                X = np.concatenate((np.ones(lin.shape[0]).reshape(-1, 1),
+                                lin),
+                                axis=1)
+
+
+            lineage_mod = smf.OLS(k, X)
+            lineage_res = mod.fit()
+
+            wald_test = np.divide(lineage_res.params, np.sqrt(np.diagonal(lineage_res.cov_params)))
+            max_lineage = np.argmax(wald_test[-1]) + 1
+
     except np.linalg.linalg.LinAlgError:
         # singular matrix error
         # singular matrix error
@@ -270,12 +318,12 @@ def continuous(kmer, p, k, m, c, af,
         notes.add('lrt-filtering-failed')
         return Seer(kmer, af, prep, lrt_pvalue,
                     kbeta, bse, intercept, beta,
-                    kstrains, nkstrains,
+                    max_lineage, kstrains, nkstrains,
                     notes, False, True)
 
     return Seer(kmer, af, prep, lrt_pvalue,
                 kbeta, bse, intercept, beta,
-                kstrains, nkstrains,
+                max_lineage, kstrains, nkstrains,
                 notes, False, False)
 
 

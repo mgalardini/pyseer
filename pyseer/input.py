@@ -50,6 +50,29 @@ def load_structure(infile, p, max_dimensions, mds_type = "metric", n_cpus = 1):
     return m
 
 
+# Loads custom cluster/lineage definitions
+def load_lineage(infile, p):
+    lin = pd.Series([float(x.rstrip().split()[1])
+                   for x in open(infile)],
+                  index=[x.split()[0]
+                         for x in open(infile)])
+    lin = lin.loc[p.index]
+    lineages = set(lin.values)
+    #categories.pop()
+
+    lineage_design_mat = []
+    lineage_assign = []
+    for i, categ in enumerate(categories):
+        lineage_design_mat.append(pd.Series([1 if x == categ
+                                          else 0
+                                          for x in lin.values],
+                                         index=lin.index))
+        lineage_assign[i] = categ
+    lineage_design_mat = pd.concat(lineage_design_mat, axis=1)
+
+    return(lineage_design_mat, lineage_assign)
+
+
 def load_covariates(infile, covariates, p):
     c = pd.read_table(infile,
                       header=None,
@@ -91,8 +114,8 @@ def load_burden(infile, burden_regions):
             burden_regions.append((name, region))
 
 def iter_variants(p, m, cov, var_type, burden, burden_regions, infile,
-               all_strains, sample_order, min_af, max_af,
-               filter_pvalue, lrt_pvalue, null_fit, firth_null,
+               all_strains, sample_order, lineage_effects, lineage_clusters,
+               min_af, max_af, filter_pvalue, lrt_pvalue, null_fit, firth_null,
                uncompressed):
     while True:
         if var_type is "vcf":
@@ -176,7 +199,12 @@ def iter_variants(p, m, cov, var_type, burden, burden_regions, infile,
                       if x in d])
         c = cov.values
 
+        lin = None
+        if lineage_clusters:
+            lin = lineage_clusters.values
+
         yield (var_name, v, k, m, c, af,
+               lineage_effects, lin,
                filter_pvalue, lrt_pvalue, null_fit, firth_null,
                kstrains, nkstrains)
 
