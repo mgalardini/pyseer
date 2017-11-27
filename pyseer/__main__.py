@@ -34,6 +34,7 @@ from .model import continuous
 
 from .utils import format_output
 
+
 def get_options():
     import argparse
 
@@ -43,97 +44,112 @@ def get_options():
 
     phenotypes = parser.add_argument_group('Phenotype')
     phenotypes.add_argument('--phenotypes',
-                        help='Phenotypes file')
-    phenotypes.add_argument('--phenotype_col',
+                            required=True,
+                            help='Phenotypes file')
+    phenotypes.add_argument('--phenotype-col',
                             type=int,
-                            default=3,
-                            help='Phenotype file column to use [Default: 3]')
+                            default=0,
+                            help='Phenotype file column to use '
+                                 '[Default: 0, meaning last column]')
 
     variants = parser.add_argument_group('Variants')
     variant_group = variants.add_mutually_exclusive_group(required=True)
     variant_group.add_argument('--kmers',
-                        default=None,
-                        help='Kmers file')
+                               default=None,
+                               help='Kmers file')
     variant_group.add_argument('--vcf',
-                        default=None,
-                        help='VCF file. Will filter any non \'PASS\' sites')
+                               default=None,
+                               help='VCF file. Will filter any non '
+                                    '\'PASS\' sites')
     variant_group.add_argument('--pres',
-                        default=None,
-                        help='Presence/absence .Rtab matrix as produced by roary and piggy')
+                               default=None,
+                               help='Presence/absence .Rtab matrix as '
+                                    'produced by roary and piggy')
 
     distances = parser.add_argument_group('Distances')
     distance_group = distances.add_mutually_exclusive_group(required=True)
     distance_group.add_argument('--distances',
-                        help='Strains distance square matrix')
+                                help='Strains distance square matrix')
     distance_group.add_argument('--load-m',
-                        help='Load an existing matrix decomposition')
+                                help='Load an existing matrix decomposition')
     distances.add_argument('--save-m',
-                        help='Prefix for saving matrix decomposition')
+                           help='Prefix for saving matrix decomposition')
     distances.add_argument('--mds',
-                        default="classic",
-                        help='Type of multidimensional scaling. Either "classic", "metric", or "non-metric"')
+                           default="classic",
+                           choices=['classic', 'metric', 'non-metric'],
+                           help='Type of multidimensional scaling.')
     distances.add_argument('--max-dimensions',
-                        type=int,
-                        default=10,
-                        help='Maximum number of dimensions to consider after MDS [Default: 10]')
+                           type=int,
+                           default=10,
+                           help='Maximum number of dimensions to consider '
+                                'after MDS [Default: 10]')
 
     association = parser.add_argument_group('Association options')
     association.add_argument('--continuous',
-                        action='store_true',
-                        default=False,
-                        help='Force continuous phenotype [Default: binary auto-detect]')
+                             action='store_true',
+                             default=False,
+                             help='Force continuous phenotype '
+                                  '[Default: binary auto-detect]')
     association.add_argument('--lineage',
-                        help='Report lineage effects (doi:10.1038/nmicrobiol.2016.41)')
+                             help='Report lineage effects ')
     association.add_argument('--lineage_clusters',
-                        help='Custom clusters to use as linages [Default: MDS components]')
+                             help='Custom clusters to use as lineages '
+                                  '[Default: MDS components]')
     association.add_argument('--burden',
-                             help='VCF regions to group variants by for burden testing (requires --vcf). Requires vcf to be indexed')
+                             help='VCF regions to group variants by for burden'
+                                  ' testing (requires --vcf). '
+                                  'Requires vcf to be indexed')
 
     filtering = parser.add_argument_group('Filtering options')
     filtering.add_argument('--min-af',
-                        type=float,
-                        default=0.01,
-                        help='Minimum AF [Default: 0.01]')
+                           type=float,
+                           default=0.01,
+                           help='Minimum AF [Default: 0.01]')
     filtering.add_argument('--max-af',
-                        type=float,
-                        default=0.99,
-                        help='Maximum AF [Default: 0.99]')
+                           type=float,
+                           default=0.99,
+                           help='Maximum AF [Default: 0.99]')
     filtering.add_argument('--filter-pvalue',
-                        type=float,
-                        default=1,
-                        help='Prefiltering t-test pvalue threshold [Default: 1]')
+                           type=float,
+                           default=1,
+                           help='Prefiltering t-test pvalue threshold '
+                                '[Default: 1]')
     filtering.add_argument('--lrt-pvalue',
-                        type=float,
-                        default=1,
-                        help='Likelihood ratio test pvalue threshold [Default: 1]')
+                           type=float,
+                           default=1,
+                           help='Likelihood ratio test pvalue threshold '
+                                '[Default: 1]')
 
     covariates = parser.add_argument_group('Covariates')
     covariates.add_argument('--covariates',
-                        default=None,
-                        help='User-defined covariates file (tab-delimited, no header, ' +
-                             'first column contains sample names)')
+                            default=None,
+                            help='User-defined covariates file '
+                                 '(tab-delimited, no header, '
+                                 'first column contains sample names)')
     covariates.add_argument('--use-covariates',
-                        default=None,
-                        nargs='*',
-                        help='Covariates to use. Format is "2 3q 4" (q for quantitative)'
-                             ' [Default: load covariates but don\'t use them]')
+                            default=None,
+                            nargs='*',
+                            help='Covariates to use. Format is "2 3q 4" '
+                                 '(q for quantitative) '
+                                 ' [Default: load covariates but don\'t use '
+                                 'them]')
 
     other = parser.add_argument_group('Other')
     other.add_argument('--print-samples',
-                        action='store_true',
-                        default=False,
-                        help='Print sample lists [Default: hide samples]')
+                       action='store_true',
+                       default=False,
+                       help='Print sample lists [Default: hide samples]')
     other.add_argument('--uncompressed',
-                        action='store_true',
-                        default=False,
-                        help='Uncompressed kmers file [Default: gzipped]')
+                       action='store_true',
+                       default=False,
+                       help='Uncompressed kmers file [Default: gzipped]')
     other.add_argument('--cpu',
-                        type=int,
-                        default=1,
-                        help='Processes [Default: 1]')
+                       type=int,
+                       default=1,
+                       help='Processes [Default: 1]')
 
     other.add_argument('--version', action='version',
-                        version='%(prog)s '+__version__)
+                       version='%(prog)s '+__version__)
 
     return parser.parse_args()
 
@@ -143,14 +159,11 @@ def main():
 
     # check some arguments here
     if options.max_dimensions < 1:
-        sys.stderr.write('Minimum number of dimensions after MDS scaling is 1\n')
+        sys.stderr.write('Minimum number of dimensions after MDS is 1\n')
         sys.exit(1)
     if options.cpu > 1 and sys.version_info[0] < 3:
         sys.stderr.write('pyseer requires python version 3 or above ' +
                          'unless the number of threads is 1\n')
-        sys.exit(1)
-    if not options.phenotypes:
-        sys.stderr.write('A phenotype file is required\n')
         sys.exit(1)
     if options.burden and not options.vcf:
         sys.stderr.write('Burden test can only be performed with VCF input\n')
@@ -176,14 +189,16 @@ def main():
         m = pd.read_pickle(options.load_m)
         m = m.loc[p.index]
     else:
-        m = load_structure(options.distances, p, options.max_dimensions, options.mds, options.cpu)
+        m = load_structure(options.distances, p, options.max_dimensions,
+                           options.mds, options.cpu)
         if options.save_m:
             m.to_pickle(options.save_m + ".pkl")
 
     if options.max_dimensions > m.shape[1]:
-        sys.stderr.write('Population MDS scaling restricted to '+
-                         '%d dimensions instead of requested %d\n' % (m.shape[1],
-                                                                      options.max_dimensions))
+        sys.stderr.write('Population MDS scaling restricted to ' +
+                         '%d dimensions instead of requested %d\n' %
+                         (m.shape[1],
+                          options.max_dimensions))
         options.max_dimensions = m.shape[1]
     m = m.values[:, :options.max_dimensions]
 
@@ -211,7 +226,8 @@ def main():
 
     header = ['variant', 'af', 'filter-pvalue',
               'lrt-pvalue', 'beta', 'beta-std-err',
-              'intercept'] + ['PC%d' % i for i in range(1, options.max_dimensions+1)]
+              'intercept'] + ['PC%d' % i
+                              for i in range(1, options.max_dimensions+1)]
     if options.covariates is not None:
         header = header + [x for x in cov.columns]
     if options.lineage:
@@ -262,12 +278,12 @@ def main():
         sample_order = header.split()[1:]
 
     k_iter = iter_variants(p, m, cov, var_type, burden, burden_regions,
-                        infile, all_strains, sample_order,
-                        options.lineage, lineage_clusters,
-                        options.min_af, options.max_af,
-                        options.filter_pvalue,
-                        options.lrt_pvalue, null_fit, firth_null,
-                        options.uncompressed)
+                           infile, all_strains, sample_order,
+                           options.lineage, lineage_clusters,
+                           options.min_af, options.max_af,
+                           options.filter_pvalue,
+                           options.lrt_pvalue, null_fit, firth_null,
+                           options.uncompressed)
 
     # keep track of the number of the total number of kmers and tests
     prefilter = 0

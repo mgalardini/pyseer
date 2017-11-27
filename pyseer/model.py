@@ -103,7 +103,7 @@ def binary(kmer, p, k, m, c, af,
                 else:
                     lrstat = -2*(null_res - res.llf)
                     lrt_pvalue = 1
-                    if lrstat > 0: # non-convergence
+                    if lrstat > 0:  # non-convergence
                         lrt_pvalue = stats.chi2.sf(lrstat, 1)
 
                     intercept = res.params[0]
@@ -117,7 +117,7 @@ def binary(kmer, p, k, m, c, af,
         # Fit Firth regression with large SE, or nearly separable values
         if bad_chisq:
             firth_fit = fit_firth(mod, start_vec, kmer, v, p)
-            if firth_fit is None: # Firth failure
+            if firth_fit is None:  # Firth failure
                 notes.add('firth-fail')
                 return Seer(kmer, af, prep, np.nan,
                             np.nan, np.nan, np.nan, [],
@@ -127,7 +127,7 @@ def binary(kmer, p, k, m, c, af,
                 intercept, kbeta, beta, bse, fitll = firth_fit
                 lrstat = -2*(null_firth - fitll)
                 lrt_pvalue = 1
-                if lrstat > 0: # check for non-convergence
+                if lrstat > 0:  # check for non-convergence
                     lrt_pvalue = stats.chi2.sf(lrstat, 1)
 
         max_lineage = None
@@ -177,7 +177,8 @@ def binary(kmer, p, k, m, c, af,
 
 
 def firth_likelihood(beta, logit):
-    return -(logit.loglike(beta) + 0.5*np.log(np.linalg.det(-logit.hessian(beta))))
+    return -(logit.loglike(beta) +
+             0.5*np.log(np.linalg.det(-logit.hessian(beta))))
 
 
 # Do firth regression
@@ -190,7 +191,9 @@ def fit_firth(logit_model, start_vec, kmer_name,
     for i in range(0, step_limit):
         pi = logit_model.predict(beta_iterations[i])
         W = np.diagflat(np.multiply(pi, 1-pi))
-        var_covar_mat = np.linalg.pinv(-logit_model.hessian(beta_iterations[i]))
+        var_covar_mat = np.linalg.pinv(
+                        -logit_model.hessian(beta_iterations[i])
+                        )
 
         # build hat matrix
         rootW = np.sqrt(W)
@@ -199,7 +202,8 @@ def fit_firth(logit_model, start_vec, kmer_name,
         H = np.matmul(np.dot(rootW, X), H)
 
         # penalised score
-        U = np.matmul(np.transpose(X), y - pi + np.multiply(np.diagonal(H), 0.5 - pi))
+        U = np.matmul(np.transpose(X),
+                      y - pi + np.multiply(np.diagonal(H), 0.5 - pi))
         new_beta = beta_iterations[i] + np.matmul(var_covar_mat, U)
 
         # step halving
@@ -211,11 +215,13 @@ def fit_firth(logit_model, start_vec, kmer_name,
                 return None
 
         beta_iterations.append(new_beta)
-        if i > 0 and (np.linalg.norm(beta_iterations[i] - beta_iterations[i-1]) < convergence_limit):
+        if i > 0 and (np.linalg.norm(beta_iterations[i] -
+                      beta_iterations[i-1]) < convergence_limit):
             break
 
     return_fit = None
-    if np.linalg.norm(beta_iterations[i] - beta_iterations[i-1]) >= convergence_limit:
+    if np.linalg.norm(beta_iterations[i] -
+                      beta_iterations[i-1]) >= convergence_limit:
         pass
     else:
         # Calculate stats
@@ -223,7 +229,7 @@ def fit_firth(logit_model, start_vec, kmer_name,
         intercept = beta_iterations[-1][0]
         kbeta = beta_iterations[-1][1]
         beta = beta_iterations[-1][2:].tolist()
-        bse = math.sqrt(-logit_model.hessian(beta_iterations[-1])[1,1])
+        bse = math.sqrt(-logit_model.hessian(beta_iterations[-1])[1, 1])
 
         return_fit = intercept, kbeta, beta, bse, fitll
 
@@ -342,16 +348,17 @@ def fit_null(p, m, cov, continuous, firth=False):
 
     df = pd.DataFrame(v,
                       columns=['phenotype'] +
-                      ['PC%d'%x for x in range(1, m.shape[1]+1)] +
+                      ['PC%d' % x for x in range(1, m.shape[1]+1)] +
                       list(cov.columns))
 
     if cov.shape[1] > 0:
         formula = ('phenotype ~ ' +
-                   ' + '.join(['PC%d'%x for x in range(1, m.shape[1]+1)]) + ' + ' +
+                   ' + '.join(['PC%d' % x for x in range(1, m.shape[1]+1)]) +
+                   ' + ' +
                    ' + '.join(list(cov.columns)))
     else:
         formula = ('phenotype ~ ' +
-                   ' + '.join(['PC%d'%x for x in range(1, m.shape[1]+1)]))
+                   ' + '.join(['PC%d' % x for x in range(1, m.shape[1]+1)]))
 
     if continuous:
         null_mod = smf.ols(formula=formula,
@@ -385,4 +392,3 @@ def fit_null(p, m, cov, continuous, firth=False):
         sys.stdout = old_stdout
 
     return null_res
-

@@ -8,6 +8,7 @@ import pandas as pd
 
 from .__init__ import __version__
 
+
 def get_options():
     import argparse
 
@@ -22,7 +23,7 @@ def get_options():
 
     parser.add_argument('--version', action='version',
                         version='%(prog)s '+__version__)
-    
+
     return parser.parse_args()
 
 
@@ -53,4 +54,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

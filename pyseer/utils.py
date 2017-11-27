@@ -6,6 +6,7 @@ import os
 import contextlib
 from decimal import Decimal
 
+
 # thanks to Laurent LAPORTE on SO
 @contextlib.contextmanager
 def set_env(**environ):
@@ -57,4 +58,3 @@ def format_output(item, lineage_dict, print_samples=False):
                                  ','.join(item.nkstrains)))
     out += '\t%s' % ','.join(item.notes)
     return out
-

@@ -4,6 +4,7 @@
 
 from .cmdscale import cmdscale
 
+
 def get_options():
     import argparse
 
@@ -24,6 +25,7 @@ def get_options():
 
     return parser.parse_args()
 
+
 def main():
     options = get_options()
 
@@ -38,14 +40,15 @@ def main():
     projection, evals = cmdscale(m)
 
     if evals.shape[0] > options.max_dimensions:
-        sys.stderr.write('Plotting only the first %d eigenvalues out of %d\n' % (options.max_dimensions,
-                                                                         evals.shape[0]))
+        sys.stderr.write('Plotting only the first %d eigenvalues out of %d\n' %
+                         (options.max_dimensions,
+                          evals.shape[0]))
         evals = evals[:options.max_dimensions]
 
-    plt.figure(figsize=(0.25*m.shape[0], 3))
+    plt.figure(figsize=(0.25*evals.shape[0], 3))
 
     plt.plot(range(evals.shape[0]),
-             evals['eigenvalue'],
+             evals,
              'ko-')
     plt.ylabel('eigenvalue')
     plt.xlabel('PCs')
@@ -57,6 +60,7 @@ def main():
     plt.tight_layout()
 
     plt.savefig('scree_plot.png', dpi=150)
+
 
 if __name__ == "__main__":
     main()
