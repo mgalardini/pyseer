@@ -45,10 +45,10 @@ def main():
                           evals.shape[0]))
         evals = evals[:options.max_dimensions]
 
-    plt.figure(figsize=(0.25*m.shape[0], 3))
+    plt.figure(figsize=(0.25*evals.shape[0], 3))
 
     plt.plot(range(evals.shape[0]),
-             evals['eigenvalue'],
+             evals,
              'ko-')
     plt.ylabel('eigenvalue')
     plt.xlabel('PCs')
