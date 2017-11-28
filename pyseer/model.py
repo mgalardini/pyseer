@@ -27,6 +27,35 @@ Seer = namedtuple('Seer', ['kmer',
                            'notes',
                            'prefilter', 'filter'])
 
+def pre_filtering(p, k, continuous):
+    bad_chisq = False
+    if continuous:
+         prep = stats.ttest_ind(p[k == 1],
+                                p[k == 0],
+                                equal_var=False)[1]
+    else:
+        t = np.concatenate((p.reshape(-1, 1), k.reshape(-1, 1)), axis=1).T
+        table = [[t[0][(t[0] == 1) & (t[1] == 1)].shape[0],
+                  t[0][(t[0] == 1) & (t[1] == 0)].shape[0]],
+                 [t[0][(t[0] == 0) & (t[1] == 1)].shape[0],
+                  t[0][(t[0] == 0) & (t[1] == 0)].shape[0]]]
+
+        # check for small values
+        bad_chisq = 0
+        bad_entries = 0
+        for row in table:
+            for entry in row:
+                if entry <= 1:
+                    bad_chisq = True
+                elif entry <= 5:
+                    bad_entries += 1
+        if bad_entries > 1:
+            bad_chisq = True
+
+        prep = stats.chi2_contingency(table, correction=False)[1]
+
+    return(prep, bad_chisq)
+
 
 def binary(kmer, p, k, m, c, af,
            lineage_effects, lin,
@@ -43,27 +72,9 @@ def binary(kmer, p, k, m, c, af,
                     notes, True, False)
 
     # pre-filtering
-    t = np.concatenate((p.reshape(-1, 1), k.reshape(-1, 1)), axis=1).T
-    table = [[t[0][(t[0] == 1) & (t[1] == 1)].shape[0],
-              t[0][(t[0] == 1) & (t[1] == 0)].shape[0]],
-             [t[0][(t[0] == 0) & (t[1] == 1)].shape[0],
-              t[0][(t[0] == 0) & (t[1] == 0)].shape[0]]]
-
-    # check for small values
-    bad_chisq = 0
-    bad_entries = 0
-    for row in table:
-        for entry in row:
-            if entry <= 1:
-                bad_chisq = True
-                notes.add('bad-chisq')
-            elif entry <= 5:
-                bad_entries += 1
-    if bad_entries > 1:
-        bad_chisq = True
+    prep, bad_chisq = pre_filtering(p, k, False)
+    if bad_chisq:
         notes.add('bad-chisq')
-
-    prep = stats.chi2_contingency(table, correction=False)[1]
     if prep > pret or not np.isfinite(prep):
         notes.add('pre-filtering-failed')
         return Seer(kmer, af, prep, np.nan,
@@ -127,33 +138,12 @@ def binary(kmer, p, k, m, c, af,
                 if lrstat > 0:  # check for non-convergence
                     lrt_pvalue = stats.chi2.sf(lrstat, 1)
 
-        max_lineage = None
-        if lineage_effects:
-            if lin is None:
-                lin = m
-            if c.shape[0] == m.shape[0]:
-                X = np.concatenate((np.ones(lin.shape[0]).reshape(-1, 1),
-                                lin,
-                                c),
-                                axis=1)
-            else:
-                X = np.concatenate((np.ones(lin.shape[0]).reshape(-1, 1),
-                                lin),
-                                axis=1)
-
-            lineage_mod = smf.Logit(k, X)
-            start_vec = np.zeros(X.shape[1])
-            start_vec[0] = np.log(np.mean(k)/(1-np.mean(k)))
-
-            try:
-                lineage_res = lineage_mod.fit(start_params=start_vec, method='newton', disp=False)
-
-                wald_test = np.divide(np.absolute(lineage_res.params), lineage_res.bse)
-                max_lineage = np.argmax(wald_test[1:lin.shape[1]+1]) # excluding intercept and covariates
-            # In case regression fails
-            except statsmodels.tools.sm_exceptions.PerfectSeparationError:
-                max_lineage = None
-
+                if lineage_effects:
+                    if lin = None:
+                        lin = m
+                    max_lineage = lineage_effect_fit(lin, c, k)
+                else:
+                    max_lineage = None
     except np.linalg.linalg.LinAlgError:
         # singular matrix error
         notes.add('matrix-inversion-error')
@@ -249,9 +239,7 @@ def continuous(kmer, p, k, m, c, af,
                     notes, True, False)
 
     # pre-filtering
-    prep = stats.ttest_ind(p[k == 1],
-                           p[k == 0],
-                           equal_var=False)[1]
+    prep, bad_chisq = pre_filtering(p, k, True)
     if prep > pret or not np.isfinite(prep):
         notes.add('pre-filtering-failed')
         return Seer(kmer, af, prep, np.nan,
@@ -281,26 +269,12 @@ def continuous(kmer, p, k, m, c, af,
         beta = res.params[2:]
         bse = res.bse[1]
 
-        max_lineage = None
         if lineage_effects:
-            if lin is None:
+            if lin = None:
                 lin = m
-            if c.shape[0] == m.shape[0]:
-                X = np.concatenate((np.ones(lin.shape[0]).reshape(-1, 1),
-                                lin,
-                                c),
-                                axis=1)
-            else:
-                X = np.concatenate((np.ones(lin.shape[0]).reshape(-1, 1),
-                                lin),
-                                axis=1)
-
-
-            lineage_mod = smf.OLS(k, X)
-            lineage_res = lineage_mod.fit(disp=False)
-
-            wald_test = np.divide(np.absolute(lineage_res.params), lineage_res.bse)
-            max_lineage = np.argmax(wald_test[1:]) + 1
+            max_lineage = lineage_effect_fit(lin, c, k)
+        else:
+            max_lineage = None
 
     except np.linalg.linalg.LinAlgError:
         # singular matrix error
@@ -324,6 +298,67 @@ def continuous(kmer, p, k, m, c, af,
                 max_lineage, kstrains, nkstrains,
                 notes, False, False)
 
+def fit_lmm(var_name, lmm, k, c, af,
+               lineage_effects, lin,
+               filter_pvalue, lrt_pvalue,
+               kstrains, nkstrains, continuous)
+    notes = set()
+
+    # was this af-filtered?
+    if var_name is None:
+        notes.add('af-filter')
+        return Seer(var_name, af, np.nan, np.nan,
+                    np.nan, np.nan, np.nan, [],
+                    np.nan, kstrains, nkstrains,
+                    notes, True, False)
+
+    # pre-filtering
+    prep, bad_chisq = pre_filtering(p, k, continuous)
+    if prep > pret or not np.isfinite(prep):
+        notes.add('pre-filtering-failed')
+        return Seer(var_name, af, prep, lrt_pvalue,
+                    kbeta, bse, None, None,
+                    max_lineage, kstrains, nkstrains,
+                    notes, False, True)
+    # fit LMM
+    res = fit_lmm_block(lmm, k)
+    lrt_pvalue = res['p_values'][0]
+    kbeta = res['beta'][0]
+
+    if lineage_effects:
+        if lin = None:
+            lin = m
+        max_lineage = lineage_effect_fit(lin, c, k)
+    else:
+        max_lineage = None
+
+    if lrt_pvalue > lrtt or not np.isfinite(lrt_pvalue) or not np.isfinite(kbeta):
+        notes.add('lrt-filtering-failed')
+        return Seer(var_name, af, prep, lrt_pvalue,
+                    kbeta, bse, None, None,
+                    max_lineage, kstrains, nkstrains,
+                    notes, False, True)
+
+    return Seer(kmer, af, prep, lrt_pvalue,
+                kbeta, bse, None, None,
+                max_lineage, kstrains, nkstrains,
+                notes, False, False)
+
+# see map/reduce section of _internal_single in fastlmm.association.single_snp
+# differs from above as can run on a block of snps
+def fit_lmm_block(lmm, variant_block):
+    res = lmm.nLLeval(h2=h2, dof=None, scale=1.0, penalty=0.0, snps=variant_block)
+
+    beta = res['beta']
+    chi2stats = beta*beta/res['variance_beta']
+
+    lmm_results = {}
+    lmm_results['p_values'] = stats.f.sf(chi2stats,1,lmm.U.shape[0]-(lmm.linreg.D+1))[:,0]
+    lmm_results['beta'] = beta[:,0]
+    lmm_results['bse'] = np.sqrt(res['variance_beta'][:,0])
+    lmm_results['fract_h2'] = np.sqrt(res['fraction_variance_explained_beta'][:,0])
+
+    return(lmm_results)
 
 # Fit the null model, regression without k-mer
 def fit_null(p, m, cov, continuous, firth=False):
@@ -360,7 +395,34 @@ def fit_null(p, m, cov, continuous, firth=False):
         return None
     except statsmodels.tools.sm_exceptions.PerfectSeparationError:
         # singular matrix error
-        sys.stderr.write('Perfetly separable data error for null model\n')
+        sys.stderr.write('Perfectly separable data error for null model\n')
         return None
 
     return null_res
+
+def lineage_effect_fit(lin, c, k)
+
+    if c.shape[0] == lin.shape[0]:
+        X = np.concatenate((np.ones(lin.shape[0]).reshape(-1, 1),
+                        lin,
+                        c),
+                        axis=1)
+    else:
+        X = np.concatenate((np.ones(lin.shape[0]).reshape(-1, 1),
+                        lin),
+                        axis=1)
+
+    lineage_mod = smf.Logit(k, X)
+    start_vec = np.zeros(X.shape[1])
+    start_vec[0] = np.log(np.mean(k)/(1-np.mean(k)))
+
+    try:
+        lineage_res = lineage_mod.fit(start_params=start_vec, method='newton', disp=False)
+
+        wald_test = np.divide(np.absolute(lineage_res.params), lineage_res.bse)
+        max_lineage = np.argmax(wald_test[1:lin.shape[1]+1]) # excluding intercept and covariates
+    # In case regression fails
+    except statsmodels.tools.sm_exceptions.PerfectSeparationError:
+        max_lineage = None
+
+    return max_lineage

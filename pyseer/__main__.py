@@ -34,6 +34,8 @@ from .model import binary
 from .model import fit_null
 from .model import continuous
 
+from fastlmm.lmm_cov import LMM as lmm_cov
+
 from .utils import format_output
 
 
@@ -67,15 +69,25 @@ def get_options():
                                default=None,
                                help='Presence/absence .Rtab matrix as '
                                     'produced by roary and piggy')
+    variants.add_argument('--burden',
+                          help='VCF regions to group variants by for burden'
+                          ' testing (requires --vcf). '
+                          'Requires vcf to be indexed')
+
 
     distances = parser.add_argument_group('Distances')
     distance_group = distances.add_mutually_exclusive_group(required=True)
     distance_group.add_argument('--distances',
-                                help='Strains distance square matrix')
+                                help='Strains distance square matrix (fixed effects)')
+    distance_group.add_argument('--similarity',
+                                help='Strains similarity square matrix (for --lmm)')
     distance_group.add_argument('--load-m',
                                 help='Load an existing matrix decomposition')
+    distance_group.add_argument('--load-lmm',
+                                help='Load an existing lmm cache')
     distances.add_argument('--save-m',
-                           help='Prefix for saving matrix decomposition')
+                           help='Prefix for saving matrix decomposition or '
+                                'LMM cache')
     distances.add_argument('--mds',
                            default="classic",
                            choices=['classic', 'metric', 'non-metric'],
@@ -92,6 +104,12 @@ def get_options():
                              default=False,
                              help='Force continuous phenotype '
                                   '[Default: binary auto-detect]')
+    association.add_argument('--lmm',
+                             action='store_true',
+                             default=False,
+                             help='Use random instead of fixed effects '
+                                  'to correct for population structure. '
+                                  'Requires a similarity matrix')
     association.add_argument('--lineage',
                              action='store_true',
                              help='Report lineage effects')
@@ -102,10 +120,6 @@ def get_options():
                              default="lineage_effects.txt",
                              help='File to write lineage association to'
                                   '[Default: lineage_effects.txt]')
-    association.add_argument('--burden',
-                             help='VCF regions to group variants by for burden'
-                                  ' testing (requires --vcf). '
-                                  'Requires vcf to be indexed')
 
     filtering = parser.add_argument_group('Filtering options')
     filtering.add_argument('--min-af',
@@ -175,6 +189,9 @@ def main():
     if options.burden and not options.vcf:
         sys.stderr.write('Burden test can only be performed with VCF input\n')
         sys.exit(1)
+    if (options.lmm and options.distances or options.load_m) or (not options.lmm and options.similarity or options.load_lmm):
+        sys.stderr.write('Must use distance matrix with fixed effects, or similarity matrix with random effects\n')
+        sys.exit(1)
 
     # silence warnings
     warnings.filterwarnings('ignore')
@@ -191,26 +208,6 @@ def main():
         else:
             sys.stderr.write("Detected binary phenotype\n")
 
-    # reading genome distances
-    if options.load_m and os.path.isfile(options.load_m):
-        m = pd.read_pickle(options.load_m)
-        m = m.loc[p.index]
-    else:
-        m = load_structure(options.distances, p, options.max_dimensions,
-                           options.mds, options.cpu)
-        if options.save_m:
-            m.to_pickle(options.save_m + ".pkl")
-
-    if options.max_dimensions > m.shape[1]:
-        sys.stderr.write('Population MDS scaling restricted to ' +
-                         '%d dimensions instead of requested %d\n' %
-                         (m.shape[1],
-                          options.max_dimensions))
-        options.max_dimensions = m.shape[1]
-    m = m.values[:, :options.max_dimensions]
-
-    all_strains = set(p.index)
-
     # read covariates
     if options.covariates is not None:
         cov = load_covariates(options.covariates,
@@ -221,61 +218,93 @@ def main():
     else:
         cov = pd.DataFrame([])
 
-    header = ['variant', 'af', 'filter-pvalue',
-              'lrt-pvalue', 'beta', 'beta-std-err',
-              'intercept'] + ['PC%d' % i
-                              for i in range(1, options.max_dimensions+1)]
-    if options.covariates is not None:
-        header = header + [x for x in cov.columns]
-    if options.lineage:
-        header = header + ['lineage']
-    if options.print_samples:
-        header = header + ['k-samples', 'nk-samples']
-    header += ['notes']
-    print('\t'.join(header))
+    # fixed effects and lineage effects regress p ~ m
+    if options.lineage or not options.lmm:
 
-    # multiprocessing setup
-    if options.cpu > 1:
-        pool = Pool(options.cpu)
-
-    # calculate null regressions once
-    null_fit = fit_null(p.values, m, cov, options.continuous)
-    if not options.continuous:
-        firth_null = fit_null(p.values, m, cov, options.continuous, True)
-    else:
-        firth_null = True
-
-    if null_fit is None or firth_null is None:
-        sys.stderr.write('Could not fit null model, exiting\n')
-        sys.exit(1)
-
-    # lineage effects using null model - read BAPS clusters and fit pheno ~ lineage
-    lineage_clusters = None
-    lineage_dict = []
-    if options.lineage:
-        if options.lineage_clusters:
-            lineage_clusters, lineage_dict = load_lineage(options.lineage_clusters, p)
-            lineage_fit = fit_null(p.values, lineage_clusters, cov, options.continuous)
+        # reading genome distances
+        if options.load_m and os.path.isfile(options.load_m):
+            m = pd.read_pickle(options.load_m)
+            m = m.loc[p.index]
         else:
-            lineage_dict = ["MDS" + str(i+1) for i in range(options.max_dimensions)]
-            lineage_clusters = None
-            lineage_fit = null_fit
+            m = load_structure(options.distances, p, options.max_dimensions,
+                               options.mds, options.cpu)
+            if options.save_m:
+                m.to_pickle(options.save_m + ".pkl")
 
-        # Calculate, sort and print lineage effects
-        lineage_wald = {}
-        for lineage, slope, se in zip(lineage_dict, lineage_fit.params[1:], lineage_fit.bse[1:]):
-            lineage_wald[lineage] = np.absolute(slope)/se
-        with open(options.lineage_file, 'w') as lineage_out:
-            for lineage, wald in sorted(lineage_wald.items(), key=operator.itemgetter(1), reverse=True):
-                lineage_out.write("\t".join([lineage, str(wald)]) + "\n")
+        if options.max_dimensions > m.shape[1]:
+            sys.stderr.write('Population MDS scaling restricted to ' +
+                             '%d dimensions instead of requested %d\n' %
+                             (m.shape[1],
+                              options.max_dimensions))
+            options.max_dimensions = m.shape[1]
+        m = m.values[:, :options.max_dimensions]
 
-    # binary regression takes LLF as null, not full model fit
-    if not options.continuous:
-        null_fit = null_fit.llf
+
+        # calculate null regressions once
+        null_fit = fit_null(p.values, m, cov, options.continuous)
+        if not options.continuous and not options.lmm:
+            firth_null = fit_null(p.values, m, cov, options.continuous, True)
+        else:
+            firth_null = True
+
+        if null_fit is None or firth_null is None:
+            sys.stderr.write('Could not fit null model, exiting\n')
+            sys.exit(1)
+
+        # lineage effects using null model - read BAPS clusters and fit pheno ~ lineage
+        lineage_clusters = None
+        lineage_dict = []
+        if options.lineage:
+            if options.lineage_clusters:
+                lineage_clusters, lineage_dict = load_lineage(options.lineage_clusters, p)
+                lineage_fit = fit_null(p.values, lineage_clusters, cov, options.continuous)
+            else:
+                lineage_dict = ["MDS" + str(i+1) for i in range(options.max_dimensions)]
+                lineage_clusters = None
+                lineage_fit = null_fit
+
+            # Calculate, sort and print lineage effects
+            lineage_wald = {}
+            for lineage, slope, se in zip(lineage_dict, lineage_fit.params[1:], lineage_fit.bse[1:]):
+                lineage_wald[lineage] = np.absolute(slope)/se
+            with open(options.lineage_file, 'w') as lineage_out:
+                for lineage, wald in sorted(lineage_wald.items(), key=operator.itemgetter(1), reverse=True):
+                    lineage_out.write("\t".join([lineage, str(wald)]) + "\n")
+
+        # binary regression takes LLF as null, not full model fit
+        if not options.continuous:
+            null_fit = null_fit.llf
+
+    # LMM setup - see _internal_single in fastlmm.association.single_snp
+    if options.lmm:
+        sys.stderr.write("Setting up LMM\n")
+        covar = np.c_[cov.values,np.ones((p.shape[0], 1))]
+        y = p.values
+
+        if options.load_lmm is not None and os.path.exists(options.load_lmm):
+            lmm = lmm_cov(X=covar, Y=y, G=None, K=None)
+            with np.load(options.load_lmm) as data:
+                lmm.U = data['arr_0']
+                lmm.S = data['arr_1']
+                h2 = data['arr_2']
+        else:
+            K = pd.read_table(options.similarity,
+                      index_col=0)
+            K = K.loc[p.index, p.index]
+            lmm = lmm_cov(X=covar, Y=y, K=K.values, G=None, inplace=True)
+
+            result = lmm.findH2()
+            h2 = result['h2']
+
+            if options.save_m is not None and not os.path.exists(options.save_m):
+                lmm.getSU()
+                np.savez(options.save_m, lmm.U,lmm.S,np.array([h2]))
+        sys.stderr.write("h^2 = " + h2 + "\n")
 
     # iterator over each kmer
     # implements maf filtering
     sample_order = []
+    all_strains = set(p.index)
     burden_regions = deque([])
     burden = False
 
@@ -298,12 +327,21 @@ def main():
         header = infile.readline().rstrip()
         sample_order = header.split()[1:]
 
-    k_iter = iter_variants(p, m, cov, var_type, burden, burden_regions,
+    if not options.lmm:
+        k_iter = fixed_iter_variants(p, m, cov, var_type, burden, burden_regions,
                            infile, all_strains, sample_order,
                            options.lineage, lineage_clusters,
                            options.min_af, options.max_af,
                            options.filter_pvalue,
                            options.lrt_pvalue, null_fit, firth_null,
+                           options.uncompressed)
+    else:
+        k_iter = lmm_iter_variants(lmm, var_type, burden, burden_regions,
+                           infile, all_strains, sample_order,
+                           options.lineage, lineage_clusters,
+                           options.min_af, options.max_af,
+                           options.filter_pvalue,
+                           options.lrt_pvalue,
                            options.uncompressed)
 
     # keep track of the number of the total number of kmers and tests
@@ -311,10 +349,51 @@ def main():
     tested = 0
     printed = 0
 
+    # header fields
+    header = ['variant', 'af', 'filter-pvalue',
+              'lrt-pvalue', 'beta', 'beta-std-err']
+
+    if not options.lmm:
+        header = header + ['intercept'] + ['PC%d' % i
+                              for i in range(1, options.max_dimensions+1)]
+        if options.covariates is not None:
+            header = header + [x for x in cov.columns]
+    else:
+        header = header + ['variant_h2']
+
+    if options.lineage:
+        header = header + ['lineage']
+    if options.print_samples:
+        header = header + ['k-samples', 'nk-samples']
+    header += ['notes']
+    print('\t'.join(header))
+
+    # multiprocessing setup
+    if options.cpu > 1:
+        pool = Pool(options.cpu)
+
     # actual association test
     if options.cpu > 1:
         # multiprocessing proceeds 1000 kmers per core at a time
-        if options.continuous:
+        if options.lmm:
+            while True:
+                ret = pool.starmap(fit_lmm,
+                                   itertools.islice(k_iter,
+                                                    options.cpu*1000))
+                if not ret:
+                    break
+                for x in ret:
+                    if x.prefilter:
+                        prefilter += 1
+                        continue
+                    tested += 1
+                    if x.filter:
+                        continue
+                    printed += 1
+                    print(format_output(x,
+                                        lineage_dict,
+                                        options.print_samples))
+        elif options.continuous:
             while True:
                 ret = pool.starmap(continuous,
                                    itertools.islice(k_iter,
@@ -352,7 +431,9 @@ def main():
                                         options.print_samples))
     else:
         for data in k_iter:
-            if options.continuous:
+            if options.lmm:
+                ret = fit_lmm(*data)
+            elif options.continuous:
                 ret = continuous(*data)
             else:
                 ret = binary(*data)

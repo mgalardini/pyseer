@@ -116,8 +116,72 @@ def load_burden(infile, burden_regions):
             (name, region) = region.rstrip().split()
             burden_regions.append((name, region))
 
+# Parse depending on input file type. Need to end with a variant name
+# and pres/abs dictionary
+def read_variant(infile, line_in, var_type, uncompressed, all_strains, sample_order)
 
-def iter_variants(p, m, cov, var_type, burden, burden_regions, infile,
+    d = {}
+    if var_type == "kmers":
+        if not uncompressed:
+            line_in = line_in.decode()
+        var_name, strains = (line_in.split()[0],
+                             line_in.rstrip().split('|')[1].lstrip().split())
+
+        d = {x.split(':')[0]: 1
+             for x in strains}
+
+    elif var_type == "vcf":
+        if not burden:
+            var_name = read_vcf_var(line_in, d)
+            if var_name is None:
+                return(None, None, None, None)
+            else:
+            # burden test. Regions are named contig:start-end.
+            # Start is non-inclusive, so start one before to include
+            (var_name, region) = line_in
+            region = re.match('^(.+):(\d+)-(\d+)$', region)
+            if region:
+                # Adds presence to d for every variant
+                # observation in region
+                for variant in infile.fetch(region.group(1),
+                                            int(region.group(2)) - 1,
+                                            int(region.group(3))):
+                    region_var_name = read_vcf_var(variant, d)
+            else:  # stop trying to make 'fetch' happen
+                sys.stderr.write("Could not parse region %s\n" %
+                                 str(region))
+                return (None, None, None, None)
+
+    elif var_type == "Rtab":
+        split_line = line_in.rstrip().split()
+        var_name, strains = split_line[0], split_line[1:]
+        for present, sample in zip(strains, sample_order):
+            if present is not '0':
+                d[sample] = 1
+
+    # Use common dictionary to format design matrix etc
+    kstrains = sorted(set(d.keys()).intersection(all_strains))
+    nkstrains = sorted(all_strains.difference(set(kstrains)))
+
+    # default for missing samples is absent kmer
+    # currently up to user to be careful about matching pheno and var files
+    for x in nkstrains:
+        d[x] = 0
+
+    af = float(len(kstrains)) / len(all_strains)
+    # filter by AF
+    if af < min_af or af > max_af:
+        # pass it to the actual tests to keep track
+        return(None, None, None, None)
+
+    k = np.array([d[x] for x in p.index
+                      if x in d])
+
+    return(k, kstrains, nkstrains, af)
+
+
+# Iterable to pass to binary/continuous
+def fixed_iter_variants(p, m, cov, var_type, burden, burden_regions, infile,
                   all_strains, sample_order, lineage_effects, lineage_clusters,
                   min_af, max_af, filter_pvalue, lrt_pvalue, null_fit,
                   firth_null, uncompressed):
@@ -140,74 +204,13 @@ def iter_variants(p, m, cov, var_type, burden, burden_regions, infile,
         if not l:
             raise StopIteration
 
-        # Parse depending on input file type. Need to end with a variant name
-        # and pres/abs dictionary
-        d = {}
-        if var_type == "kmers":
-            if not uncompressed:
-                l = l.decode()
-            var_name, strains = (l.split()[0],
-                                 l.rstrip().split('|')[1].lstrip().split())
-
-            d = {x.split(':')[0]: 1
-                 for x in strains}
-
-        elif var_type == "vcf":
-            if not burden:
-                var_name = read_vcf_var(l, d)
-                if var_name is None:
-                    yield (None, None, None, None, None, None,
-                           None, None, None, None, None, None,
-                           None, None)
-                    continue
-            else:
-                # burden test. Regions are named contig:start-end.
-                # Start is non-inclusive, so start one before to include
-                (var_name, region) = l
-                region = re.match('^(.+):(\d+)-(\d+)$', region)
-                if region:
-                    # Adds presence to d for every variant
-                    # observation in region
-                    for variant in infile.fetch(region.group(1),
-                                                int(region.group(2)) - 1,
-                                                int(region.group(3))):
-                        region_var_name = read_vcf_var(variant, d)
-                else:  # stop trying to make 'fetch' happen
-                    sys.stderr.write("Could not parse region %s\n" %
-                                     str(region))
-                    yield (None, None, None, None, None, None,
-                           None, None, None, None, None, None,
-                           None, None)
-                    continue
-
-        elif var_type == "Rtab":
-            split_line = l.rstrip().split()
-            var_name, strains = split_line[0], split_line[1:]
-            for present, sample in zip(strains, sample_order):
-                if present is not '0':
-                    d[sample] = 1
-
-        # Use common dictionary to format design matrix etc
-        kstrains = sorted(set(d.keys()).intersection(all_strains))
-        nkstrains = sorted(all_strains.difference(set(kstrains)))
-
-        # default for missing samples is absent kmer
-        # currently up to user to be careful about matching pheno and var files
-        for x in nkstrains:
-            d[x] = 0
-
-        af = float(len(kstrains)) / len(all_strains)
-        # filter by AF
-        if af < min_af or af > max_af:
-            # pass it to the actual tests to keep track
-            yield (var_name, None, None, None, None, af,
-                   None, None, None, None, None, None,
-                   kstrains, nkstrains)
-            continue
+        k, kstrains, nkstrains, af = read_variant(infile, l, var_type, uncompressed, all_strains, sample_order)
+        if k is None:
+            yield(None, None, None, None, None, None,
+                  None, None, None, None, None, None,
+                  None, None)
 
         v = p.values
-        k = np.array([d[x] for x in p.index
-                      if x in d])
         c = cov.values
 
         lin = None
@@ -217,6 +220,44 @@ def iter_variants(p, m, cov, var_type, burden, burden_regions, infile,
         yield (var_name, v, k, m, c, af,
                lineage_effects, lin,
                filter_pvalue, lrt_pvalue, null_fit, firth_null,
+               kstrains, nkstrains)
+
+# Iterable to pass to LMM
+def lmm_iter_variants(lmm, var_type, burden, burden_regions, infile,
+                  all_strains, sample_order, lineage_effects, lineage_clusters,
+                  min_af, max_af, filter_pvalue, lrt_pvalue, uncompressed):
+    while True:
+        if var_type is "vcf":
+            # burden tests read through regions and slice vcf
+            if burden:
+                if len(burden_regions) > 0:
+                    l = burden_regions.popleft()
+                else:  # Last; to raise exception on next loop
+                    l = None
+            # read single vcf line
+            else:
+                l = next(infile)
+        else:
+            # kmers and Rtab plain text files
+            l = infile.readline()
+
+        # check for EOF
+        if not l:
+            raise StopIteration
+
+        k, kstrains, nkstrains, af = read_variant(infile, l, var_type, uncompressed, all_strains)
+        if k is None:
+            yield(None, None, None, None, None, None,
+                  None, None, None, None, None)
+
+
+        lin = None
+        if lineage_clusters is not None:
+            lin = lineage_clusters.values
+
+        yield (var_name, lmm, k, c, af,
+               lineage_effects, lin,
+               filter_pvalue, lrt_pvalue,
                kstrains, nkstrains)
 
 
