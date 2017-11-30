@@ -1,6 +1,5 @@
 import numpy as np
 import warnings
-import logging
 import sys
 import time
 
@@ -22,7 +21,7 @@ def thin_results_file(myfile,dup_postfix="v2"):
             dup_ind.append(i)
 
     sets_nodup = sets[nodup_ind]
-    print "%i reps, and %i non-reps" % (len(dup_ind),len(nodup_ind))
+    print("%i reps, and %i non-reps" % (len(dup_ind),len(nodup_ind)))
     return sets_nodup
 
 def compare_files(file1,file2,tol=1e-8,delimiter="\t"):
@@ -183,7 +182,7 @@ def standardize_col(dat,meanonly=False):
             if colstd[c]>1e-6:
                 datimp[:,c]=datimp[:,c]/colstd[c]
             else:
-                print "warning: colstd=" + colstd[c] + " during normalization"
+                print("warning: colstd=" + colstd[c] + " during normalization")
         nmissing[c]=float(np.isnan(dat[:,c]).sum())
     fracmissing=nmissing/dat.shape[0]
     return datimp,fracmissing
@@ -315,7 +314,7 @@ def create_directory_if_necessary(name, isfile=True, robust=False):
         if not robust:
             try:
                 os.makedirs(directory_name)
-            except OSError, e:
+            except OSError:
                 if not os.path.isdir(directory_name):
                     raise Exception("not valid path: '{0}'. (Working directory is '{1}'".format(directory_name,os.getcwd()))
         else:
@@ -326,7 +325,7 @@ def create_directory_if_necessary(name, isfile=True, robust=False):
                     os.makedirs(directory_name)
                     is_ok = True
                     break
-                except OSError, e:
+                except OSError:
                     if not os.path.isdir(directory_name):
                         time_to_sleep *= 1.1
                         warnings.warn("creating directory robust=True, try#{0},time={3} error: not valid path: '{1}'. (Working directory is '{2}'".format(i, directory_name,os.getcwd(),int(time_to_sleep)))
@@ -571,7 +570,7 @@ def _compute_x_positions_snps(positions, chromosome_starts):
 
 if __name__ == "__main__":
 
-    logging.basicConfig(level=logging.INFO)
+    #logging.basicConfig(level=logging.INFO)
 
     import doctest
     doctest.testmod()

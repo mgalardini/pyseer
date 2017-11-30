@@ -30,9 +30,8 @@ from .input import load_phenotypes
 from .input import load_covariates
 from .input import load_burden
 
-from .model import binary
+from .model import fixed_effects_regression
 from .model import fit_null
-from .model import continuous
 
 from .lmm import initialise_lmm
 from .lmm import fit_lmm
@@ -196,7 +195,7 @@ def main():
     if options.burden and not options.vcf:
         sys.stderr.write('Burden test can only be performed with VCF input\n')
         sys.exit(1)
-    if (options.lmm and options.distances or options.load_m) or (not options.lmm and options.similarity or options.load_lmm):
+    if (options.lmm and (options.distances or options.load_m)) or (not options.lmm and (options.similarity or options.load_lmm)):
         sys.stderr.write('Must use distance matrix with fixed effects, or similarity matrix with random effects\n')
         sys.exit(1)
 
@@ -348,7 +347,7 @@ def main():
         # implements maf filtering
         k_iter = iter_variants(p, m, cov, var_type, burden, burden_regions,
                            infile, all_strains, sample_order,
-                           options.lineage, lineage_clusters.values,
+                           options.lineage, lineage_clusters,
                            options.min_af, options.max_af,
                            options.filter_pvalue,
                            options.lrt_pvalue, null_fit, firth_null,
@@ -360,20 +359,20 @@ def main():
                 ret = pool.starmap(fixed_effects_regression,
                                    itertools.islice(k_iter,
                                                     options.cpu*kmer_per_core))
-            if not ret:
-                break
-            for x in ret:
-                if x.prefilter:
-                    prefilter += 1
-                    continue
-                tested += 1
-                if x.filter:
-                    continue
-                printed += 1
-                print(format_output(x,
-                                    lineage_dict,
-                                    options.lmm,
-                                    options.print_samples))
+                if not ret:
+                    break
+                for x in ret:
+                    if x.prefilter:
+                        prefilter += 1
+                        continue
+                    tested += 1
+                    if x.filter:
+                        continue
+                    printed += 1
+                    print(format_output(x,
+                                        lineage_dict,
+                                        options.lmm,
+                                        options.print_samples))
         else:
             for data in k_iter:
                 ret = fixed_effects_regression(*data)
@@ -390,16 +389,17 @@ def main():
                                     options.lmm,
                                     options.print_samples))
     else:
-        # This is possible but we can come back to it. Might need to think about memory use
-        # I would write using mutex on input file... but is there a more pythonic way?
         if options.cpu > 1:
-            sys.stderr.write("LMM does not currently support >1 core\n
-                              Consider splitting your input file.\n")
+            # This is possible but we can come back to it. Might need to think about memory use
+            # I would write using mutex on input file... but is there a more pythonic way?
+            # Or just split load_var_block into ncpu bits and then run fitted_variants on each in pool?
+            sys.stderr.write("LMM does not currently support >1 core\n" +
+                             "Consider splitting your input file.\n")
 
-        variants, variant_mat, counts = load_var_block(var_type, burden, burden_regions, infile, all_strains, sample_order,
+        variants, variant_mat, counts = load_var_block(var_type, p, burden, burden_regions, infile, all_strains, sample_order,
                                           options.min_af, options.max_af, options.filter_pvalue, options.uncompressed,
                                           options.continuous, lmm_block_size)
-        fitted_variants = fit_lmm(lmm, variants, variant_mat, options.lineage, lineage_clusters.values, cov.values, options.lrt_pvalue)
+        fitted_variants = fit_lmm(lmm, variants, variant_mat, options.lineage, lineage_clusters, cov.values, options.lrt_pvalue)
 
         prefilter += counts.prefilter
         test += counts.tested

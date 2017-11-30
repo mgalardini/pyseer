@@ -43,16 +43,16 @@ def format_output(item, lineage_dict, lmm=False, print_samples=False):
                              else ''
                              for x in (item.af,
                                        item.prep,
-                                       item.lrt_pvalue,
+                                       item.pvalue,
                                        item.kbeta,
                                        item.bse)])
-    if not lmm:
+    if lmm:
         out += item.variant_h2
     else:
-        out += '\t' item.intercept + '\t'.join(['%.2E' % x
-                             if np.isfinite(x)
-                             else ''
-                             for x in item.betas])
+        out += '\t' + '%.2E' % Decimal(item.intercept) + '\t'.join(['%.2E' % Decimal(x)
+                                                                    if np.isfinite(x)
+                                                                    else ''
+                                                                    for x in item.betas])
 
     if item.max_lineage is not None:
         if item.max_lineage is not "NA":
@@ -62,5 +62,7 @@ def format_output(item, lineage_dict, lmm=False, print_samples=False):
     if print_samples:
         out += '\t' + '\t'.join((','.join(item.kstrains),
                                  ','.join(item.nkstrains)))
-    out += '\t%s' % ','.join(item.notes)
+    if not lmm:
+        out += '\t%s' % ','.join(item.notes)
+
     return out

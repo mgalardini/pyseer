@@ -10,6 +10,7 @@ with set_env(MKL_NUM_THREADS='1',
              NUMEXPR_NUM_THREADS='1',
              OMP_NUM_THREADS='1'):
     import numpy as np
+from collections import namedtuple
 import pandas as pd
 from sklearn import manifold
 from .cmdscale import cmdscale
@@ -76,7 +77,7 @@ def load_lineage(infile, p):
         lineage_assign.append(categ)
     lineage_design_mat = pd.concat(lineage_design_mat, axis=1)
 
-    return(lineage_design_mat, lineage_assign)
+    return(lineage_design_mat.values, lineage_assign)
 
 
 def load_covariates(infile, covariates, p):
@@ -121,150 +122,83 @@ def load_burden(infile, burden_regions):
             (name, region) = region.rstrip().split()
             burden_regions.append((name, region))
 
-# Parse depending on input file type. Need to end with a variant name
+# Read input line and parse depending on input file type. Return a variant name
 # and pres/abs dictionary
-def read_variant(infile, line_in, var_type, uncompressed, all_strains, sample_order)
+def read_variant(infile, p, var_type, burden, uncompressed, all_strains, sample_order):
 
-    d = {}
-    if var_type == "kmers":
-        if not uncompressed:
-            line_in = line_in.decode()
-        var_name, strains = (line_in.split()[0],
-                             line_in.rstrip().split('|')[1].lstrip().split())
-
-        d = {x.split(':')[0]: 1
-             for x in strains}
-
-    elif var_type == "vcf":
-        if not burden:
-            var_name = read_vcf_var(line_in, d)
-            if var_name is None:
-                return(None, None, None, None)
-            else:
-            # burden test. Regions are named contig:start-end.
-            # Start is non-inclusive, so start one before to include
-            (var_name, region) = line_in
-            region = re.match('^(.+):(\d+)-(\d+)$', region)
-            if region:
-                # Adds presence to d for every variant
-                # observation in region
-                for variant in infile.fetch(region.group(1),
-                                            int(region.group(2)) - 1,
-                                            int(region.group(3))):
-                    region_var_name = read_vcf_var(variant, d)
-            else:  # stop trying to make 'fetch' happen
-                sys.stderr.write("Could not parse region %s\n" %
-                                 str(region))
-                return (None, None, None, None)
-
-    elif var_type == "Rtab":
-        split_line = line_in.rstrip().split()
-        var_name, strains = split_line[0], split_line[1:]
-        for present, sample in zip(strains, sample_order):
-            if present is not '0':
-                d[sample] = 1
-
-    # Use common dictionary to format design matrix etc
-    kstrains = sorted(set(d.keys()).intersection(all_strains))
-    nkstrains = sorted(all_strains.difference(set(kstrains)))
-
-    # default for missing samples is absent kmer
-    # currently up to user to be careful about matching pheno and var files
-    for x in nkstrains:
-        d[x] = 0
-
-    af = float(len(kstrains)) / len(all_strains)
-    # filter by AF
-    if af < min_af or af > max_af:
-        # pass it to the actual tests to keep track
-        return(None, None, None, None)
-
-    k = np.array([d[x] for x in p.index
-                      if x in d])
-
-    return(k, var_name, kstrains, nkstrains, af)
-
-
-# Iterable to pass to fixed effects regression
-def iter_variants(p, m, cov, var_type, burden, burden_regions, infile,
-                  all_strains, sample_order, lineage_effects, lineage_clusters,
-                  min_af, max_af, filter_pvalue, lrt_pvalue, null_fit,
-                  firth_null, uncompressed, continuous):
-    while True:
-        if var_type is "vcf":
-            # burden tests read through regions and slice vcf
-            if burden:
-                if len(burden_regions) > 0:
-                    l = burden_regions.popleft()
-                else:  # Last; to raise exception on next loop
-                    l = None
-            # read single vcf line
-            else:
-                l = next(infile)
+    if var_type is "vcf":
+        # burden tests read through regions and slice vcf
+        if burden:
+            if len(burden_regions) > 0:
+                line_in = burden_regions.popleft()
+            else:  # Last; to raise exception on next loop
+                line_in = None
+        # read single vcf line
         else:
-            # kmers and Rtab plain text files
-            l = infile.readline()
+            line_in = next(infile)
+    else:
+        # kmers and Rtab plain text files
+        line_in = infile.readline()
 
-        # check for EOF
-        if not l:
-            raise StopIteration
+    if not line_in:
+        eof = True
+        return(eof, None, None, None, None, None)
+    else:
+        eof = False
+        d = {}
+        if var_type == "kmers":
+            if not uncompressed:
+                line_in = line_in.decode()
+            var_name, strains = (line_in.split()[0],
+                                 line_in.rstrip().split('|')[1].lstrip().split())
 
-        k, var_name, kstrains, nkstrains, af = read_variant(infile, l, var_type, uncompressed, all_strains, sample_order)
-        if k is None:
-            yield(None, None, None, None, None, None,
-                  None, None, None, None, None, None,
-                  None, None, None)
+            d = {x.split(':')[0]: 1
+                 for x in strains}
 
-        v = p.values
-        c = cov.values
-
-        yield (var_name, v, k, m, c, af,
-               lineage_effects, lineage_clusters,
-               filter_pvalue, lrt_pvalue, null_fit, firth_null,
-               kstrains, nkstrains, continuous)
-
-# Loads a block of variants into memory for use with LMM
-def load_var_block(var_type, burden, burden_regions, infile,
-                  all_strains, sample_order, min_af, max_af, filter_pvalue,
-                  uncompressed, continuous, block_size):
-    prefilter = 0
-    variants = []
-    for var_idx in range(block_size):
-        if var_type is "vcf":
-            # burden tests read through regions and slice vcf
-            if burden:
-                if len(burden_regions) > 0:
-                    l = burden_regions.popleft()
-                else:  # Last; to raise exception on next loop
-                    l = None
-            # read single vcf line
+        elif var_type == "vcf":
+            if not burden:
+                var_name = read_vcf_var(line_in, d)
+                if var_name is None:
+                    return(eof, None, None, None, None, None)
             else:
-                l = next(infile)
-        else:
-            # kmers and Rtab plain text files
-            l = infile.readline()
+                # burden test. Regions are named contig:start-end.
+                # Start is non-inclusive, so start one before to include
+                (var_name, region) = line_in
+                region = re.match('^(.+):(\d+)-(\d+)$', region)
+                if region:
+                    # Adds presence to d for every variant
+                    # observation in region
+                    for variant in infile.fetch(region.group(1),
+                                                int(region.group(2)) - 1,
+                                                int(region.group(3))):
+                        var_sub_name = read_vcf_var(variant, d)
+                else:  # stop trying to make 'fetch' happen
+                    sys.stderr.write("Could not parse region %s\n" %
+                                     str(region))
+                    return (eof, None, None, None, None, None)
 
-        # check for EOF
-        if not l:
-            break
+        elif var_type == "Rtab":
+            split_line = line_in.rstrip().split()
+            var_name, strains = split_line[0], split_line[1:]
+            for present, sample in zip(strains, sample_order):
+                if present is not '0':
+                    d[sample] = 1
 
-        k, var_name, kstrains, nkstrains, af = read_variant(infile, l, var_type, uncompressed, all_strains, sample_order)
-        if k:
-            if af > min_af and af < max_af:
-                prep, bad_chisq = pre_filtering(p, k, continuous)
-                if prep < filter_pvalue:
-                    variants.append(LMM(var_name, af, prep, 0, 0, 0, 0, None, kstrains, nkstrains))
-                    if variant_mat:
-                        np.concatenate(variant_mat, k, axis=0)
-                    else:
-                        variant_mat = k
-            else:
-                prefilter += 1
+        # Use common dictionary to format design matrix etc
+        kstrains = sorted(set(d.keys()).intersection(all_strains))
+        nkstrains = sorted(all_strains.difference(set(kstrains)))
 
-    counts['prefilter'] = prefilter
-    counts['tested'] = len(variants)
+        # default for missing samples is absent kmer
+        # currently up to user to be careful about matching pheno and var files
+        for x in nkstrains:
+            d[x] = 0
 
-    return(variants, variant_mat, counts)
+        af = float(len(kstrains)) / len(all_strains)
+
+        k = np.array([d[x] for x in p.index
+                          if x in d])
+
+    return(eof, k, var_name, kstrains, nkstrains, af)
 
 # Parses vcf variants from pysam. Returns None if filtered variant.
 # Mutates passed dictionary d
@@ -292,3 +226,61 @@ def read_vcf_var(variant, d):
                     break
 
     return(var_name)
+
+# Iterable to pass single variants to fixed effects regression
+def iter_variants(p, m, cov, var_type, burden, burden_regions, infile,
+                  all_strains, sample_order, lineage_effects, lineage_clusters,
+                  min_af, max_af, filter_pvalue, lrt_pvalue, null_fit,
+                  firth_null, uncompressed, continuous):
+    while True:
+        eof, k, var_name, kstrains, nkstrains, af = read_variant(infile, p, var_type, burden, uncompressed, all_strains, sample_order)
+
+        # check for EOF
+        if eof:
+            raise StopIteration
+
+        if (k is None) or not (min_af <= af <= max_af):
+            yield(None, None, None, None, None, None,
+                  None, None, None, None, None, None,
+                  None, None, None)
+        else:
+            v = p.values
+            c = cov.values
+
+            yield (var_name, v, k, m, c, af,
+                   lineage_effects, lineage_clusters,
+                   filter_pvalue, lrt_pvalue, null_fit, firth_null,
+                   kstrains, nkstrains, continuous)
+
+# Loads a block of variants into memory for use with LMM
+def load_var_block(var_type, p, burden, burden_regions, infile,
+                  all_strains, sample_order, min_af, max_af, filter_pvalue,
+                  uncompressed, continuous, block_size):
+
+    counts = {}
+    prefilter = 0
+    variants = []
+    for var_idx in range(block_size):
+        eof, l, var_name, kstrains, nkstrains, af = read_variant(infile, p, var_type, burden, burden_regions, uncompressed, all_strains, sample_order)
+
+        # check for EOF
+        if eof:
+            break
+
+        if k:
+            if (min_af <= af <= max_af):
+                prep, bad_chisq = pre_filtering(p, k, continuous)
+                if prep < filter_pvalue:
+                    variants.append(LMM(var_name, af, prep, 0, 0, 0, 0, None, kstrains, nkstrains))
+                    if variant_mat:
+                        np.concatenate(variant_mat, k, axis=0)
+                    else:
+                        variant_mat = k
+            else:
+                prefilter += 1
+
+    counts['prefilter'] = prefilter
+    counts['tested'] = len(variants)
+
+    return(variants, variant_mat, counts)
+

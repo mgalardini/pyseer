@@ -21,7 +21,7 @@ from fastlmm.lmm_cov import LMM as lmm_cov
 
 # Initialises LMM using K matrix
 # see _internal_single in fastlmm.association.single_snp
-def initialise_lmm(p, cov, K_in, lmm_cache_in = None, lmm_cache_out = None)
+def initialise_lmm(p, cov, K_in, lmm_cache_in = None, lmm_cache_out = None):
     covar = np.c_[cov.values,np.ones((p.shape[0], 1))]
     y = p.values
 
@@ -47,7 +47,7 @@ def initialise_lmm(p, cov, K_in, lmm_cache_in = None, lmm_cache_out = None)
     return(lmm, h2)
 
 # Fits LMM and returns LMM tuples for printing
-def fit_lmm(lmm, variants, variant_mat, lineage_effects, lineage_clusters, covariates, lrt_pvalue)
+def fit_lmm(lmm, variants, variant_mat, lineage_effects, lineage_clusters, covariates, lrt_pvalue):
 
     # fit LMM to block
     res = fit_lmm_block(lmm, variant_mat)

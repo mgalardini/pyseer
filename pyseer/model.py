@@ -19,7 +19,7 @@ import statsmodels.formula.api as smf
 
 
 Seer = namedtuple('Seer', ['kmer',
-                           'af', 'prep', 'lrt_pvalue',
+                           'af', 'prep', 'pvalue',
                            'kbeta', 'bse',
                            'intercept', 'betas',
                            'max_lineage',
@@ -108,7 +108,7 @@ def fit_null(p, m, cov, continuous, firth=False):
 # W are the lineages (either a projection of samples, or cluster indicators) and covariates
 # a is the slope to be fitted
 # Returns the index of the most significant lineage
-def fit_lineage_effect(lin, c, k)
+def fit_lineage_effect(lin, c, k):
 
     if c.shape[0] == lin.shape[0]:
         X = np.concatenate((np.ones(lin.shape[0]).reshape(-1, 1),

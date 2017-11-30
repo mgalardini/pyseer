@@ -1,3 +1,7 @@
+# Copyright 2014 Microsoft Corporation
+
+'''FaST-LMM fit. Modified to python3 syntax and removed logging'''
+
 import numpy as np
 import numpy.linalg as la
 import scipy.optimize as opt
@@ -89,7 +93,8 @@ class LMM(object):
         K_ = self.linreg.regress(Y=K_.T)
         [self.S,self.U] = la.eigh(K_)
         if np.any(self.S < -0.1):
-            logging.warning("kernel contains a negative Eigenvalue")
+            #logging.warning("kernel contains a negative Eigenvalue")
+            pass
 
         self.U = self.U[:,D:N]
         self.S = self.S[D:N] - 1.0
@@ -118,10 +123,11 @@ class LMM(object):
                     self.U = self.U[:,inonzero]
 
                 except la.LinAlgError:  # revert to Eigenvalue decomposition
-                    print "Got SVD exception, trying eigenvalue decomposition of square of G. Note that this is a little bit less accurate"
+                    print("Got SVD exception, trying eigenvalue decomposition of square of G. Note that this is a little bit less accurate")
                     [S,V] = la.eigh(PxG.T.dot(PxG))
                     if np.any(S < -0.1):
-                        logging.warning("kernel contains a negative Eigenvalue")
+                        #logging.warning("kernel contains a negative Eigenvalue")
+                        pass
                     inonzero = (S > 1E-10)
                     self.S = S[inonzero]
                     #self.S*=(N/self.S.sum())
@@ -142,13 +148,13 @@ class LMM(object):
         """
         if self.U is None or self.S is None:
             if self.K is not None:
-                logging.debug("starting 'lmm_cov.setSU_fromK()'")
+                #logging.debug("starting 'lmm_cov.setSU_fromK()'")
                 self.setSU_fromK()
-                logging.debug("finished 'lmm_cov.setSU_fromK()'")
+                #logging.debug("finished 'lmm_cov.setSU_fromK()'")
             elif self.G is not None:
-                logging.debug("starting 'lmm_cov.setSU_fromG()'")
+                #logging.debug("starting 'lmm_cov.setSU_fromG()'")
                 self.setSU_fromG()
-                logging.debug("finished 'lmm_cov.setSU_fromG()'")
+                #logging.debug("finished 'lmm_cov.setSU_fromG()'")
             else:
                 raise Exception("No Kernel is set. Cannot return U and S.")
         return self.S, self.U
@@ -278,7 +284,7 @@ class LMM(object):
         #TODO: ckw: is this method needed?  seems like a wrapper around findA2_2K!
         #Christoph and Chris: probably not needed
         if self.Y.shape[1] > 1:
-            print "not implemented"
+            print("not implemented")
             raise NotImplementedError("only single pheno case implemented")
 
         #if self.K0 is not None:
@@ -317,7 +323,7 @@ class LMM(object):
             dictionary containing the model parameters at the optimal a2
         '''
         if self.Y.shape[1] > 1:
-            print "not implemented"
+            print("not implemented")
             raise NotImplementedError("only single pheno case implemented")
 
         self.numcalls = 0
@@ -334,7 +340,7 @@ class LMM(object):
             #print "one objective function call took %.2f seconds elapsed" % (t1-t0)
             #import pdb; pdb.set_trace()
             return res['nLL']
-        if verbose: print "finda2"
+        if verbose: print("finda2")
         min = minimize1D(f=f, nGrid=nGridA2, minval=minA2, maxval=maxA2,verbose=False)
         #print "numcalls to innerLoopTwoKernel= " + str(self.numcalls)
         return resmin[0]
@@ -366,7 +372,7 @@ class LMM(object):
         '''
         #f = lambda x : (self.nLLeval(h2=x,**kwargs)['nLL'])
         if self.Y.shape[1] > 1:
-            print "not implemented"
+            print("not implemented")
             raise NotImplementedError("only single pheno case implemented")
         resmin = [None]
         noG1 = True
@@ -576,7 +582,7 @@ class LMM(object):
         if snps is not None:
 
             if snps.shape[0] != self.Y.shape[0]:
-                print "shape mismatch between snps and Y"
+                print("shape mismatch between snps and Y")
             Usnps,UUsnps = self.rotate(A=snps)
 
         result = self.nLLcore(Sd=Sd, dof=dof, scale=scale, penalty=penalty, UW=UW, UUW=UUW, weightW=weightW, denom=denom, Usnps=Usnps, UUsnps=UUsnps)
