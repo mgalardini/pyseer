@@ -34,9 +34,15 @@ from .model import binary
 from .model import fit_null
 from .model import continuous
 
-from fastlmm.lmm_cov import LMM as lmm_cov
+from .lmm import initialise_lmm
+from .lmm import fit_lmm
+from .lmm import fit_lmm_block
 
 from .utils import format_output
+
+# Number of variants to process at a time
+lmm_block_size = 100000
+kmer_per_core = 1000
 
 
 def get_options():
@@ -76,14 +82,15 @@ def get_options():
 
 
     distances = parser.add_argument_group('Distances')
-    distance_group = distances.add_mutually_exclusive_group(required=True)
+    distance_group = distances.add_mutually_exclusive_group()
     distance_group.add_argument('--distances',
-                                help='Strains distance square matrix (fixed effects)')
-    distance_group.add_argument('--similarity',
-                                help='Strains similarity square matrix (for --lmm)')
+                                help='Strains distance square matrix (fixed or lineage effects)')
     distance_group.add_argument('--load-m',
                                 help='Load an existing matrix decomposition')
-    distance_group.add_argument('--load-lmm',
+    similarity_group = distances.add_mutually_exclusive_group()
+    similarity_group.add_argument('--similarity',
+                                help='Strains similarity square matrix (for --lmm)')
+    similarity_group.add_argument('--load-lmm',
                                 help='Load an existing lmm cache')
     distances.add_argument('--save-m',
                            help='Prefix for saving matrix decomposition or '
@@ -218,8 +225,8 @@ def main():
     else:
         cov = pd.DataFrame([])
 
-    # fixed effects and lineage effects regress p ~ m
-    if options.lineage or not options.lmm:
+    # fixed effects or lineage effects require regressing p ~ m
+    if (options.lineage and not options.lineage_clusters) or not options.lmm:
 
         # reading genome distances
         if options.load_m and os.path.isfile(options.load_m):
@@ -239,7 +246,6 @@ def main():
             options.max_dimensions = m.shape[1]
         m = m.values[:, :options.max_dimensions]
 
-
         # calculate null regressions once
         null_fit = fit_null(p.values, m, cov, options.continuous)
         if not options.continuous and not options.lmm:
@@ -251,7 +257,9 @@ def main():
             sys.stderr.write('Could not fit null model, exiting\n')
             sys.exit(1)
 
-        # lineage effects using null model - read BAPS clusters and fit pheno ~ lineage
+    # lineage effects using null model - read BAPS clusters and fit pheno ~ lineage
+    # TODO maybe should move out of __main__?
+    if options.lineage or not options.lmm:
         lineage_clusters = None
         lineage_dict = []
         if options.lineage:
@@ -260,7 +268,7 @@ def main():
                 lineage_fit = fit_null(p.values, lineage_clusters, cov, options.continuous)
             else:
                 lineage_dict = ["MDS" + str(i+1) for i in range(options.max_dimensions)]
-                lineage_clusters = None
+                lineage_clusters = m
                 lineage_fit = null_fit
 
             # Calculate, sort and print lineage effects
@@ -278,31 +286,10 @@ def main():
     # LMM setup - see _internal_single in fastlmm.association.single_snp
     if options.lmm:
         sys.stderr.write("Setting up LMM\n")
-        covar = np.c_[cov.values,np.ones((p.shape[0], 1))]
-        y = p.values
-
-        if options.load_lmm is not None and os.path.exists(options.load_lmm):
-            lmm = lmm_cov(X=covar, Y=y, G=None, K=None)
-            with np.load(options.load_lmm) as data:
-                lmm.U = data['arr_0']
-                lmm.S = data['arr_1']
-                h2 = data['arr_2']
-        else:
-            K = pd.read_table(options.similarity,
-                      index_col=0)
-            K = K.loc[p.index, p.index]
-            lmm = lmm_cov(X=covar, Y=y, K=K.values, G=None, inplace=True)
-
-            result = lmm.findH2()
-            h2 = result['h2']
-
-            if options.save_m is not None and not os.path.exists(options.save_m):
-                lmm.getSU()
-                np.savez(options.save_m, lmm.U,lmm.S,np.array([h2]))
+        lmm, h2 = initialise_lmm(p, cov, options.similarity, options.load_lmm, options.save_m)
         sys.stderr.write("h^2 = " + h2 + "\n")
 
-    # iterator over each kmer
-    # implements maf filtering
+    # Open variant file
     sample_order = []
     all_strains = set(p.index)
     burden_regions = deque([])
@@ -326,23 +313,6 @@ def main():
         infile = open(options.pres)
         header = infile.readline().rstrip()
         sample_order = header.split()[1:]
-
-    if not options.lmm:
-        k_iter = fixed_iter_variants(p, m, cov, var_type, burden, burden_regions,
-                           infile, all_strains, sample_order,
-                           options.lineage, lineage_clusters,
-                           options.min_af, options.max_af,
-                           options.filter_pvalue,
-                           options.lrt_pvalue, null_fit, firth_null,
-                           options.uncompressed)
-    else:
-        k_iter = lmm_iter_variants(lmm, var_type, burden, burden_regions,
-                           infile, all_strains, sample_order,
-                           options.lineage, lineage_clusters,
-                           options.min_af, options.max_af,
-                           options.filter_pvalue,
-                           options.lrt_pvalue,
-                           options.uncompressed)
 
     # keep track of the number of the total number of kmers and tests
     prefilter = 0
@@ -373,79 +343,71 @@ def main():
         pool = Pool(options.cpu)
 
     # actual association test
-    if options.cpu > 1:
-        # multiprocessing proceeds 1000 kmers per core at a time
-        if options.lmm:
+    if not options.lmm:
+        # iterator over each kmer
+        # implements maf filtering
+        k_iter = iter_variants(p, m, cov, var_type, burden, burden_regions,
+                           infile, all_strains, sample_order,
+                           options.lineage, lineage_clusters.values,
+                           options.min_af, options.max_af,
+                           options.filter_pvalue,
+                           options.lrt_pvalue, null_fit, firth_null,
+                           options.uncompressed, options.continuous)
+
+        if options.cpu > 1:
+            # multiprocessing proceeds 1000 kmers per core at a time
             while True:
-                ret = pool.starmap(fit_lmm,
+                ret = pool.starmap(fixed_effects_regression,
                                    itertools.islice(k_iter,
-                                                    options.cpu*1000))
-                if not ret:
-                    break
-                for x in ret:
-                    if x.prefilter:
-                        prefilter += 1
-                        continue
-                    tested += 1
-                    if x.filter:
-                        continue
-                    printed += 1
-                    print(format_output(x,
-                                        lineage_dict,
-                                        options.print_samples))
-        elif options.continuous:
-            while True:
-                ret = pool.starmap(continuous,
-                                   itertools.islice(k_iter,
-                                                    options.cpu*1000))
-                if not ret:
-                    break
-                for x in ret:
-                    if x.prefilter:
-                        prefilter += 1
-                        continue
-                    tested += 1
-                    if x.filter:
-                        continue
-                    printed += 1
-                    print(format_output(x,
-                                        lineage_dict,
-                                        options.print_samples))
+                                                    options.cpu*kmer_per_core))
+            if not ret:
+                break
+            for x in ret:
+                if x.prefilter:
+                    prefilter += 1
+                    continue
+                tested += 1
+                if x.filter:
+                    continue
+                printed += 1
+                print(format_output(x,
+                                    lineage_dict,
+                                    options.lmm,
+                                    options.print_samples))
         else:
-            while True:
-                ret = pool.starmap(binary,
-                                   itertools.islice(k_iter,
-                                                    options.cpu*1000))
-                if not ret:
-                    break
-                for x in ret:
-                    if x.prefilter:
-                        prefilter += 1
-                        continue
-                    tested += 1
-                    if x.filter:
-                        continue
-                    printed += 1
-                    print(format_output(x,
-                                        lineage_dict,
-                                        options.print_samples))
+            for data in k_iter:
+                ret = fixed_effects_regression(*data)
+
+                if ret.prefilter:
+                    prefilter += 1
+                    continue
+                tested += 1
+                if ret.filter:
+                    continue
+                printed += 1
+                print(format_output(ret,
+                                    lineage_dict,
+                                    options.lmm,
+                                    options.print_samples))
     else:
-        for data in k_iter:
-            if options.lmm:
-                ret = fit_lmm(*data)
-            elif options.continuous:
-                ret = continuous(*data)
-            else:
-                ret = binary(*data)
-            if ret.prefilter:
-                prefilter += 1
-                continue
-            tested += 1
-            if ret.filter:
-                continue
+        # This is possible but we can come back to it. Might need to think about memory use
+        # I would write using mutex on input file... but is there a more pythonic way?
+        if options.cpu > 1:
+            sys.stderr.write("LMM does not currently support >1 core\n
+                              Consider splitting your input file.\n")
+
+        variants, variant_mat, counts = load_var_block(var_type, burden, burden_regions, infile, all_strains, sample_order,
+                                          options.min_af, options.max_af, options.filter_pvalue, options.uncompressed,
+                                          options.continuous, lmm_block_size)
+        fitted_variants = fit_lmm(lmm, variants, variant_mat, options.lineage, lineage_clusters.values, cov.values, options.lrt_pvalue)
+
+        prefilter += counts.prefilter
+        test += counts.tested
+        for variant in fitted_variants:
             printed += 1
             print(format_output(ret,
                                 lineage_dict,
+                                options.lmm,
                                 options.print_samples))
 
     sys.stderr.write('%d loaded variants\n' % (prefilter + tested))

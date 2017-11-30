@@ -14,6 +14,11 @@ import pandas as pd
 from sklearn import manifold
 from .cmdscale import cmdscale
 
+LMM = namedtuple('LMM', ['kmer',
+                           'af', 'prep', 'pvalue',
+                           'kbeta', 'bse', 'frac_h2',
+                           'max_lineage',
+                           'kstrains', 'nkstrains'])
 
 def load_phenotypes(infile, column):
     p = pd.Series([float(x.rstrip().split()[column-1])
@@ -177,14 +182,14 @@ def read_variant(infile, line_in, var_type, uncompressed, all_strains, sample_or
     k = np.array([d[x] for x in p.index
                       if x in d])
 
-    return(k, kstrains, nkstrains, af)
+    return(k, var_name, kstrains, nkstrains, af)
 
 
-# Iterable to pass to binary/continuous
-def fixed_iter_variants(p, m, cov, var_type, burden, burden_regions, infile,
+# Iterable to pass to fixed effects regression
+def iter_variants(p, m, cov, var_type, burden, burden_regions, infile,
                   all_strains, sample_order, lineage_effects, lineage_clusters,
                   min_af, max_af, filter_pvalue, lrt_pvalue, null_fit,
-                  firth_null, uncompressed):
+                  firth_null, uncompressed, continuous):
     while True:
         if var_type is "vcf":
             # burden tests read through regions and slice vcf
@@ -204,29 +209,27 @@ def fixed_iter_variants(p, m, cov, var_type, burden, burden_regions, infile,
         if not l:
             raise StopIteration
 
-        k, kstrains, nkstrains, af = read_variant(infile, l, var_type, uncompressed, all_strains, sample_order)
+        k, var_name, kstrains, nkstrains, af = read_variant(infile, l, var_type, uncompressed, all_strains, sample_order)
         if k is None:
             yield(None, None, None, None, None, None,
                   None, None, None, None, None, None,
-                  None, None)
+                  None, None, None)
 
         v = p.values
         c = cov.values
 
-        lin = None
-        if lineage_clusters is not None:
-            lin = lineage_clusters.values
-
         yield (var_name, v, k, m, c, af,
-               lineage_effects, lin,
+               lineage_effects, lineage_clusters,
                filter_pvalue, lrt_pvalue, null_fit, firth_null,
-               kstrains, nkstrains)
+               kstrains, nkstrains, continuous)
 
-# Iterable to pass to LMM
-def lmm_iter_variants(lmm, var_type, burden, burden_regions, infile,
-                  all_strains, sample_order, lineage_effects, lineage_clusters,
-                  min_af, max_af, filter_pvalue, lrt_pvalue, uncompressed):
-    while True:
+# Loads a block of variants into memory for use with LMM
+def load_var_block(var_type, burden, burden_regions, infile,
+                  all_strains, sample_order, min_af, max_af, filter_pvalue,
+                  uncompressed, continuous, block_size):
+    prefilter = 0
+    variants = []
+    for var_idx in range(block_size):
         if var_type is "vcf":
             # burden tests read through regions and slice vcf
             if burden:
@@ -243,23 +246,25 @@ def lmm_iter_variants(lmm, var_type, burden, burden_regions, infile,
 
         # check for EOF
         if not l:
-            raise StopIteration
+            break
 
-        k, kstrains, nkstrains, af = read_variant(infile, l, var_type, uncompressed, all_strains)
-        if k is None:
-            yield(None, None, None, None, None, None,
-                  None, None, None, None, None)
+        k, var_name, kstrains, nkstrains, af = read_variant(infile, l, var_type, uncompressed, all_strains, sample_order)
+        if k:
+            if af > min_af and af < max_af:
+                prep, bad_chisq = pre_filtering(p, k, continuous)
+                if prep < filter_pvalue:
+                    variants.append(LMM(var_name, af, prep, 0, 0, 0, 0, None, kstrains, nkstrains))
+                    if variant_mat:
+                        np.concatenate(variant_mat, k, axis=0)
+                    else:
+                        variant_mat = k
+            else:
+                prefilter += 1
 
+    counts['prefilter'] = prefilter
+    counts['tested'] = len(variants)
 
-        lin = None
-        if lineage_clusters is not None:
-            lin = lineage_clusters.values
-
-        yield (var_name, lmm, k, c, af,
-               lineage_effects, lin,
-               filter_pvalue, lrt_pvalue,
-               kstrains, nkstrains)
-
+    return(variants, variant_mat, counts)
 
 # Parses vcf variants from pysam. Returns None if filtered variant.
 # Mutates passed dictionary d

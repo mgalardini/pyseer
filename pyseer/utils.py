@@ -36,7 +36,7 @@ with set_env(MKL_NUM_THREADS='1',
     import numpy as np
 
 
-def format_output(item, lineage_dict, print_samples=False):
+def format_output(item, lineage_dict, lmm=False, print_samples=False):
     out = '%s' % item.kmer
     out += '\t' + '\t'.join(['%.2E' % Decimal(x)
                              if np.isfinite(x)
@@ -45,12 +45,15 @@ def format_output(item, lineage_dict, print_samples=False):
                                        item.prep,
                                        item.lrt_pvalue,
                                        item.kbeta,
-                                       item.bse,
-                                       item.intercept)])
-    out += '\t' + '\t'.join(['%.2E' % x
+                                       item.bse)])
+    if not lmm:
+        out += item.variant_h2
+    else:
+        out += '\t' item.intercept + '\t'.join(['%.2E' % x
                              if np.isfinite(x)
                              else ''
                              for x in item.betas])
+
     if item.max_lineage is not None:
         if item.max_lineage is not "NA":
             out += '\t' + lineage_dict[item.max_lineage]
