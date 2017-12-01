@@ -41,7 +41,7 @@ from .lmm import fit_lmm_block
 from .utils import format_output
 
 # Number of variants to process at a time
-lmm_block_size = 100  #TODO change this to 100000
+lmm_block_size = 10000
 kmer_per_core = 1000
 
 
