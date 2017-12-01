@@ -97,8 +97,8 @@ def compare_mixed_files(file1,file2,tol=1e-8,delimiter="\t"):
         #file contains just a single column.
         return np.all(dat1==dat2), "single column result doesn't match exactly ('{0}')".format(file1)
 
-    for r in xrange(r_count):
-        for c in xrange(c_count):
+    for r in range(r_count):
+        for c in range(c_count):
             val1 = dat1[r,c]
             val2 = dat2[r,c]
             if val1!=val2:
@@ -237,13 +237,13 @@ def intersect_ids(idslist,sep="Q_Q"):
                     if ~observed[l]:
                         raise Exception("first list must be non-empty")
                     else:
-                        for i in xrange(id_list.shape[0]):
+                        for i in range(id_list.shape[0]):
                             id=id_list[i,0] +sep+ id_list[i,1]
                             entry=np.zeros(L)*np.nan #id_list to contain the index for this id, for all lists provided
                             entry[l]=i                 #index for the first one
                             id2ind[id]=entry
                 elif observed[l]:
-                    for i in xrange(id_list.shape[0]):
+                    for i in range(id_list.shape[0]):
                         id=id_list[i,0] +sep+ id_list[i,1]
                         if id2ind.has_key(id):
                             id2ind[id][l]=i
@@ -320,7 +320,7 @@ def create_directory_if_necessary(name, isfile=True, robust=False):
         else:
             is_ok = False
             time_to_sleep = 10.0
-            for i in xrange(25):
+            for i in range(25):
                 try:
                     os.makedirs(directory_name)
                     is_ok = True
@@ -364,7 +364,7 @@ def which_opposite(vec):
     index of the last True from the bool vector vec
     ----------------------------------------------------------------------
     '''
-    for i in reversed(xrange(len(vec))):
+    for i in reversed(range(len(vec))):
         item = vec[i]
         if (item):
             return(i)
@@ -400,7 +400,7 @@ def excludeinds(pos0, pos1, mindist = 10.0,idist = 2):
     chromosomes1 = np.unique(pos1[:,0])
     i_exclude = np.zeros(pos0[:,0].shape[0],dtype = 'bool')
     if (mindist>=0.0):
-        for ichr in xrange(chromosomes1.shape[0]):
+        for ichr in range(chromosomes1.shape[0]):
             i_SNPs1_chr=pos1[:,0] == chromosomes1[ichr]
             i_SNPs0_chr=pos0[:,0] == chromosomes1[ichr]
             pos1_ = pos1[i_SNPs1_chr,idist]
@@ -434,7 +434,7 @@ def dotDotRange(dotDotString):
             yield start
         else:
             lastInclusive = int(parts[1])
-            for i in xrange(start,lastInclusive+1):
+            for i in range(start,lastInclusive+1):
                 yield i
 
 
@@ -536,7 +536,7 @@ def manhattan_plot(chr_pos_pvalue_array,pvalue_line=None,plot_threshold=1.0,vlin
         if np.any(idx_significant):
             y_significant = y[idx_significant]
             chr_pos_list_significant = chr_pos_list[idx_significant]
-            for i in xrange(len(chr_pos_list_significant)):
+            for i in range(len(chr_pos_list_significant)):
                 plt.axvline(x=chr_pos_list_significant[i],ymin = 0.0, ymax = y_significant[i], color = 'r',alpha=0.8)
 
     plt.scatter(chr_pos_list,y,marker=marker,c=_color_list(array[:,0],rle),edgecolor='none',s=y/max_y*20+0.5, alpha=alpha)

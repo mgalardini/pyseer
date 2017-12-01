@@ -47,7 +47,7 @@ def format_output(item, lineage_dict, lmm=False, print_samples=False):
                                        item.kbeta,
                                        item.bse)])
     if lmm:
-        out += item.variant_h2
+        out += '\t' + '%.2E' % Decimal(item.frac_h2)
     else:
         out += '\t' + '%.2E' % Decimal(item.intercept) + '\t'.join(['%.2E' % Decimal(x)
                                                                     if np.isfinite(x)

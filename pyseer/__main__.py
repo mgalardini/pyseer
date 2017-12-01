@@ -23,12 +23,13 @@ from pysam import VariantFile
 
 from .__init__ import __version__
 
-from .input import iter_variants
+from .input import load_phenotypes
 from .input import load_structure
 from .input import load_lineage
-from .input import load_phenotypes
 from .input import load_covariates
 from .input import load_burden
+from .input import iter_variants
+from .input import load_var_block
 
 from .model import fixed_effects_regression
 from .model import fit_null
@@ -40,7 +41,7 @@ from .lmm import fit_lmm_block
 from .utils import format_output
 
 # Number of variants to process at a time
-lmm_block_size = 100000
+lmm_block_size = 100  #TODO change this to 100000
 kmer_per_core = 1000
 
 
@@ -258,9 +259,9 @@ def main():
 
     # lineage effects using null model - read BAPS clusters and fit pheno ~ lineage
     # TODO maybe should move out of __main__?
+    lineage_clusters = None
+    lineage_dict = []
     if options.lineage or not options.lmm:
-        lineage_clusters = None
-        lineage_dict = []
         if options.lineage:
             if options.lineage_clusters:
                 lineage_clusters, lineage_dict = load_lineage(options.lineage_clusters, p)
@@ -286,7 +287,7 @@ def main():
     if options.lmm:
         sys.stderr.write("Setting up LMM\n")
         lmm, h2 = initialise_lmm(p, cov, options.similarity, options.load_lmm, options.save_m)
-        sys.stderr.write("h^2 = " + h2 + "\n")
+        sys.stderr.write("h^2 = " + '{0:.2f}'.format(h2) + "\n")
 
     # Open variant file
     sample_order = []
@@ -396,19 +397,23 @@ def main():
             sys.stderr.write("LMM does not currently support >1 core\n" +
                              "Consider splitting your input file.\n")
 
-        variants, variant_mat, counts = load_var_block(var_type, p, burden, burden_regions, infile, all_strains, sample_order,
+        eof = 0
+        while not eof:
+            variants, variant_mat, counts, eof = load_var_block(var_type, p, burden, burden_regions, infile, all_strains, sample_order,
                                           options.min_af, options.max_af, options.filter_pvalue, options.uncompressed,
                                           options.continuous, lmm_block_size)
-        fitted_variants = fit_lmm(lmm, variants, variant_mat, options.lineage, lineage_clusters, cov.values, options.lrt_pvalue)
+            prefilter += counts['prefilter']
+            tested += counts['tested']
 
-        prefilter += counts.prefilter
-        test += counts.tested
-        for variant in fitted_variants:
-            printed += 1
-            print(format_output(ret,
-                                lineage_dict,
-                                options.lmm,
-                                options.print_samples))
+            if counts['tested'] > 0:
+                fitted_variants = fit_lmm(lmm, h2, variants, variant_mat, options.lineage, lineage_clusters, cov.values, options.lrt_pvalue)
+
+                for variant in fitted_variants:
+                    printed += 1
+                    print(format_output(variant,
+                                        lineage_dict,
+                                        options.lmm,
+                                        options.print_samples))
 
     sys.stderr.write('%d loaded variants\n' % (prefilter + tested))
     sys.stderr.write('%d filtered variants\n' % prefilter)

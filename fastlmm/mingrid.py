@@ -55,7 +55,7 @@ def minimize1D(f, evalgrid = None, nGrid=10, minval=0.0, maxval = 0.99999, verbo
                     minglobal=minlocal[0:2]
         if verbose: print("exploring triplets with brent search")
         onebrent=False
-        for i in xrange(resultgrid.shape[0]-2):#if any triplet is found, where the inner point is a local optimum expand search
+        for i in range(resultgrid.shape[0]-2):#if any triplet is found, where the inner point is a local optimum expand search
             if (resultgrid[i+1]<resultgrid[i+2]) and (resultgrid[i+1]<resultgrid[i]):
                 onebrent=True
                 if verbose: print("found triplet to explore")
@@ -92,7 +92,7 @@ def evalgrid1D(f, evalgrid = None, nGrid=10, minval=0.0, maxval = 0.99999, dimF=
         resultgrid = SP.ones((evalgrid.shape[0],dimF))*9999999999999.0
     else:
         resultgrid = SP.ones(evalgrid.shape[0])*9999999999999.0
-    for i in xrange(evalgrid.shape[0]):
+    for i in range(evalgrid.shape[0]):
         fevalgrid = f(evalgrid[i])
         assert SP.isreal(fevalgrid).all(),"function returned imaginary value"
         resultgrid[i] = fevalgrid

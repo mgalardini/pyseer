@@ -10,16 +10,12 @@ with set_env(MKL_NUM_THREADS='1',
              NUMEXPR_NUM_THREADS='1',
              OMP_NUM_THREADS='1'):
     import numpy as np
-from collections import namedtuple
 import pandas as pd
 from sklearn import manifold
-from .cmdscale import cmdscale
 
-LMM = namedtuple('LMM', ['kmer',
-                           'af', 'prep', 'pvalue',
-                           'kbeta', 'bse', 'frac_h2',
-                           'max_lineage',
-                           'kstrains', 'nkstrains'])
+import pyseer.classes as var_obj
+from .cmdscale import cmdscale
+from .model import pre_filtering
 
 def load_phenotypes(infile, column):
     p = pd.Series([float(x.rstrip().split()[column-1])
@@ -124,7 +120,7 @@ def load_burden(infile, burden_regions):
 
 # Read input line and parse depending on input file type. Return a variant name
 # and pres/abs dictionary
-def read_variant(infile, p, var_type, burden, uncompressed, all_strains, sample_order):
+def read_variant(infile, p, var_type, burden, burden_regions, uncompressed, all_strains, sample_order):
 
     if var_type is "vcf":
         # burden tests read through regions and slice vcf
@@ -233,7 +229,7 @@ def iter_variants(p, m, cov, var_type, burden, burden_regions, infile,
                   min_af, max_af, filter_pvalue, lrt_pvalue, null_fit,
                   firth_null, uncompressed, continuous):
     while True:
-        eof, k, var_name, kstrains, nkstrains, af = read_variant(infile, p, var_type, burden, uncompressed, all_strains, sample_order)
+        eof, k, var_name, kstrains, nkstrains, af = read_variant(infile, p, var_type, burden, burden_regions, uncompressed, all_strains, sample_order)
 
         # check for EOF
         if eof:
@@ -260,27 +256,27 @@ def load_var_block(var_type, p, burden, burden_regions, infile,
     counts = {}
     prefilter = 0
     variants = []
+    variant_mat = np.zeros((len(p), block_size))  # pre-allocation of memory
     for var_idx in range(block_size):
-        eof, l, var_name, kstrains, nkstrains, af = read_variant(infile, p, var_type, burden, burden_regions, uncompressed, all_strains, sample_order)
+        eof, k, var_name, kstrains, nkstrains, af = read_variant(infile, p, var_type, burden, burden_regions, uncompressed, all_strains, sample_order)
 
         # check for EOF
         if eof:
             break
 
-        if k:
-            if (min_af <= af <= max_af):
-                prep, bad_chisq = pre_filtering(p, k, continuous)
-                if prep < filter_pvalue:
-                    variants.append(LMM(var_name, af, prep, 0, 0, 0, 0, None, kstrains, nkstrains))
-                    if variant_mat:
-                        np.concatenate(variant_mat, k, axis=0)
-                    else:
-                        variant_mat = k
-            else:
-                prefilter += 1
+        if k is not None and (min_af <= af <= max_af):
+            prep, bad_chisq = pre_filtering(p, k, continuous)
+            if prep < filter_pvalue:
+                variants.append(var_obj.LMM(var_name, af, prep, 0, 0, 0, 0, None, kstrains, nkstrains))
+                variant_mat[:,var_idx] = k
+        else:
+            prefilter += 1
+
+    # remove empty rows from filtering
+    variant_mat = variant_mat[:, ~np.all(variant_mat == 0, axis = 0)]
 
     counts['prefilter'] = prefilter
     counts['tested'] = len(variants)
 
-    return(variants, variant_mat, counts)
+    return(variants, variant_mat, counts, eof)
 

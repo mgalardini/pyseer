@@ -14,18 +14,9 @@ import math
 import statsmodels
 import pandas as pd
 from scipy import stats
-from collections import namedtuple
 import statsmodels.formula.api as smf
 
-
-Seer = namedtuple('Seer', ['kmer',
-                           'af', 'prep', 'pvalue',
-                           'kbeta', 'bse',
-                           'intercept', 'betas',
-                           'max_lineage',
-                           'kstrains', 'nkstrains',
-                           'notes',
-                           'prefilter', 'filter'])
+import pyseer.classes as var_obj
 
 # Calculate a naive p-value from a chisq test (binary phenotype)
 # or a t-test (continuous phenotype) which is not adjusted for population
@@ -121,16 +112,13 @@ def fit_lineage_effect(lin, c, k):
                         axis=1)
 
     lineage_mod = smf.Logit(k, X)
-    start_vec = np.zeros(X.shape[1])
-    start_vec[0] = np.log(np.mean(k)/(1-np.mean(k)))
-
     try:
-        lineage_res = lineage_mod.fit(start_params=start_vec, method='newton', disp=False)
+        lineage_res = lineage_mod.fit(method='newton', disp=False)
 
         wald_test = np.divide(np.absolute(lineage_res.params), lineage_res.bse)
         max_lineage = np.argmax(wald_test[1:lin.shape[1]+1]) # excluding intercept and covariates
     # In case regression fails
-    except statsmodels.tools.sm_exceptions.PerfectSeparationError:
+    except (statsmodels.tools.sm_exceptions.PerfectSeparationError, np.linalg.LinAlgError):
         max_lineage = None
 
     return max_lineage
@@ -151,7 +139,7 @@ def fixed_effects_regression(kmer, p, k, m, c, af,
     # was this af-filtered?
     if p is None:
         notes.add('af-filter')
-        return Seer(kmer, af, np.nan, np.nan,
+        return var_obj.Seer(kmer, af, np.nan, np.nan,
                     np.nan, np.nan, np.nan, [],
                     np.nan, kstrains, nkstrains,
                     notes, True, False)
@@ -162,7 +150,7 @@ def fixed_effects_regression(kmer, p, k, m, c, af,
         notes.add('bad-chisq')
     if prep > pret or not np.isfinite(prep):
         notes.add('pre-filtering-failed')
-        return Seer(kmer, af, prep, np.nan,
+        return var_obj.Seer(kmer, af, prep, np.nan,
                     np.nan, np.nan, np.nan, [],
                     np.nan, kstrains, nkstrains,
                     notes, True, False)
@@ -223,7 +211,7 @@ def fixed_effects_regression(kmer, p, k, m, c, af,
                 firth_fit = fit_firth(mod, start_vec, kmer, v, p)
                 if firth_fit is None:  # Firth failure
                     notes.add('firth-fail')
-                    return Seer(kmer, af, prep, np.nan,
+                    return var_obj.Seer(kmer, af, prep, np.nan,
                                 np.nan, np.nan, np.nan, [],
                                 kstrains, nkstrains,
                                 notes, False, True)
@@ -238,14 +226,14 @@ def fixed_effects_regression(kmer, p, k, m, c, af,
     except np.linalg.linalg.LinAlgError:
         # singular matrix error
         notes.add('matrix-inversion-error')
-        return Seer(kmer, af, prep, np.nan,
+        return var_obj.Seer(kmer, af, prep, np.nan,
                     np.nan, np.nan, np.nan, [],
                     np.nan, kstrains, nkstrains,
                     notes, False, True)
 
     if lrt_pvalue > lrtt or not np.isfinite(lrt_pvalue) or not np.isfinite(kbeta):
         notes.add('lrt-filtering-failed')
-        return Seer(kmer, af, prep, lrt_pvalue,
+        return var_obj.Seer(kmer, af, prep, lrt_pvalue,
                     kbeta, bse, intercept, beta,
                     max_lineage, kstrains, nkstrains,
                     notes, False, True)
@@ -255,7 +243,7 @@ def fixed_effects_regression(kmer, p, k, m, c, af,
     else:
         max_lineage = None
 
-    return Seer(kmer, af, prep, lrt_pvalue,
+    return var_obj.Seer(kmer, af, prep, lrt_pvalue,
                 kbeta, bse, intercept, beta,
                 max_lineage, kstrains, nkstrains,
                 notes, False, False)

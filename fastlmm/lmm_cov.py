@@ -435,14 +435,14 @@ class LMM(object):
             dictionary containing the model parameters at the optimal h2
         '''
         #f = lambda x : (self.nLLeval(h2=x,**kwargs)['nLL'])
-        resmin = [None for i in xrange(self.Y.shape[1])]
+        resmin = [None for i in range(self.Y.shape[1])]
         #logging.info("starting H2 search")
         assert estimate_Bayes == False, "not implemented"
         if self.Y.shape[1] > 1:
             def f(x):
                 res = self.nLLeval(h2=x,**kwargs)
                 #check all results for local minimum:
-                for i in xrange(self.Y.shape[1]):
+                for i in range(self.Y.shape[1]):
                     if (resmin[i] is None) or (res['nLL'][i] < resmin[i]['nLL']):
                         resmin[i] = res.copy()
                         resmin[i]['nLL'] = res['nLL'][i]
@@ -468,7 +468,7 @@ class LMM(object):
                 res = self.nLLeval(h2=x,**kwargs)
                 if (resmin[0] is None) or (res['nLL'] < resmin[0]['nLL']):
                     resmin[0] = res
-                logging.debug("search\t{0}\t{1}".format(x,res['nLL']))
+                #logging.debug("search\t{0}\t{1}".format(x,res['nLL']))
                 return res['nLL'][0]
             min = minimize1D(f=f, nGrid=nGridH2, minval=minH2, maxval=maxH2)
             #logging.info("search\t{0}\t{1}".format("?",resmin[0]))
@@ -497,7 +497,7 @@ class LMM(object):
             if (resmin[0] is None):
                     resmin[0] = {'nLL':res['nLL'],'h2':np.zeros_like(res['nLL'])+res['h2']}
             else:
-                for i in xrange(self.Y.shape[1]):
+                for i in range(self.Y.shape[1]):
                     if (res['nLL'][i] < resmin[0]['nLL'][i]):
                         resmin[0]['nLL'][i] = res['nLL'][i]
                         resmin[0]['h2'][i] = res['h2']
@@ -798,7 +798,7 @@ class LMM(object):
             assert (penalty_ >= 0.0), "penalty has to be non-negative"
             beta = snpsKY / (snpsKsnps + penalty_)
             if np.isnan(beta.min()):
-                logging.warning("NaN beta value seen, may be due to an SNC (a constant SNP)")
+                #logging.warning("NaN beta value seen, may be due to an SNC (a constant SNP)")
                 beta[snpsKY==0] = 0.0
             variance_explained_beta = (snpsKY * beta)
             r2 = YKY[np.newaxis,:] - variance_explained_beta
@@ -902,7 +902,7 @@ def computeAKA(Sd, denom, UA, UUA=None):
 
     AKA = np.zeros(UA.shape[1])
     start0, start1 = 0, 0
-    for piece_index in xrange(piece_count):
+    for piece_index in range(piece_count):
         end0 = UA.shape[0] * (piece_index+1) // piece_count
         AKA += (UA[start0:end0,:] / Sd.reshape(-1,1)[start0:end0,:] * UA[start0:end0,:]).sum(0)
         start0 = end0
