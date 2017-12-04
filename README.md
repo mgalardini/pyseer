@@ -4,7 +4,7 @@ pyseer
 [SEER](https://github.com/johnlees/seer), reimplemented in python by
 [Marco Galardini](https://github.com/mgalardini) and [John Lees](https://github.com/johnlees)
 
-    pyseer kmers.gz phenotypes.tsv structure.tsv --min-af 0.01 --max-af 0.99 --cpu 15 --filter-pvalue 1E-8
+    python pyseer-runner.py --phenotypes phenotypes.tsv --kmers kmers.gz --distances structure.tsv --min-af 0.01 --max-af 0.99 --cpu 15 --filter-pvalue 1E-8
 
 [![Build Status](https://travis-ci.org/mgalardini/pyseer.svg?branch=master)](https://travis-ci.org/mgalardini/pyseer)
 [![PyPI version](https://badge.fury.io/py/pyseer.svg)](https://badge.fury.io/py/pyseer)
@@ -51,7 +51,7 @@ If you would like to use the `scree_plot` script you will also need to have `mat
 Installation
 ------------
 
-The easiest way to install `pysee` is through `pip`:
+The easiest way to install `pyseer` is through `pip`:
 
     pip install pyseer
 
@@ -144,7 +144,7 @@ the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the   
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 GNU General Public License for more details.
 
 Neither the institution name nor the name pyseer

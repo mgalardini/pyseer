@@ -265,7 +265,10 @@ def load_var_block(var_type, p, burden, burden_regions, infile,
             break
 
         if k is not None and (min_af <= af <= max_af):
-            prep, bad_chisq = pre_filtering(p, k, continuous)
+            if continuous is not None:
+                prep, bad_chisq = pre_filtering(p, k, continuous)
+            else:
+                prep = 0
             if prep < filter_pvalue:
                 variants.append(var_obj.LMM(var_name, af, prep, 0, 0, 0, 0, None, kstrains, nkstrains))
                 variant_mat[:,var_idx] = k

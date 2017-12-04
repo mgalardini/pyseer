@@ -35,11 +35,15 @@ def initialise_lmm(p, cov, K_in, lmm_cache_in = None, lmm_cache_out = None):
             lmm.S = data['arr_1']
             h2 = data['arr_2']
     else:
+        # read and normalise K
         K = pd.read_table(K_in,
                   index_col=0)
         K = K.loc[p.index, p.index]
-        lmm = lmm_cov(X=covar, Y=y, K=K.values, G=None, inplace=True)
+        factor = float(len(p)) / np.diag(K.values).sum()
+        if abs(factor-1.0)>1e-15:
+            K.values *= factor
 
+        lmm = lmm_cov(X=covar, Y=y, K=K.values, G=None, inplace=True)
         result = lmm.findH2()
         h2 = result['h2']
 
