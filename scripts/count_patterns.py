@@ -8,12 +8,15 @@ mem_adjust = 10
 def get_options():
     import argparse
 
-    description = 'Extract a distance matrix from a phylogeny'
+    description = 'Calculate p-value threshold using Bonferroni correction'
     parser = argparse.ArgumentParser(description=description)
 
     parser.add_argument('patterns',
                         help='File of patterns from pyseer')
 
+    parser.add_argument('--alpha',
+                        default=0.05,
+                        help='Family-wise error rate')
     parser.add_argument('--cores',
                         default=1,
                         help='Number of cores to use')
@@ -32,6 +35,7 @@ if __name__ == "__main__":
 
     import sys
     import subprocess
+    from decimal import Decimal
 
     command = ("LC_ALL=C sort -u " +
               "--parallel=" + str(options.cores) +
@@ -40,4 +44,5 @@ if __name__ == "__main__":
               " " + options.patterns +
               " | wc -l")
     p = subprocess.check_output(command, shell=True, encoding='utf-8')
-    print(p.rstrip())
+    print("Patterns:\t" + p.rstrip())
+    print("Threshold:\t" + '%.2E' % Decimal(options.alpha/float(p.rstrip())))
