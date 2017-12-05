@@ -12,6 +12,8 @@ with set_env(MKL_NUM_THREADS='1',
     import numpy as np
 import pandas as pd
 from sklearn import manifold
+import hashlib
+import binascii
 
 import pyseer.classes as var_obj
 from .cmdscale import cmdscale
@@ -238,12 +240,13 @@ def iter_variants(p, m, cov, var_type, burden, burden_regions, infile,
         if (k is None) or not (min_af <= af <= max_af):
             yield(None, None, None, None, None, None,
                   None, None, None, None, None, None,
-                  None, None, None)
+                  None, None, None, None)
         else:
             v = p.values
             c = cov.values
+            pattern = hash_pattern(k);
 
-            yield (var_name, v, k, m, c, af,
+            yield (var_name, v, k, m, c, af, pattern,
                    lineage_effects, lineage_clusters,
                    filter_pvalue, lrt_pvalue, null_fit, firth_null,
                    kstrains, nkstrains, continuous)
@@ -270,7 +273,8 @@ def load_var_block(var_type, p, burden, burden_regions, infile,
             else:
                 prep = 0
             if prep < filter_pvalue:
-                variants.append(var_obj.LMM(var_name, af, prep, 0, 0, 0, 0, None, kstrains, nkstrains))
+                pattern = hash_pattern(k)
+                variants.append(var_obj.LMM(var_name, pattern, af, prep, 0, 0, 0, 0, None, kstrains, nkstrains))
                 variant_mat[:,var_idx] = k
         else:
             prefilter += 1
@@ -283,3 +287,9 @@ def load_var_block(var_type, p, burden, burden_regions, infile,
 
     return(variants, variant_mat, counts, eof)
 
+
+# Calculates the hash of a presence/absence vector
+def hash_pattern(k):
+    pattern = k.view(np.uint8)
+    hashed = hashlib.md5(pattern)
+    return(binascii.b2a_base64(hashed.digest()));

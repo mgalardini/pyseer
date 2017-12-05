@@ -167,6 +167,10 @@ def get_options():
                        action='store_true',
                        default=False,
                        help='Print sample lists [Default: hide samples]')
+    other.add_argument('--output-patterns',
+                       default=False,
+                       help='File to print patterns to, for finding pvalue'
+                            'threshold')
     other.add_argument('--uncompressed',
                        action='store_true',
                        default=False,
@@ -319,6 +323,10 @@ def main():
     tested = 0
     printed = 0
 
+    # open pattern file if specified
+    if options.output_patterns:
+        patterns = open(options.output_patterns, 'wb')
+
     # header fields
     header = ['variant', 'af', 'filter-pvalue',
               'lrt-pvalue', 'beta', 'beta-std-err']
@@ -367,6 +375,9 @@ def main():
                         prefilter += 1
                         continue
                     tested += 1
+                    if patterns.writable():
+                        patterns.write(ret.pattern)
+
                     if x.filter:
                         continue
                     printed += 1
@@ -382,6 +393,9 @@ def main():
                     prefilter += 1
                     continue
                 tested += 1
+                if patterns.writable():
+                    patterns.write(ret.pattern)
+
                 if ret.filter:
                     continue
                 printed += 1
@@ -409,8 +423,11 @@ def main():
                 fitted_variants = fit_lmm(lmm, h2, variants, variant_mat, options.lineage, lineage_clusters, cov.values, options.lrt_pvalue)
 
                 for variant in fitted_variants:
-                    printed += 1
-                    print(format_output(variant,
+                    if patterns.writable():
+                        patterns.write(variant.pattern)
+                    if variant.pvalue < options.lrt_pvalue:
+                        printed += 1
+                        print(format_output(variant,
                                         lineage_dict,
                                         options.lmm,
                                         options.print_samples))

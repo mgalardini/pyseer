@@ -1,12 +1,12 @@
 from collections import namedtuple
 
-LMM = namedtuple('LMM', ['kmer',
+LMM = namedtuple('LMM', ['kmer', 'pattern',
                            'af', 'prep', 'pvalue',
                            'kbeta', 'bse', 'frac_h2',
                            'max_lineage',
                            'kstrains', 'nkstrains'])
 
-Seer = namedtuple('Seer', ['kmer',
+Seer = namedtuple('Seer', ['kmer', 'pattern',
                            'af', 'prep', 'pvalue',
                            'kbeta', 'bse',
                            'intercept', 'betas',
