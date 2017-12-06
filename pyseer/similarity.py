@@ -14,6 +14,7 @@ from .input import load_var_block
 
 block_size = 10000
 
+
 def get_options():
     import argparse
 
@@ -38,18 +39,17 @@ def get_options():
                                     'produced by roary and piggy')
 
     parser.add_argument('--min-af',
-                           type=float,
-                           default=0.01,
-                           help='Minimum AF [Default: 0.01]')
+                        type=float,
+                        default=0.01,
+                        help='Minimum AF [Default: 0.01]')
     parser.add_argument('--max-af',
-                           type=float,
-                           default=0.99,
-                           help='Maximum AF [Default: 0.99]')
+                        type=float,
+                        default=0.99,
+                        help='Maximum AF [Default: 0.99]')
     parser.add_argument('--uncompressed',
-                       action='store_true',
-                       default=False,
-                       help='Uncompressed kmers file [Default: gzipped]')
-
+                        action='store_true',
+                        default=False,
+                        help='Uncompressed kmers file [Default: gzipped]')
 
     parser.add_argument('--version', action='version',
                         version='%(prog)s '+__version__)
@@ -88,14 +88,19 @@ def main():
         header = infile.readline().rstrip()
         sample_order = header.split()[1:]
 
-
     eof = 0
-    G = np.empty((len(p), block_size))  # no copy of first variant_mat made. Reserve memory
+    # no copy of first variant_mat made. Reserve memory
+    G = np.empty((len(p), block_size))
     sys.stderr.write("Reading in variants\n")
     while not eof:
-        variants, variant_mat, counts, eof = load_var_block(var_type, p, None, None, infile, all_strains, sample_order,
-                                          options.min_af, options.max_af, 1, options.uncompressed,
-                                          None, block_size)
+        variants, variant_mat, counts, eof = load_var_block(var_type, p, None,
+                                                            None, infile,
+                                                            all_strains,
+                                                            sample_order,
+                                                            options.min_af,
+                                                            options.max_af, 1,
+                                                            options.uncompressed,
+                                                            None, block_size)
         if G.shape[1] > block_size:
             G = np.concatenate(G, variant_mat)
         else:
@@ -107,6 +112,6 @@ def main():
     K_out.to_csv(sys.stdout,
                  sep='\t')
 
+
 if __name__ == "__main__":
     main()
-

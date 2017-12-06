@@ -1,6 +1,9 @@
 # Copyright 2014 Microsoft Corporation
 
+# Notice of changes made to this file as part of their integration
+# into pyseer
 '''FaST-LMM 1D fit for h2. Modified to python3 syntax and removed logging'''
+#
 
 import scipy as SP
 import scipy.optimize as opt
@@ -97,5 +100,3 @@ def evalgrid1D(f, evalgrid = None, nGrid=10, minval=0.0, maxval = 0.99999, dimF=
         assert SP.isreal(fevalgrid).all(),"function returned imaginary value"
         resultgrid[i] = fevalgrid
     return (evalgrid,resultgrid)
-
-

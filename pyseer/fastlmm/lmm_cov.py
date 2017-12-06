@@ -1,6 +1,9 @@
 # Copyright 2014 Microsoft Corporation
 
+# Notice of changes made to this file as part of their integration
+# into pyseer
 '''FaST-LMM fit. Modified to python3 syntax and removed logging'''
+#
 
 import numpy as np
 import numpy.linalg as la
@@ -911,5 +914,3 @@ def computeAKA(Sd, denom, UA, UUA=None):
             AKA += (UUA[start1:end1,:] * UUA[start1:end1,:]).sum(0) / denom
             start1 = end1
     return AKA
-
-

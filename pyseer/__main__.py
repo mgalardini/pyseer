@@ -120,10 +120,10 @@ def get_options():
     association.add_argument('--lineage',
                              action='store_true',
                              help='Report lineage effects')
-    association.add_argument('--lineage_clusters',
+    association.add_argument('--lineage-clusters',
                              help='Custom clusters to use as lineages '
                                   '[Default: MDS components]')
-    association.add_argument('--lineage_file',
+    association.add_argument('--lineage-file',
                              default="lineage_effects.txt",
                              help='File to write lineage association to'
                                   '[Default: lineage_effects.txt]')
@@ -169,8 +169,8 @@ def get_options():
                        help='Print sample lists [Default: hide samples]')
     other.add_argument('--output-patterns',
                        default=False,
-                       help='File to print patterns to, for finding pvalue'
-                            'threshold')
+                       help='File to print patterns to, useful for finding '
+                            'pvalue threshold')
     other.add_argument('--uncompressed',
                        action='store_true',
                        default=False,
@@ -333,7 +333,8 @@ def main():
 
     if not options.lmm:
         header = header + ['intercept'] + ['PC%d' % i
-                              for i in range(1, options.max_dimensions+1)]
+                                           for i in range(1,
+                                                options.max_dimensions+1)]
         if options.covariates is not None:
             header = header + [x for x in cov.columns]
     else:
@@ -355,12 +356,12 @@ def main():
         # iterator over each kmer
         # implements maf filtering
         k_iter = iter_variants(p, m, cov, var_type, burden, burden_regions,
-                           infile, all_strains, sample_order,
-                           options.lineage, lineage_clusters,
-                           options.min_af, options.max_af,
-                           options.filter_pvalue,
-                           options.lrt_pvalue, null_fit, firth_null,
-                           options.uncompressed, options.continuous)
+                               infile, all_strains, sample_order,
+                               options.lineage, lineage_clusters,
+                               options.min_af, options.max_af,
+                               options.filter_pvalue,
+                               options.lrt_pvalue, null_fit, firth_null,
+                               options.uncompressed, options.continuous)
 
         if options.cpu > 1:
             # multiprocessing proceeds 1000 kmers per core at a time
@@ -375,7 +376,7 @@ def main():
                         prefilter += 1
                         continue
                     tested += 1
-                    if patterns.writable():
+                    if options.output_patterns:
                         patterns.write(ret.pattern)
 
                     if x.filter:
@@ -393,7 +394,7 @@ def main():
                     prefilter += 1
                     continue
                 tested += 1
-                if patterns.writable():
+                if options.output_patterns:
                     patterns.write(ret.pattern)
 
                 if ret.filter:
@@ -413,24 +414,36 @@ def main():
 
         eof = 0
         while not eof:
-            variants, variant_mat, counts, eof = load_var_block(var_type, p, burden, burden_regions, infile, all_strains, sample_order,
-                                          options.min_af, options.max_af, options.filter_pvalue, options.uncompressed,
-                                          options.continuous, lmm_block_size)
+            variants, variant_mat, counts, eof = load_var_block(var_type, p,
+                                                                burden,
+                                                                burden_regions,
+                                                                infile,
+                                                                all_strains,
+                                                                sample_order,
+                                                                options.min_af,
+                                                                options.max_af,
+                                                                options.filter_pvalue,
+                                                                options.uncompressed,
+                                                                options.continuous,
+                                                                lmm_block_size)
             prefilter += counts['prefilter']
             tested += counts['tested']
 
             if counts['tested'] > 0:
-                fitted_variants = fit_lmm(lmm, h2, variants, variant_mat, options.lineage, lineage_clusters, cov.values, options.lrt_pvalue)
+                fitted_variants = fit_lmm(lmm, h2, variants,
+                                          variant_mat, options.lineage,
+                                          lineage_clusters, cov.values,
+                                          options.lrt_pvalue)
 
                 for variant in fitted_variants:
-                    if patterns.writable():
+                    if options.output_patterns:
                         patterns.write(variant.pattern)
                     if variant.pvalue < options.lrt_pvalue:
                         printed += 1
                         print(format_output(variant,
-                                        lineage_dict,
-                                        options.lmm,
-                                        options.print_samples))
+                                            lineage_dict,
+                                            options.lmm,
+                                            options.print_samples))
 
     sys.stderr.write('%d loaded variants\n' % (prefilter + tested))
     sys.stderr.write('%d filtered variants\n' % prefilter)

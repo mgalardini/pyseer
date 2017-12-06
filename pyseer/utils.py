@@ -49,16 +49,18 @@ def format_output(item, lineage_dict, lmm=False, print_samples=False):
     if lmm:
         out += '\t' + '%.2E' % Decimal(item.frac_h2)
     else:
-        out += '\t' + '%.2E' % Decimal(item.intercept) + '\t'.join(['%.2E' % Decimal(x)
-                                                                    if np.isfinite(x)
-                                                                    else ''
-                                                                    for x in item.betas])
+        out += '\t' + '%.2E' % Decimal(item.intercept) + '\t' + '\t'.join(
+                                                        ['%.2E' % Decimal(x)
+                                                         if np.isfinite(x)
+                                                         else ''
+                                                         for x in item.betas]
+                                                                  )
 
     if item.max_lineage is not None:
-        if item.max_lineage is not "NA":
+        if np.isfinite(item.max_lineage):
             out += '\t' + lineage_dict[item.max_lineage]
         else:
-            out += '\tNA'
+            out += '\t'
     if print_samples:
         out += '\t' + '\t'.join((','.join(item.kstrains),
                                  ','.join(item.nkstrains)))

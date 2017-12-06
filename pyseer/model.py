@@ -18,15 +18,16 @@ import statsmodels.formula.api as smf
 
 import pyseer.classes as var_obj
 
+
 # Calculate a naive p-value from a chisq test (binary phenotype)
 # or a t-test (continuous phenotype) which is not adjusted for population
 # structure
 def pre_filtering(p, k, continuous):
     bad_chisq = False
     if continuous:
-         prep = stats.ttest_ind(p[k == 1],
-                                p[k == 0],
-                                equal_var=False)[1]
+        prep = stats.ttest_ind(p[k == 1],
+                               p[k == 0],
+                               equal_var=False)[1]
     else:
         t = np.concatenate((p.reshape(-1, 1), k.reshape(-1, 1)), axis=1).T
         table = [[t[0][(t[0] == 1) & (t[1] == 1)].shape[0],
@@ -79,10 +80,14 @@ def fit_null(p, m, cov, continuous, firth=False):
             null_res = null_mod.fit(disp=False)
         else:
             if firth:
-                (intercept, kbeta, beta, bse, fitll) = fit_firth(null_mod, start_vec, "null", v, p)
+                (intercept, kbeta, beta, bse, fitll) = fit_firth(null_mod,
+                                                                 start_vec,
+                                                                 "null", v, p)
                 null_res = fitll
             else:
-                null_res = null_mod.fit(start_params=start_vec, method='newton', disp=False)
+                null_res = null_mod.fit(start_params=start_vec,
+                                        method='newton',
+                                        disp=False)
     except np.linalg.linalg.LinAlgError:
         # singular matrix error
         sys.stderr.write('Matrix inversion error for null model\n')
@@ -94,6 +99,7 @@ def fit_null(p, m, cov, continuous, firth=False):
 
     return null_res
 
+
 # Fits the model k ~ Wa using binomial error with logit link
 # k is the variant presence/absence
 # W are the lineages (either a projection of samples, or cluster indicators) and covariates
@@ -103,22 +109,24 @@ def fit_lineage_effect(lin, c, k):
 
     if c.shape[0] == lin.shape[0]:
         X = np.concatenate((np.ones(lin.shape[0]).reshape(-1, 1),
-                        lin,
-                        c),
-                        axis=1)
+                            lin,
+                            c),
+                           axis=1)
     else:
         X = np.concatenate((np.ones(lin.shape[0]).reshape(-1, 1),
-                        lin),
-                        axis=1)
+                            lin),
+                           axis=1)
 
     lineage_mod = smf.Logit(k, X)
     try:
         lineage_res = lineage_mod.fit(method='newton', disp=False)
 
         wald_test = np.divide(np.absolute(lineage_res.params), lineage_res.bse)
-        max_lineage = np.argmax(wald_test[1:lin.shape[1]+1]) # excluding intercept and covariates
+        # excluding intercept and covariates
+        max_lineage = np.argmax(wald_test[1:lin.shape[1]+1])
     # In case regression fails
-    except (statsmodels.tools.sm_exceptions.PerfectSeparationError, np.linalg.LinAlgError):
+    except (statsmodels.tools.sm_exceptions.PerfectSeparationError,
+            np.linalg.LinAlgError):
         max_lineage = None
 
     return max_lineage
@@ -131,18 +139,18 @@ def fit_lineage_effect(lin, c, k):
 # W are covariate fixed effects, including population structure
 # a and b are slopes to be fitted
 def fixed_effects_regression(kmer, p, k, m, c, af, pattern,
-           lineage_effects, lin,
-           pret, lrtt, null_res, null_firth,
-           kstrains, nkstrains, continuous):
+                             lineage_effects, lin,
+                             pret, lrtt, null_res, null_firth,
+                             kstrains, nkstrains, continuous):
     notes = set()
 
     # was this af-filtered?
     if p is None:
         notes.add('af-filter')
         return var_obj.Seer(kmer, pattern, af, np.nan, np.nan,
-                    np.nan, np.nan, np.nan, [],
-                    np.nan, kstrains, nkstrains,
-                    notes, True, False)
+                            np.nan, np.nan, np.nan, [],
+                            np.nan, kstrains, nkstrains,
+                            notes, True, False)
 
     # pre-filtering
     prep, bad_chisq = pre_filtering(p, k, continuous)
@@ -151,9 +159,9 @@ def fixed_effects_regression(kmer, p, k, m, c, af, pattern,
     if prep > pret or not np.isfinite(prep):
         notes.add('pre-filtering-failed')
         return var_obj.Seer(kmer, pattern, af, prep, np.nan,
-                    np.nan, np.nan, np.nan, [],
-                    np.nan, kstrains, nkstrains,
-                    notes, True, False)
+                            np.nan, np.nan, np.nan, [],
+                            np.nan, kstrains, nkstrains,
+                            notes, True, False)
 
     # actual regression
     if c.shape[0] == m.shape[0]:
@@ -187,7 +195,9 @@ def fixed_effects_regression(kmer, p, k, m, c, af, pattern,
 
             if not bad_chisq:
                 try:
-                    res = mod.fit(start_params=start_vec, method='newton', disp=False)
+                    res = mod.fit(start_params=start_vec,
+                                  method='newton',
+                                  disp=False)
 
                     if res.bse[1] > 3:
                         bad_chisq = True
@@ -212,9 +222,9 @@ def fixed_effects_regression(kmer, p, k, m, c, af, pattern,
                 if firth_fit is None:  # Firth failure
                     notes.add('firth-fail')
                     return var_obj.Seer(kmer, pattern, af, prep, np.nan,
-                                np.nan, np.nan, np.nan, [],
-                                kstrains, nkstrains,
-                                notes, False, True)
+                                        np.nan, np.nan, np.nan, [],
+                                        kstrains, nkstrains,
+                                        notes, False, True)
                 else:
                     intercept, kbeta, beta, bse, fitll = firth_fit
                     lrstat = -2*(null_firth - fitll)
@@ -222,31 +232,30 @@ def fixed_effects_regression(kmer, p, k, m, c, af, pattern,
                     if lrstat > 0:  # check for non-convergence
                         lrt_pvalue = stats.chi2.sf(lrstat, 1)
 
-
     except np.linalg.linalg.LinAlgError:
         # singular matrix error
         notes.add('matrix-inversion-error')
         return var_obj.Seer(kmer, pattern, af, prep, np.nan,
-                    np.nan, np.nan, np.nan, [],
-                    np.nan, kstrains, nkstrains,
-                    notes, False, True)
-
-    if lrt_pvalue > lrtt or not np.isfinite(lrt_pvalue) or not np.isfinite(kbeta):
-        notes.add('lrt-filtering-failed')
-        return var_obj.Seer(kmer, pattern, af, prep, lrt_pvalue,
-                    kbeta, bse, intercept, beta,
-                    max_lineage, kstrains, nkstrains,
-                    notes, False, True)
+                            np.nan, np.nan, np.nan, [],
+                            np.nan, kstrains, nkstrains,
+                            notes, False, True)
 
     if lineage_effects:
         max_lineage = fit_lineage_effect(lin, c, k)
     else:
         max_lineage = None
 
+    if lrt_pvalue > lrtt or not np.isfinite(lrt_pvalue) or not np.isfinite(kbeta):
+        notes.add('lrt-filtering-failed')
+        return var_obj.Seer(kmer, pattern, af, prep, lrt_pvalue,
+                            kbeta, bse, intercept, beta,
+                            max_lineage, kstrains, nkstrains,
+                            notes, False, True)
+
     return var_obj.Seer(kmer, pattern, af, prep, lrt_pvalue,
-                kbeta, bse, intercept, beta,
-                max_lineage, kstrains, nkstrains,
-                notes, False, False)
+                        kbeta, bse, intercept, beta,
+                        max_lineage, kstrains, nkstrains,
+                        notes, False, False)
 
 
 # Convenience function to calculate likelihood of Firth regression
@@ -282,7 +291,10 @@ def fit_firth(logit_model, start_vec, kmer_name,
 
         # step halving
         j = 0
-        while firth_likelihood(new_beta, logit_model) > firth_likelihood(beta_iterations[i], logit_model):
+        while firth_likelihood(new_beta, logit_model) > firth_likelihood(
+                                                        beta_iterations[i],
+                                                        logit_model
+                                                                        ):
             new_beta = beta_iterations[i] + 0.5*(new_beta - beta_iterations[i])
             j = j + 1
             if (j > step_limit):

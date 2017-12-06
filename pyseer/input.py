@@ -58,9 +58,9 @@ def load_structure(infile, p, max_dimensions, mds_type="metric", n_cpus=1):
 # Loads custom cluster/lineage definitions
 def load_lineage(infile, p):
     lin = pd.Series([x.rstrip().split()[1]
-                   for x in open(infile)],
-                  index=[x.split()[0]
-                         for x in open(infile)])
+                     for x in open(infile)],
+                    index=[x.split()[0]
+                           for x in open(infile)])
     lin = lin.loc[p.index]
     lineages = set(lin.values)
     lineages.pop()
@@ -69,9 +69,9 @@ def load_lineage(infile, p):
     lineage_assign = []
     for categ in lineages:
         lineage_design_mat.append(pd.Series([1 if x == categ
-                                          else 0
-                                          for x in lin.values],
-                                         index=lin.index))
+                                             else 0
+                                             for x in lin.values],
+                                            index=lin.index))
         lineage_assign.append(categ)
     lineage_design_mat = pd.concat(lineage_design_mat, axis=1)
 
@@ -120,9 +120,11 @@ def load_burden(infile, burden_regions):
             (name, region) = region.rstrip().split()
             burden_regions.append((name, region))
 
+
 # Read input line and parse depending on input file type. Return a variant name
 # and pres/abs dictionary
-def read_variant(infile, p, var_type, burden, burden_regions, uncompressed, all_strains, sample_order):
+def read_variant(infile, p, var_type, burden, burden_regions,
+                 uncompressed, all_strains, sample_order):
 
     if var_type is "vcf":
         # burden tests read through regions and slice vcf
@@ -148,7 +150,8 @@ def read_variant(infile, p, var_type, burden, burden_regions, uncompressed, all_
             if not uncompressed:
                 line_in = line_in.decode()
             var_name, strains = (line_in.split()[0],
-                                 line_in.rstrip().split('|')[1].lstrip().split())
+                                 line_in.rstrip().split(
+                                 '|')[1].lstrip().split())
 
             d = {x.split(':')[0]: 1
                  for x in strains}
@@ -194,9 +197,10 @@ def read_variant(infile, p, var_type, burden, burden_regions, uncompressed, all_
         af = float(len(kstrains)) / len(all_strains)
 
         k = np.array([d[x] for x in p.index
-                          if x in d])
+                      if x in d])
 
     return(eof, k, var_name, kstrains, nkstrains, af)
+
 
 # Parses vcf variants from pysam. Returns None if filtered variant.
 # Mutates passed dictionary d
@@ -225,13 +229,21 @@ def read_vcf_var(variant, d):
 
     return(var_name)
 
+
 # Iterable to pass single variants to fixed effects regression
 def iter_variants(p, m, cov, var_type, burden, burden_regions, infile,
                   all_strains, sample_order, lineage_effects, lineage_clusters,
                   min_af, max_af, filter_pvalue, lrt_pvalue, null_fit,
                   firth_null, uncompressed, continuous):
     while True:
-        eof, k, var_name, kstrains, nkstrains, af = read_variant(infile, p, var_type, burden, burden_regions, uncompressed, all_strains, sample_order)
+        eof, k, var_name, kstrains, nkstrains, af = read_variant(infile,
+                                                                 p,
+                                                                 var_type,
+                                                                 burden,
+                                                                 burden_regions,
+                                                                 uncompressed,
+                                                                 all_strains,
+                                                                 sample_order)
 
         # check for EOF
         if eof:
@@ -244,24 +256,32 @@ def iter_variants(p, m, cov, var_type, burden, burden_regions, infile,
         else:
             v = p.values
             c = cov.values
-            pattern = hash_pattern(k);
+            pattern = hash_pattern(k)
 
             yield (var_name, v, k, m, c, af, pattern,
                    lineage_effects, lineage_clusters,
                    filter_pvalue, lrt_pvalue, null_fit, firth_null,
                    kstrains, nkstrains, continuous)
 
+
 # Loads a block of variants into memory for use with LMM
 def load_var_block(var_type, p, burden, burden_regions, infile,
-                  all_strains, sample_order, min_af, max_af, filter_pvalue,
-                  uncompressed, continuous, block_size):
+                   all_strains, sample_order, min_af, max_af, filter_pvalue,
+                   uncompressed, continuous, block_size):
 
     counts = {}
     prefilter = 0
     variants = []
     variant_mat = np.zeros((len(p), block_size))  # pre-allocation of memory
     for var_idx in range(block_size):
-        eof, k, var_name, kstrains, nkstrains, af = read_variant(infile, p, var_type, burden, burden_regions, uncompressed, all_strains, sample_order)
+        eof, k, var_name, kstrains, nkstrains, af = read_variant(infile,
+                                                                 p,
+                                                                 var_type,
+                                                                 burden,
+                                                                 burden_regions,
+                                                                 uncompressed,
+                                                                 all_strains,
+                                                                 sample_order)
 
         # check for EOF
         if eof:
@@ -274,13 +294,15 @@ def load_var_block(var_type, p, burden, burden_regions, infile,
                 prep = 0
             if prep < filter_pvalue:
                 pattern = hash_pattern(k)
-                variants.append(var_obj.LMM(var_name, pattern, af, prep, 0, 0, 0, 0, None, kstrains, nkstrains))
-                variant_mat[:,var_idx] = k
+                variants.append(var_obj.LMM(var_name, pattern, af, prep,
+                                            0, 0, 0, 0, None,
+                                            kstrains, nkstrains))
+                variant_mat[:, var_idx] = k
         else:
             prefilter += 1
 
     # remove empty rows from filtering
-    variant_mat = variant_mat[:, ~np.all(variant_mat == 0, axis = 0)]
+    variant_mat = variant_mat[:, ~np.all(variant_mat == 0, axis=0)]
 
     counts['prefilter'] = prefilter
     counts['tested'] = len(variants)
@@ -292,4 +314,4 @@ def load_var_block(var_type, p, burden, burden_regions, infile,
 def hash_pattern(k):
     pattern = k.view(np.uint8)
     hashed = hashlib.md5(pattern)
-    return(binascii.b2a_base64(hashed.digest()));
+    return(binascii.b2a_base64(hashed.digest()))
