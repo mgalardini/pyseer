@@ -19,6 +19,7 @@ import pyseer.classes as var_obj
 from .cmdscale import cmdscale
 from .model import pre_filtering
 
+
 def load_phenotypes(infile, column):
     p = pd.Series([float(x.rstrip().split()[column-1])
                    for x in open(infile)],
@@ -205,7 +206,6 @@ def read_variant(infile, p, var_type, burden, burden_regions,
 # Parses vcf variants from pysam. Returns None if filtered variant.
 # Mutates passed dictionary d
 def read_vcf_var(variant, d):
-
     var_name = "_".join([variant.contig, str(variant.pos)] +
                         [str(allele) for allele in variant.alleles])
 

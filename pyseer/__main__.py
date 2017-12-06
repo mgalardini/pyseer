@@ -80,18 +80,19 @@ def get_options():
                           ' testing (requires --vcf). '
                           'Requires vcf to be indexed')
 
-
     distances = parser.add_argument_group('Distances')
     distance_group = distances.add_mutually_exclusive_group()
     distance_group.add_argument('--distances',
-                                help='Strains distance square matrix (fixed or lineage effects)')
+                                help='Strains distance square matrix '
+                                     '(fixed or lineage effects)')
     distance_group.add_argument('--load-m',
                                 help='Load an existing matrix decomposition')
     similarity_group = distances.add_mutually_exclusive_group()
     similarity_group.add_argument('--similarity',
-                                help='Strains similarity square matrix (for --lmm)')
+                                  help='Strains similarity square matrix '
+                                       '(for --lmm)')
     similarity_group.add_argument('--load-lmm',
-                                help='Load an existing lmm cache')
+                                  help='Load an existing lmm cache')
     distances.add_argument('--save-m',
                            help='Prefix for saving matrix decomposition or '
                                 'LMM cache')
@@ -125,7 +126,7 @@ def get_options():
                                   '[Default: MDS components]')
     association.add_argument('--lineage-file',
                              default="lineage_effects.txt",
-                             help='File to write lineage association to'
+                             help='File to write lineage association to '
                                   '[Default: lineage_effects.txt]')
 
     filtering = parser.add_argument_group('Filtering options')
@@ -269,18 +270,23 @@ def main():
         if options.lineage:
             if options.lineage_clusters:
                 lineage_clusters, lineage_dict = load_lineage(options.lineage_clusters, p)
-                lineage_fit = fit_null(p.values, lineage_clusters, cov, options.continuous)
+                lineage_fit = fit_null(p.values, lineage_clusters, cov,
+                                       options.continuous)
             else:
-                lineage_dict = ["MDS" + str(i+1) for i in range(options.max_dimensions)]
+                lineage_dict = ["MDS" + str(i+1)
+                                for i in range(options.max_dimensions)]
                 lineage_clusters = m
                 lineage_fit = null_fit
 
             # Calculate, sort and print lineage effects
             lineage_wald = {}
-            for lineage, slope, se in zip(lineage_dict, lineage_fit.params[1:], lineage_fit.bse[1:]):
+            for lineage, slope, se in zip(lineage_dict, lineage_fit.params[1:],
+                                          lineage_fit.bse[1:]):
                 lineage_wald[lineage] = np.absolute(slope)/se
             with open(options.lineage_file, 'w') as lineage_out:
-                for lineage, wald in sorted(lineage_wald.items(), key=operator.itemgetter(1), reverse=True):
+                for lineage, wald in sorted(lineage_wald.items(),
+                                            key=operator.itemgetter(1),
+                                            reverse=True):
                     lineage_out.write("\t".join([lineage, str(wald)]) + "\n")
 
         # binary regression takes LLF as null, not full model fit
@@ -290,7 +296,8 @@ def main():
     # LMM setup - see _internal_single in fastlmm.association.single_snp
     if options.lmm:
         sys.stderr.write("Setting up LMM\n")
-        lmm, h2 = initialise_lmm(p, cov, options.similarity, options.load_lmm, options.save_m)
+        lmm, h2 = initialise_lmm(p, cov, options.similarity, options.load_lmm,
+                                 options.save_m)
         sys.stderr.write("h^2 = " + '{0:.2f}'.format(h2) + "\n")
 
     # Open variant file
@@ -334,7 +341,7 @@ def main():
     if not options.lmm:
         header = header + ['intercept'] + ['PC%d' % i
                                            for i in range(1,
-                                                options.max_dimensions+1)]
+                                                    options.max_dimensions+1)]
         if options.covariates is not None:
             header = header + [x for x in cov.columns]
     else:
