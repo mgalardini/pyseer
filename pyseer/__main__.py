@@ -360,9 +360,9 @@ def main():
 
     # actual association test
     if not options.lmm:
-        # iterator over each kmer
+        # iterator over each variant
         # implements maf filtering
-        k_iter = iter_variants(p, m, cov, var_type, burden, burden_regions,
+        v_iter = iter_variants(p, m, cov, var_type, burden, burden_regions,
                                infile, all_strains, sample_order,
                                options.lineage, lineage_clusters,
                                options.min_af, options.max_af,
@@ -371,10 +371,10 @@ def main():
                                options.uncompressed, options.continuous)
 
         if options.cpu > 1:
-            # multiprocessing proceeds 1000 kmers per core at a time
+            # multiprocessing proceeds X kmers per core at a time
             while True:
                 ret = pool.starmap(fixed_effects_regression,
-                                   itertools.islice(k_iter,
+                                   itertools.islice(v_iter,
                                                     options.cpu*kmer_per_core))
                 if not ret:
                     break
@@ -394,7 +394,7 @@ def main():
                                         options.lmm,
                                         options.print_samples))
         else:
-            for data in k_iter:
+            for data in v_iter:
                 ret = fixed_effects_regression(*data)
 
                 if ret.prefilter:

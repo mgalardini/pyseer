@@ -89,11 +89,9 @@ def fit_null(p, m, cov, continuous, firth=False):
                                         method='newton',
                                         disp=False)
     except np.linalg.linalg.LinAlgError:
-        # singular matrix error
         sys.stderr.write('Matrix inversion error for null model\n')
         return None
     except statsmodels.tools.sm_exceptions.PerfectSeparationError:
-        # singular matrix error
         sys.stderr.write('Perfectly separable data error for null model\n')
         return None
 
@@ -106,7 +104,6 @@ def fit_null(p, m, cov, continuous, firth=False):
 # a is the slope to be fitted
 # Returns the index of the most significant lineage
 def fit_lineage_effect(lin, c, k):
-
     if c.shape[0] == lin.shape[0]:
         X = np.concatenate((np.ones(lin.shape[0]).reshape(-1, 1),
                             lin,
