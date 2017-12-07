@@ -283,6 +283,8 @@ def main():
             for lineage, slope, se in zip(lineage_dict, lineage_fit.params[1:],
                                           lineage_fit.bse[1:]):
                 lineage_wald[lineage] = np.absolute(slope)/se
+            sys.stderr.write('Writing lineage effects to %s\n' %
+                             options.lineage_file)
             with open(options.lineage_file, 'w') as lineage_out:
                 for lineage, wald in sorted(lineage_wald.items(),
                                             key=operator.itemgetter(1),
