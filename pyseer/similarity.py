@@ -4,6 +4,7 @@
 
 import os
 import sys
+import gzip
 import numpy as np
 import pandas as pd
 from pysam import VariantFile
@@ -100,7 +101,7 @@ def main():
                                                             options.min_af,
                                                             options.max_af, 1,
                                                             options.uncompressed,
-                                                            None, block_size)
+                                                            True, block_size)
         if G.shape[1] > block_size:
             G = np.concatenate(G, variant_mat)
         else:
