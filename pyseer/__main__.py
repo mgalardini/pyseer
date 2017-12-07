@@ -205,6 +205,14 @@ def main():
     if (options.lmm and (options.distances or options.load_m)) or (not options.lmm and (options.similarity or options.load_lmm)):
         sys.stderr.write('Must use distance matrix with fixed effects, or similarity matrix with random effects\n')
         sys.exit(1)
+    if options.cpu > 1 and options.lmm:
+        # This is possible but we can come back to it. Might need to think about memory use
+        # I would write using mutex on input file... but is there a more pythonic way?
+        # Or just split load_var_block into ncpu bits and then run fitted_variants on each in pool?
+        sys.stderr.write("LMM does not currently support >1 core\n" +
+                         "Consider splitting your input file " +
+                         "or running with 1 core.\n")
+        sys.exit(1)
 
     # silence warnings
     warnings.filterwarnings('ignore')
@@ -415,13 +423,6 @@ def main():
                                     options.lmm,
                                     options.print_samples))
     else:
-        if options.cpu > 1:
-            # This is possible but we can come back to it. Might need to think about memory use
-            # I would write using mutex on input file... but is there a more pythonic way?
-            # Or just split load_var_block into ncpu bits and then run fitted_variants on each in pool?
-            sys.stderr.write("LMM does not currently support >1 core\n" +
-                             "Consider splitting your input file.\n")
-
         eof = 0
         while not eof:
             variants, variant_mat, counts, eof = load_var_block(var_type, p,
