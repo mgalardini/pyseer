@@ -136,7 +136,10 @@ def read_variant(infile, p, var_type, burden, burden_regions,
                 line_in = None
         # read single vcf line
         else:
-            line_in = next(infile)
+            try:
+                line_in = next(infile)
+            except StopIteration:
+                line_in = None
     else:
         # kmers and Rtab plain text files
         line_in = infile.readline()
@@ -288,7 +291,7 @@ def load_var_block(var_type, p, burden, burden_regions, infile,
             break
 
         if k is not None and (min_af <= af <= max_af):
-            if continuous is not None:
+            if not continuous:
                 prep, bad_chisq = pre_filtering(p, k, continuous)
             else:
                 prep = 0

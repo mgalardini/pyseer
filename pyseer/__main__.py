@@ -241,7 +241,6 @@ def main():
 
     # fixed effects or lineage effects require regressing p ~ m
     if (options.lineage and not options.lineage_clusters) or not options.lmm:
-
         # reading genome distances
         if options.load_m and os.path.isfile(options.load_m):
             m = pd.read_pickle(options.load_m)

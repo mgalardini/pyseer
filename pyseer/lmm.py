@@ -42,7 +42,7 @@ def initialise_lmm(p, cov, K_in, lmm_cache_in=None, lmm_cache_out=None):
         K = K.loc[p.index, p.index]
         factor = float(len(p)) / np.diag(K.values).sum()
         if abs(factor-1.0) > 1e-15:
-            K.values *= factor
+            K *= factor
 
         lmm = lmm_cov(X=covar, Y=y, K=K.values, G=None, inplace=True)
         result = lmm.findH2()
@@ -71,19 +71,14 @@ def fit_lmm(lmm, h2, variants, variant_mat, lineage_effects,
             else:
                 max_lineage = None
 
-            # Copy variant. Might be inefficient?
-            return_var = var_obj.LMM(tested_variant.kmer,
-                                     tested_variant.af,
-                                     tested_variant.prep,
-                                     res['p_values'][lmm_result_idx],
-                                     res['beta'][lmm_result_idx],
-                                     res['bse'][lmm_result_idx],
-                                     res['frac_h2'][lmm_result_idx],
-                                     max_lineage,
-                                     tested_variant.kstrains,
-                                     tested_variant.nkstrains)
+            tested_variant = tested_variant._replace(
+                    pvalue=res['p_values'][lmm_result_idx],
+                    kbeta=res['beta'][lmm_result_idx],
+                    bse=res['bse'][lmm_result_idx],
+                    frac_h2=res['frac_h2'][lmm_result_idx]
+                    )
 
-            passed_vars.append(return_var)
+            passed_vars.append(tested_variant)
 
     return(passed_vars)
 
