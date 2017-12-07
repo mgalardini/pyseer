@@ -30,19 +30,19 @@ def load_phenotypes(infile, column):
     return p
 
 
-def load_structure(infile, p, max_dimensions, mds_type="metric", n_cpus=1):
+def load_structure(infile, p, max_dimensions, mds_type="classic", n_cpus=1):
     m = pd.read_table(infile,
                       index_col=0)
     m = m.loc[p.index, p.index]
 
     # MDS
-    if mds_type is "classic":
+    if mds_type == "classic":
         projection, evals = cmdscale(m)
     else:
         metric_mds = True
-        if mds_type is "non-metric":
+        if mds_type == "non-metric":
             metric_mds = False
-        elif mds_type is not "metric":
+        elif mds_type != "metric":
             sys.stderr.write("Unsupported mds type chosen. Assuming metric\n")
 
         mds = manifold.MDS(max_dimensions, metric_mds, n_jobs=n_cpus,

@@ -99,7 +99,8 @@ def get_options():
     distances.add_argument('--mds',
                            default="classic",
                            choices=['classic', 'metric', 'non-metric'],
-                           help='Type of multidimensional scaling.')
+                           help='Type of multidimensional scaling '
+                                '[Default: classic]')
     distances.add_argument('--max-dimensions',
                            type=int,
                            default=10,
