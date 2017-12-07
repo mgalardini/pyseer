@@ -394,7 +394,7 @@ def main():
                         continue
                     tested += 1
                     if options.output_patterns:
-                        patterns.write(ret.pattern)
+                        patterns.write(x.pattern)
 
                     if x.filter:
                         continue
