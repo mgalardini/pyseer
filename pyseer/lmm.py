@@ -64,7 +64,8 @@ def fit_lmm(lmm, h2, variants, variant_mat, lineage_effects,
     assert len(res['p_values']) == len(variants), "length of LMM result does not match number of variants"
 
     passed_vars = []
-    for lmm_result_idx, tested_variant in zip(range(len(res)), variants):
+    for lmm_result_idx, tested_variant in zip(range(len(res['p_values'])),
+                                              variants):
         if res['p_values'][lmm_result_idx] < lrt_pvalue:
             if lineage_effects:
                 max_lineage = fit_lineage_effect(lin, covariates, k)
