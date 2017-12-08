@@ -56,11 +56,11 @@ def get_options():
     phenotypes.add_argument('--phenotypes',
                             required=True,
                             help='Phenotypes file')
-    phenotypes.add_argument('--phenotype-col',
+    phenotypes.add_argument('--phenotype-column',
                             type=int,
-                            default=0,
+                            default=None,
                             help='Phenotype file column to use '
-                                 '[Default: 0, meaning last column]')
+                                 '[Default: last column]')
 
     variants = parser.add_argument_group('Variants')
     variant_group = variants.add_mutually_exclusive_group(required=True)
@@ -219,7 +219,7 @@ def main():
     #
 
     # reading phenotypes
-    p = load_phenotypes(options.phenotypes, options.phenotype_col)
+    p = load_phenotypes(options.phenotypes, options.phenotype_column)
 
     # Check whether any non 0/1 phenotypes
     if not options.continuous:

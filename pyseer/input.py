@@ -21,10 +21,11 @@ from .model import pre_filtering
 
 
 def load_phenotypes(infile, column):
-    p = pd.Series([float(x.rstrip().split()[column-1])
-                   for x in open(infile)],
-                  index=[x.split()[0]
-                         for x in open(infile)])
+    p = pd.read_table(infile, index_col=0)
+    if column is None:
+        p = p[p.columns[-1]]
+    else:
+        p = p[column]
     # Remove missing values
     p = p.dropna()
     return p
