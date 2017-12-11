@@ -64,7 +64,6 @@ def format_output(item, lineage_dict, lmm=False, print_samples=False):
     if print_samples:
         out += '\t' + '\t'.join((','.join(item.kstrains),
                                  ','.join(item.nkstrains)))
-    if not lmm:
-        out += '\t%s' % ','.join(item.notes)
+    out += '\t%s' % ','.join(item.notes)
 
     return out

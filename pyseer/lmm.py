@@ -20,6 +20,7 @@ import pyseer.classes as var_obj
 from .fastlmm.lmm_cov import LMM as lmm_cov
 
 from .model import pre_filtering
+from .model import fit_lineage_effect
 
 
 # Initialises LMM using K matrix
@@ -77,6 +78,7 @@ def fit_lmm(lmm, h2, variants, variant_mat, lineage_effects,
             prep, bad_chisq = pre_filtering(p, k, continuous)
         else:
             prep = 0
+            bad_chisq = False
         if bad_chisq:
             notes.add('bad-chisq')
         if prep >= filter_pvalue or not np.isfinite(prep):
@@ -115,7 +117,8 @@ def fit_lmm(lmm, h2, variants, variant_mat, lineage_effects,
                                       filter=True))
         else:
             if lineage_effects:
-                max_lineage = fit_lineage_effect(lin, covariates, k)
+                max_lineage = fit_lineage_effect(lineage_clusters,
+                                                 covariates, k)
             else:
                 max_lineage = None
 
@@ -125,7 +128,8 @@ def fit_lmm(lmm, h2, variants, variant_mat, lineage_effects,
                     bse=res['bse'][lmm_result_idx],
                     frac_h2=res['frac_h2'][lmm_result_idx],
                     notes=notes,
-                    filter=False)
+                    filter=False,
+                    max_lineage=max_lineage)
 
             all_variants.append(tested_variant)
 
