@@ -5,6 +5,7 @@
 
 mem_adjust = 10
 
+
 def get_options():
     import argparse
 
@@ -21,7 +22,7 @@ def get_options():
                         default=1,
                         help='Number of cores to use')
     parser.add_argument('--memory',
-                        default=1000,
+                        default=1024,
                         help='Maximum memory to use (in Mb)')
     parser.add_argument('--temp',
                         default='/tmp',
@@ -38,11 +39,11 @@ if __name__ == "__main__":
     from decimal import Decimal
 
     command = ("LC_ALL=C sort -u " +
-              "--parallel=" + str(options.cores) +
-              " -S " + str(options.memory - mem_adjust) + "M" +
-              " -T " + options.temp +
-              " " + options.patterns +
-              " | wc -l")
-    p = subprocess.check_output(command, shell=True, encoding='utf-8')
+               "--parallel=" + str(options.cores) +
+               " -S " + str(options.memory - mem_adjust) + "M" +
+               " -T " + options.temp +
+               " " + options.patterns +
+               " | wc -l")
+    p = subprocess.check_output(command, shell=True, universal_newlines=True)
     print("Patterns:\t" + p.rstrip())
     print("Threshold:\t" + '%.2E' % Decimal(options.alpha/float(p.rstrip())))
