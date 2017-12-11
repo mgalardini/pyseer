@@ -93,15 +93,12 @@ def main():
     # no copy of first variant_mat made. Reserve memory
     G = np.empty((len(p), block_size))
     sys.stderr.write("Reading in variants\n")
+    v_iter = load_var_block(var_type, p, None, None, infile,
+                            all_strains, sample_order,
+                            options.min_af, options.max_af,
+                            options.uncompressed, block_size)
     while not eof:
-        variants, variant_mat, counts, eof = load_var_block(var_type, p, None,
-                                                            None, infile,
-                                                            all_strains,
-                                                            sample_order,
-                                                            options.min_af,
-                                                            options.max_af, 1,
-                                                            options.uncompressed,
-                                                            True, block_size)
+        variants, variant_mat, eof = next(v_iter)
         if G.shape[1] > block_size:
             G = np.concatenate(G, variant_mat)
         else:
