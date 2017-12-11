@@ -57,7 +57,6 @@ def get_options():
                             required=True,
                             help='Phenotypes file')
     phenotypes.add_argument('--phenotype-column',
-                            type=int,
                             default=None,
                             help='Phenotype file column to use '
                                  '[Default: last column]')

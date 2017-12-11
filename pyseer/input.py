@@ -165,7 +165,7 @@ def read_variant(infile, p, var_type, burden, burden_regions,
             if not burden:
                 var_name = read_vcf_var(line_in, d)
                 if var_name is None:
-                    return(eof, None, None, None, None, None)
+                    return (eof, None, None, None, None, None)
             else:
                 # burden test. Regions are named contig:start-end.
                 # Start is non-inclusive, so start one before to include
@@ -204,7 +204,7 @@ def read_variant(infile, p, var_type, burden, burden_regions,
         k = np.array([d[x] for x in p.index
                       if x in d])
 
-    return(eof, k, var_name, kstrains, nkstrains, af)
+    return (eof, k, var_name, kstrains, nkstrains, af)
 
 
 # Parses vcf variants from pysam. Returns None if filtered variant.
@@ -254,9 +254,9 @@ def iter_variants(p, m, cov, var_type, burden, burden_regions, infile,
             raise StopIteration
 
         if (k is None) or not (min_af <= af <= max_af):
-            yield(None, None, None, None, None, None,
-                  None, None, None, None, None, None,
-                  None, None, None, None)
+            yield (None, None, None, None, None, None,
+                   None, None, None, None, None, None,
+                   None, None, None, None)
         else:
             v = p.values
             c = cov.values
