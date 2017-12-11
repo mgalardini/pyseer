@@ -17,7 +17,6 @@ import binascii
 
 import pyseer.classes as var_obj
 from .cmdscale import cmdscale
-from .model import pre_filtering
 
 
 def load_phenotypes(infile, column):
@@ -268,54 +267,56 @@ def iter_variants(p, m, cov, var_type, burden, burden_regions, infile,
                    kstrains, nkstrains, continuous)
 
 
-# Loads a block of variants into memory for use with LMM
-def load_var_block(var_type, p, burden, burden_regions, infile,
-                   all_strains, sample_order, min_af, max_af, filter_pvalue,
-                   uncompressed, continuous, block_size):
-
-    counts = {}
-    prefilter = 0
-    variants = []
-    variant_mat = np.zeros((len(p), block_size))  # pre-allocation of memory
-    for var_idx in range(block_size):
-        eof, k, var_name, kstrains, nkstrains, af = read_variant(infile,
-                                                                 p,
-                                                                 var_type,
-                                                                 burden,
-                                                                 burden_regions,
-                                                                 uncompressed,
-                                                                 all_strains,
-                                                                 sample_order)
-
-        # check for EOF
+def iter_variants_lmm(variant_iter, lmm, h2,
+                      lineage, lineage_clusters,
+                      covariates, continuous, filter_pvalue, lrt_pvalue):
+    for variants, variant_mat, eof in variant_iter:
+        if len(variants) == 0:
+            break
+        yield (lmm, h2, variants, variant_mat, lineage,
+               lineage_clusters, covariates,
+               continuous, filter_pvalue, lrt_pvalue)
         if eof:
             break
 
-        if k is not None and (min_af <= af <= max_af):
-            if not continuous:
-                prep, bad_chisq = pre_filtering(p, k, continuous)
+
+# Loads a block of variants into memory for use with LMM
+def load_var_block(var_type, p, burden, burden_regions, infile,
+                   all_strains, sample_order, min_af, max_af,
+                   uncompressed, block_size):
+    while True:
+        variants = []
+        # pre-allocation of memory
+        variant_mat = np.zeros((len(p), block_size))
+        for var_idx in range(block_size):
+            eof, k, var_name, kstrains, nkstrains, af = read_variant(
+                                            infile, p, var_type,
+                                            burden, burden_regions,
+                                            uncompressed, all_strains,
+                                            sample_order)
+
+            # check for EOF
+            if eof:
+                break
+
+            if k is None or af < min_af or af > max_af:
+                pattern = None
             else:
-                prep = 0
-            if prep < filter_pvalue:
                 pattern = hash_pattern(k)
-                variants.append(var_obj.LMM(var_name, pattern, af, prep,
-                                            0, 0, 0, 0, None,
-                                            kstrains, nkstrains))
                 variant_mat[:, var_idx] = k
-        else:
-            prefilter += 1
+            variants.append((var_obj.LMM(var_name, pattern, af, np.nan,
+                                         np.nan, np.nan, np.nan, np.nan,
+                                         np.nan, kstrains, nkstrains,
+                                         set(), True, True),
+                             p, k))
+        yield (variants, variant_mat, eof)
+        if eof:
+            break
 
-    # remove empty rows from filtering
-    variant_mat = variant_mat[:, ~np.all(variant_mat == 0, axis=0)]
-
-    counts['prefilter'] = prefilter
-    counts['tested'] = len(variants)
-
-    return(variants, variant_mat, counts, eof)
-
+    yield None, None, True
 
 # Calculates the hash of a presence/absence vector
 def hash_pattern(k):
     pattern = k.view(np.uint8)
     hashed = hashlib.md5(pattern)
-    return(binascii.b2a_base64(hashed.digest()))
+    return (binascii.b2a_base64(hashed.digest()))

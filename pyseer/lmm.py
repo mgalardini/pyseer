@@ -19,6 +19,8 @@ import statsmodels.formula.api as smf
 import pyseer.classes as var_obj
 from .fastlmm.lmm_cov import LMM as lmm_cov
 
+from .model import pre_filtering
+
 
 # Initialises LMM using K matrix
 # see _internal_single in fastlmm.association.single_snp
@@ -57,16 +59,61 @@ def initialise_lmm(p, cov, K_in, lmm_cache_in=None, lmm_cache_out=None):
 
 # Fits LMM and returns LMM tuples for printing
 def fit_lmm(lmm, h2, variants, variant_mat, lineage_effects,
-            lineage_clusters, covariates, lrt_pvalue):
+            lineage_clusters, covariates, continuous,
+            filter_pvalue, lrt_pvalue):
+    all_variants = []
+    filtered_variants = []
+    for var_idx, variant in enumerate(variants):
+        notes = set()
+        var, p, k = variant
+        if var.pattern is None or k is None:
+            notes.add('af-filter')
+            all_variants.append(var._replace(notes=notes,
+                                             prefilter=True,
+                                             filter=False))
+            variant_mat[:, var_idx] = np.zeros(variant_mat.shape[0])
+            continue
+        if not continuous:
+            prep, bad_chisq = pre_filtering(p, k, continuous)
+        else:
+            prep = 0
+        if bad_chisq:
+            notes.add('bad-chisq')
+        if prep >= filter_pvalue or not np.isfinite(prep):
+            notes.add('pre-filtering-failed')
+            all_variants(var._replace(notes=notes,
+                                      prep=prep,
+                                      prefilter=True,
+                                      filter=False))
+            variant_mat[:, var_idx] = np.zeros(variant_mat.shape[0])
+            continue
+        var = var._replace(prep=prep,
+                           notes=notes,
+                           prefilter=False)
+        filtered_variants.append(var)
+
+    # remove empty rows from filtering
+    variant_mat = variant_mat[:, ~np.all(variant_mat == 0, axis=0)]
+
+    if variant_mat.shape[1] == 0:
+        return []
 
     # fit LMM to block
     res = fit_lmm_block(lmm, h2, variant_mat)
-    assert len(res['p_values']) == len(variants), "length of LMM result does not match number of variants"
+    assert len(res['p_values']) == len(filtered_variants), "length of LMM result does not match number of variants"
 
     passed_vars = []
     for lmm_result_idx, tested_variant in zip(range(len(res['p_values'])),
-                                              variants):
-        if res['p_values'][lmm_result_idx] < lrt_pvalue:
+                                              filtered_variants):
+        notes = tested_variant.notes
+        if res['p_values'][lmm_result_idx] >= lrt_pvalue or not np.isfinite(
+                                            res['p_values'][lmm_result_idx]):
+            notes.add('lrt-filtering-failed')
+            all_variants.append(tested_variant._replace(
+                                      notes=notes,
+                                      pvalue=res['p_values'][lmm_result_idx],
+                                      filter=True))
+        else:
             if lineage_effects:
                 max_lineage = fit_lineage_effect(lin, covariates, k)
             else:
@@ -76,13 +123,13 @@ def fit_lmm(lmm, h2, variants, variant_mat, lineage_effects,
                     pvalue=res['p_values'][lmm_result_idx],
                     kbeta=res['beta'][lmm_result_idx],
                     bse=res['bse'][lmm_result_idx],
-                    frac_h2=res['frac_h2'][lmm_result_idx]
-                    )
+                    frac_h2=res['frac_h2'][lmm_result_idx],
+                    notes=notes,
+                    filter=False)
 
-            passed_vars.append(tested_variant)
+            all_variants.append(tested_variant)
 
-    return(passed_vars)
-
+    return all_variants
 
 # Actually fits the LMM to numpy variant array
 # see map/reduce section of _internal_single in fastlmm.association.single_snp

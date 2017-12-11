@@ -30,6 +30,7 @@ from .input import load_covariates
 from .input import load_burden
 from .input import iter_variants
 from .input import load_var_block
+from .input import iter_variants_lmm
 
 from .model import fixed_effects_regression
 from .model import fit_null
@@ -41,8 +42,8 @@ from .lmm import fit_lmm_block
 from .utils import format_output
 
 # Number of variants to process at a time
-lmm_block_size = 10000
-kmer_per_core = 1000
+lmm_block_size = 1000
+variants_per_core = 1000
 
 
 def get_options():
@@ -203,14 +204,6 @@ def main():
         sys.exit(1)
     if (options.lmm and (options.distances or options.load_m)) or (not options.lmm and (options.similarity or options.load_lmm)):
         sys.stderr.write('Must use distance matrix with fixed effects, or similarity matrix with random effects\n')
-        sys.exit(1)
-    if options.cpu > 1 and options.lmm:
-        # This is possible but we can come back to it. Might need to think about memory use
-        # I would write using mutex on input file... but is there a more pythonic way?
-        # Or just split load_var_block into ncpu bits and then run fitted_variants on each in pool?
-        sys.stderr.write("LMM does not currently support >1 core\n" +
-                         "Consider splitting your input file " +
-                         "or running with 1 core.\n")
         sys.exit(1)
 
     # silence warnings
@@ -380,11 +373,12 @@ def main():
                                options.uncompressed, options.continuous)
 
         if options.cpu > 1:
-            # multiprocessing proceeds X kmers per core at a time
+            # multiprocessing proceeds X variants per core at a time
             while True:
                 ret = pool.starmap(fixed_effects_regression,
-                                   itertools.islice(v_iter,
-                                                    options.cpu*kmer_per_core))
+                                   itertools.islice(
+                                                v_iter,
+                                                options.cpu*variants_per_core))
                 if not ret:
                     break
                 for x in ret:
@@ -421,38 +415,59 @@ def main():
                                     options.lmm,
                                     options.print_samples))
     else:
-        eof = 0
-        while not eof:
-            variants, variant_mat, counts, eof = load_var_block(var_type, p,
-                                                                burden,
-                                                                burden_regions,
-                                                                infile,
-                                                                all_strains,
-                                                                sample_order,
-                                                                options.min_af,
-                                                                options.max_af,
-                                                                options.filter_pvalue,
-                                                                options.uncompressed,
-                                                                options.continuous,
-                                                                lmm_block_size)
-            prefilter += counts['prefilter']
-            tested += counts['tested']
+        v_iter = load_var_block(var_type, p, burden, burden_regions,
+                                infile, all_strains, sample_order,
+                                options.min_af, options.max_af,
+                                options.uncompressed, lmm_block_size)
+        lmm_iter = iter_variants_lmm(v_iter, lmm, h2,
+                                     options.lineage, lineage_clusters,
+                                     cov.values,
+                                     options.continuous,
+                                     options.filter_pvalue,
+                                     options.lrt_pvalue)
+        if options.cpu > 1:
+            while True:
+                ret = pool.starmap(fit_lmm,
+                                   itertools.islice(
+                                                lmm_iter,
+                                                options.cpu))
+                if not ret:
+                    break
+                for values in ret:
+                    for x in values:
+                        if x.prefilter:
+                            prefilter += 1
+                            continue
+                        tested += 1
+                        if options.output_patterns:
+                            patterns.write(x.pattern)
 
-            if counts['tested'] > 0:
-                fitted_variants = fit_lmm(lmm, h2, variants,
-                                          variant_mat, options.lineage,
-                                          lineage_clusters, cov.values,
-                                          options.lrt_pvalue)
-
-                for variant in fitted_variants:
-                    if options.output_patterns:
-                        patterns.write(variant.pattern)
-                    if variant.pvalue < options.lrt_pvalue:
+                        if x.filter:
+                            continue
                         printed += 1
-                        print(format_output(variant,
+                        print(format_output(x,
                                             lineage_dict,
                                             options.lmm,
                                             options.print_samples))
+        else:
+            for data in lmm_iter:
+                ret = fit_lmm(*data)
+
+                for x in ret:
+                    if x.prefilter:
+                        prefilter += 1
+                        continue
+                    tested += 1
+                    if options.output_patterns:
+                        patterns.write(x.pattern)
+
+                    if x.filter:
+                        continue
+                    printed += 1
+                    print(format_output(x,
+                                        lineage_dict,
+                                        options.lmm,
+                                        options.print_samples))
 
     sys.stderr.write('%d loaded variants\n' % (prefilter + tested))
     sys.stderr.write('%d filtered variants\n' % prefilter)
