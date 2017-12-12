@@ -15,14 +15,17 @@ def get_options():
 
     parser.add_argument('--format',
                         default="newick",
-                        help="Format of tree file")
-    parser.add_argument('--calc-C',
-                        action='store_true',
-                        help='Produce var-covar matrix C (as from PDDIST). Always uses branch lengths.')
-    parser.add_argument('--topology',
-                        action='store_true',
-                        default=False,
-                        help='Ignore branch lengths, and only use topological distances')
+                        help="Format of tree file [Default: newick]")
+    method_group = parser.add_mutually_exclusive_group()
+    method_group.add_argument('--calc-C',
+                              action='store_true',
+                              help='Produce var-covar matrix C (as from PDDIST). '
+                                   'Always uses branch lengths.')
+    method_group.add_argument('--topology',
+                              action='store_true',
+                              default=False,
+                              help='Ignore branch lengths, and only use topological '
+                                   'distances')
 
     return parser.parse_args()
 
