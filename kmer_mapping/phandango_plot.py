@@ -25,7 +25,7 @@ def get_options():
                         help="Output file")
 
     parser.add_argument("--bwa",
-                        help="Location of bwa executable"
+                        help="Location of bwa executable "
                         "[default=bwa]",
                         default="bwa")
     parser.add_argument("--tmp-prefix",
@@ -41,7 +41,7 @@ def main():
     # Open seer results
     # seer_remaining = seer_results
     seer_results = open(options.kmers, 'r')
-    header_vals = seer_remaining.readline().rstrip.split("\t")
+    header_vals = seer_results.readline().rstrip().split("\t")
     p_val_col = 0
     for column in header_vals:
         if column == "lrt-pvalue":
@@ -49,9 +49,11 @@ def main():
         p_val_col += 1
 
     tmp_fa = tempfile.NamedTemporaryFile(prefix=options.tmp_prefix + "/")
+    kmer_idx = 0
     with open(tmp_fa.name, 'w') as kmer_fa:
         for kmer in seer_results:
-            kmer_fa.write(">" + str(kmers_remaining) + "\n")
+            kmer_idx += 1
+            kmer_fa.write(">" + str(kmer_idx) + "\n")
             kmer_fa.write(kmer.split("\t")[0] + "\n")
 
     seer_results.seek(0)
@@ -64,13 +66,13 @@ def main():
     with open(options.output, 'w') as outfile:
         outfile.write("\t".join(["SNP", "BP", "minLOG10(P)", "log10(p)", "r^2"]))
 
-        mapped_kmers = bwa_iter(options.reference, remaining_fa_tmp, "mem")
-        for mapping, kmer_line in zip(mapped_kmers, seer_remaining):
+        mapped_kmers = bwa_iter(options.reference, tmp_fa.name, "mem")
+        for mapping, kmer_line in zip(mapped_kmers, seer_results):
             p_val = float(kmer_line.split("\t")[p_val_col])
             if mapping.mapped and p_val > 0:
                 log10p = -log10(p_val)
                 for (contig, start, end, strand) in mapping.positions:
-                    outfile.write("\t".join(["26", ".", str(start) + ".." + str(end), str(log10p), "0"]))
+                    outfile.write("\t".join(["26", ".", str(start) + ".." + str(end), str(log10p), "0"]) + "\n")
 
     # Clean up
     tmp_fa.close()
