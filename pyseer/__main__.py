@@ -93,8 +93,9 @@ def get_options():
     similarity_group.add_argument('--load-lmm',
                                   help='Load an existing lmm cache')
     distances.add_argument('--save-m',
-                           help='Prefix for saving matrix decomposition or '
-                                'LMM cache')
+                           help='Prefix for saving matrix decomposition')
+    distances.add_argument('--save-lmm',
+                           help='Prefix for saving LMM cache')
     distances.add_argument('--mds',
                            default="classic",
                            choices=['classic', 'metric', 'non-metric'],
@@ -302,7 +303,7 @@ def main():
     if options.lmm:
         sys.stderr.write("Setting up LMM\n")
         lmm, h2 = initialise_lmm(p, cov, options.similarity, options.load_lmm,
-                                 options.save_m)
+                                 options.save_lmm)
         sys.stderr.write("h^2 = " + '{0:.2f}'.format(h2) + "\n")
 
     # Open variant file

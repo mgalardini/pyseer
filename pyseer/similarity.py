@@ -13,7 +13,7 @@ from .__init__ import __version__
 
 from .input import load_var_block
 
-block_size = 10000
+block_size = 1000
 
 
 def get_options():
