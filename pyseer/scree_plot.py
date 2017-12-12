@@ -12,8 +12,7 @@ def get_options():
     parser = argparse.ArgumentParser(description=description)
 
     parser.add_argument('distances',
-                        help='Eigenvalues file '
-                             'Strains distance square matrix')
+                        help='Strains distance square matrix')
 
     parser.add_argument('--max-dimensions',
                         type=int,
@@ -57,7 +56,8 @@ def main():
                rotation=90)
 
     plt.xlim(-0.25, evals.shape[0]-0.75)
-    plt.tight_layout()
+    if options.max_dimensions >= 5:
+        plt.tight_layout()
 
     plt.savefig('scree_plot.png', dpi=150)
 
