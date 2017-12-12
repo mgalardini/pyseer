@@ -34,10 +34,10 @@ def initialise_lmm(p, cov, K_in, lmm_cache_in=None, lmm_cache_out=None):
 
     if lmm_cache_in is not None and os.path.exists(lmm_cache_in):
         lmm = lmm_cov(X=covar, Y=y, G=None, K=None)
-        with np.load(lmm_cache) as data:
+        with np.load(lmm_cache_in) as data:
             lmm.U = data['arr_0']
             lmm.S = data['arr_1']
-            h2 = data['arr_2']
+            h2 = data['arr_2'][0]
     else:
         # read and normalise K
         K = pd.read_table(K_in,
@@ -83,10 +83,10 @@ def fit_lmm(lmm, h2, variants, variant_mat, lineage_effects,
             notes.add('bad-chisq')
         if prep >= filter_pvalue or not np.isfinite(prep):
             notes.add('pre-filtering-failed')
-            all_variants(var._replace(notes=notes,
-                                      prep=prep,
-                                      prefilter=True,
-                                      filter=False))
+            all_variants.append(var._replace(notes=notes,
+                                             prep=prep,
+                                             prefilter=True,
+                                             filter=False))
             variant_mat[:, var_idx] = np.zeros(variant_mat.shape[0])
             continue
         var = var._replace(prep=prep,
