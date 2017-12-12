@@ -242,8 +242,14 @@ def main():
             m = pd.read_pickle(options.load_m)
             m = m.loc[p.index]
         else:
+            # see if we have setup a seed for non-classical mds
+            # a bit of a ugly hack for testing
+            seed = os.environ.get('PYSEERSEED', None)
+            if seed is not None:
+                seed = int(seed)
+            #
             m = load_structure(options.distances, p, options.max_dimensions,
-                               options.mds, options.cpu)
+                               options.mds, options.cpu, seed)
             if options.save_m:
                 m.to_pickle(options.save_m + ".pkl")
 
