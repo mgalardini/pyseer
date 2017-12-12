@@ -26,7 +26,7 @@ def get_options():
                         "First column fasta sequence, second column gff annotation, "
                         "third column 'ref' or 'draft'")
     parser.add_argument("output",
-                        help="Output file prefix")
+                        help="Output file")
 
     parser.add_argument("--bwa",
                         help="Location of bwa executable"
