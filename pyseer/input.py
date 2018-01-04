@@ -219,7 +219,7 @@ def read_vcf_var(variant, d):
         sys.stderr.write("Multiple alleles at %s_%s. Skipping\n" %
                          (variant.contig, str(variant.pos)))
         var_name = None
-    elif "PASS" not in variant.filter.keys() and "." not in variant.filter.keys():
+    elif variant.filter.keys() == True and "PASS" not in variant.filter.keys():
         var_name = None
     else:
         for sample, call in variant.samples.items():
