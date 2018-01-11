@@ -1,4 +1,7 @@
+Read 50 phenotypes
 Detected binary phenotype
+Loaded projection with dimension (50, 35)
+Analysing 50 samples found in both phenotype and structure matrix
 Multiple alleles at FM211187_23. Skipping
 Multiple alleles at FM211187_79. Skipping
 Multiple alleles at FM211187_845. Skipping
@@ -53,6 +56,6 @@ Multiple alleles at FM211187_15766. Skipping
 Multiple alleles at FM211187_15769. Skipping
 Multiple alleles at FM211187_15770. Skipping
 886 loaded variants
-622 filtered variants
-264 tested variants
-264 printed variants
+524 filtered variants
+362 tested variants
+362 printed variants

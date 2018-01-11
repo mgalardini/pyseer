@@ -1,3 +1,4 @@
+Read 50 phenotypes
 Detected binary phenotype
 Setting up LMM
 h^2 = 0.00
@@ -55,6 +56,6 @@ Multiple alleles at FM211187_15766. Skipping
 Multiple alleles at FM211187_15769. Skipping
 Multiple alleles at FM211187_15770. Skipping
 886 loaded variants
-622 filtered variants
-264 tested variants
-264 printed variants
+524 filtered variants
+362 tested variants
+362 printed variants

@@ -216,6 +216,7 @@ def main():
 
     # reading phenotypes
     p = load_phenotypes(options.phenotypes, options.phenotype_column)
+    sys.stderr.write("Read " + str(len(p)) + " phenotypes\n")
 
     # Check whether any non 0/1 phenotypes
     if not options.continuous:
@@ -240,14 +241,14 @@ def main():
         # reading genome distances
         if options.load_m and os.path.isfile(options.load_m):
             m = pd.read_pickle(options.load_m)
-            m = m.loc[p.index]
+            sys.stderr.write("Loaded projection with dimension " + str(m.shape) + "\n")
         else:
             # see if we have setup a seed for non-classical mds
             # a bit of a ugly hack for testing
             seed = os.environ.get('PYSEERSEED', None)
             if seed is not None:
                 seed = int(seed)
-            #
+
             m = load_structure(options.distances, p, options.max_dimensions,
                                options.mds, options.cpu, seed)
             if options.save_m:
@@ -259,6 +260,15 @@ def main():
                              (m.shape[1],
                               options.max_dimensions))
             options.max_dimensions = m.shape[1]
+
+        intersecting_samples = p.index.intersection(m.index)
+        sys.stderr.write("Analysing " + str(len(intersecting_samples)) + " samples"
+                         " found in both phenotype and structure matrix\n")
+        p = p.loc[intersecting_samples]
+        m = m.loc[p.index]
+        if cov.shape[1] > 0:
+            cov = cov.loc[p.index]
+
         m = m.values[:, :options.max_dimensions]
 
         # calculate null regressions once
@@ -273,7 +283,6 @@ def main():
             sys.exit(1)
 
     # lineage effects using null model - read BAPS clusters and fit pheno ~ lineage
-    # TODO maybe should move out of __main__?
     lineage_clusters = None
     lineage_dict = []
     if options.lineage or not options.lmm:
@@ -308,7 +317,7 @@ def main():
     # LMM setup - see _internal_single in fastlmm.association.single_snp
     if options.lmm:
         sys.stderr.write("Setting up LMM\n")
-        lmm, h2 = initialise_lmm(p, cov, options.similarity, options.load_lmm,
+        p, lmm, h2 = initialise_lmm(p, cov, options.similarity, options.load_lmm,
                                  options.save_lmm)
         sys.stderr.write("h^2 = " + '{0:.2f}'.format(h2) + "\n")
 

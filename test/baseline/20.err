@@ -1,5 +1,8 @@
+Read 50 phenotypes
 Detected binary phenotype
 Setting up LMM
+Similarity matrix has dimension (1838, 1838)
+Analysing 50 samples found in both phenotype and similarity matrix
 h^2 = 0.00
 200 loaded variants
 14 filtered variants

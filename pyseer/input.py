@@ -34,7 +34,12 @@ def load_structure(infile, p, max_dimensions, mds_type="classic", n_cpus=1,
                    seed=None):
     m = pd.read_table(infile,
                       index_col=0)
-    m = m.loc[p.index, p.index]
+    sys.stderr.write("Structure matrix has dimension " + str(m.shape) + "\n")
+
+    # Also take intersection here, so that MDS isn't done using samples not present
+    # in sample
+    intersecting_samples = p.index.intersection(m.index)
+    m = m.loc[intersecting_samples, intersecting_samples]
 
     # MDS
     if mds_type == "classic":
@@ -64,7 +69,13 @@ def load_lineage(infile, p):
                      for x in open(infile)],
                     index=[x.split()[0]
                            for x in open(infile)])
-    lin = lin.loc[p.index]
+
+    if (len(p.index.difference(lin.index)) > 0):
+        sys.stderr.write("All samples with a phenotype must be present in lineage file\n")
+        sys.exit(0)
+    else:
+        lin = lin.loc[p.index]
+
     lineages = set(lin.values)
     lineages.pop()
 
@@ -86,7 +97,13 @@ def load_covariates(infile, covariates, p):
                       header=None,
                       index_col=0)
     c.columns = ['covariate%d' % (x+2) for x in range(c.shape[1])]
-    c = c.loc[p.index]
+
+    if (len(p.index.difference(c.index)) > 0):
+        sys.stderr.write("All samples with a phenotype must be present in covariate file\n")
+        sys.exit(0)
+    else:
+        c = c.loc[p.index]
+
     # which covariates to use?
     if covariates is None:
         cov = pd.DataFrame([])

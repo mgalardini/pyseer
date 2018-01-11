@@ -26,23 +26,41 @@ from .model import fit_lineage_effect
 # Initialises LMM using K matrix
 # see _internal_single in fastlmm.association.single_snp
 def initialise_lmm(p, cov, K_in, lmm_cache_in=None, lmm_cache_out=None):
-    if cov.shape[0] == p.shape[0]:
-        covar = np.c_[cov.values, np.ones((p.shape[0], 1))]
-    else:
-        covar = np.ones((p.shape[0], 1))
-    y = np.reshape(p.values, (-1, 1))
 
     if lmm_cache_in is not None and os.path.exists(lmm_cache_in):
+        if cov.shape[0] == p.shape[0]:
+            covar = np.c_[cov.values, np.ones((p.shape[0], 1))]
+        else:
+            covar = np.ones((p.shape[0], 1))
+        y = np.reshape(p.values, (-1, 1))
+
         lmm = lmm_cov(X=covar, Y=y, G=None, K=None)
         with np.load(lmm_cache_in) as data:
             lmm.U = data['arr_0']
             lmm.S = data['arr_1']
             h2 = data['arr_2'][0]
+
+            if (lmm.U.shape[0] != len(p)):
+                sys.stderr.write("Phenotype different length from cache file\n")
+                sys.exit(1)
     else:
         # read and normalise K
         K = pd.read_table(K_in,
                           index_col=0)
+        sys.stderr.write("Similarity matrix has dimension " + str(K.shape) + "\n")
+
+        intersecting_samples = p.index.intersection(K.index)
+        sys.stderr.write("Analysing " + str(len(intersecting_samples)) + " samples"
+                         " found in both phenotype and similarity matrix\n")
+        p = p.loc[intersecting_samples]
+        y = np.reshape(p.values, (-1, 1))
         K = K.loc[p.index, p.index]
+        if cov.shape[0] == p.shape[0]:
+            cov = cov.loc[intersecting_samples]
+            covar = np.c_[cov.values, np.ones((p.shape[0], 1))]
+        else:
+            covar = np.ones((p.shape[0], 1))
+
         factor = float(len(p)) / np.diag(K.values).sum()
         if abs(factor-1.0) > 1e-15:
             K *= factor
@@ -55,7 +73,7 @@ def initialise_lmm(p, cov, K_in, lmm_cache_in=None, lmm_cache_out=None):
             lmm.getSU()
             np.savez(lmm_cache_out, lmm.U, lmm.S, np.array([h2]))
 
-    return(lmm, h2)
+    return(p, lmm, h2)
 
 
 # Fits LMM and returns LMM tuples for printing
