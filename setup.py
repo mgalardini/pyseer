@@ -56,4 +56,5 @@ setup(
                       'scipy',
                       'pandas',
                       'statsmodels'],
+    test_suite="tests",
 )
