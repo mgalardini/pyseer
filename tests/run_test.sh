@@ -6,22 +6,20 @@ reset="\033[0m"
 
 die () {
         echo -e $red"############"$reset
-	echo -e $red$1$reset
-	echo -e $red"Test failed!"$reset
-	echo -e $red"############"$reset
-	exit 1
+	      echo -e $red$1$reset
+	      echo -e $red"Test failed!"$reset
+	      echo -e $red"############"$reset
+	      exit 1
 }
 
 # unpack the test data
-zcat distances.tsv.gz > distances.tsv
-zcat similarity.tsv.gz > similarity.tsv
 zcat presence_absence.Rtab.gz > presence_absence.Rtab
 
 # test all command line options
-python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --distances distances.tsv --save-m pop_struct > 1.log 2> 1.err || die "Save population structure"
+python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --distances distances.tsv.gz --save-m pop_struct > 1.log 2> 1.err || die "Save population structure"
 python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --load-m pop_struct.pkl > 2.log 2> 2.err || die "Load population structure"
 python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --filter-pvalue 1E-5 --lrt-pvalue 1E-8 --load-m pop_struct.pkl > 3.log 2> 3.err || die "Basic filters"
-python ../pyseer-runner.py --kmers kmers.gz --phenotypes example.pheno --distances distances.tsv --max-dimensions 3 --min-af 0.4 --max-af 0.6 > 4.log 2> 4.err || die "Binary phenotype w/ AF filtering"
+python ../pyseer-runner.py --kmers kmers.gz --phenotypes example.pheno --distances distances.tsv.gz --max-dimensions 3 --min-af 0.4 --max-af 0.6 > 4.log 2> 4.err || die "Binary phenotype w/ AF filtering"
 python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --max-dimensions 3 --load-m pop_struct.pkl --phenotype-column continuous > 5.log 2> 5.err || die "Continuous phenotype"
 python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --max-dimensions 3 --continuous --load-m pop_struct.pkl > 6.log 2> 6.err || die "Force continuous phenotype"
 python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --max-dimensions 3 --print-samples --load-m pop_struct.pkl > 7.log 2> 7.err || die "Print samples"
@@ -32,15 +30,15 @@ python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --cpu 2 --
 python ../pyseer-runner.py --vcf variants.vcf.gz --phenotypes subset.pheno --load-m pop_struct.pkl --max-dimensions 3 > 12.log 2> 12.err || die "VCF input"
 python ../pyseer-runner.py --vcf variants.vcf.gz --burden burden_regions.txt --phenotypes subset.pheno --load-m pop_struct.pkl --max-dimensions 3 > 13.log 2> 13.err || die "VCF w/ burden test"
 python ../pyseer-runner.py --pres presence_absence.Rtab --phenotypes subset.pheno --load-m pop_struct.pkl --max-dimensions 3 > 14.log 2> 14.err || die "Roary/piggy input"
-python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --distances distances.tsv --max-dimensions 3 --mds classic --continuous > 15.log 2> 15.err || die "Classic MDS"
+python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --distances distances.tsv.gz --max-dimensions 3 --mds classic --continuous > 15.log 2> 15.err || die "Classic MDS"
 # ugly hack for sklearn random_state
 export PYSEERSEED="42"
-python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --distances distances.tsv --max-dimensions 3 --mds metric --continuous > 16.log 2> 16.err || die "Metric MDS"
-python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --distances distances.tsv --max-dimensions 3 --mds non-metric --continuous > 17.log 2> 17.err || die "Non-metric MDS"
+python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --distances distances.tsv.gz --max-dimensions 3 --mds metric --continuous > 16.log 2> 16.err || die "Metric MDS"
+python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --distances distances.tsv.gz --max-dimensions 3 --mds non-metric --continuous > 17.log 2> 17.err || die "Non-metric MDS"
 #
-python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --distances distances.tsv --max-dimensions 3 --lineage --lineage-file lineage.txt > 18.log 2> 18.err || die "Lineage effects"
-python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --distances distances.tsv --max-dimensions 3 --lineage --lineage-clusters lineage_clusters.txt > 19.log 2> 19.err || die "Lineage effects w/ user-provided clusters"
-python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --similarity similarity.tsv --lmm --save-lmm lmm.cache > 20.log 2> 20.err || die "LMM saving cache"
+python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --distances distances.tsv.gz --max-dimensions 3 --lineage --lineage-file lineage.txt > 18.log 2> 18.err || die "Lineage effects"
+python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --distances distances.tsv.gz --max-dimensions 3 --lineage --lineage-clusters lineage_clusters.txt > 19.log 2> 19.err || die "Lineage effects w/ user-provided clusters"
+python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --similarity similarity.tsv.gz --lmm --save-lmm lmm.cache > 20.log 2> 20.err || die "LMM saving cache"
 python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --lmm --load-lmm lmm.cache.npz > 21.log 2> 21.err || die "LMM loading cache"
 python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --lmm --load-lmm lmm.cache.npz --lineage --load-m pop_struct.pkl > 22.log 2> 22.err || die "LMM with lineage"
 python ../pyseer-runner.py --vcf variants.vcf.gz --phenotypes subset.pheno --lmm --load-lmm lmm.cache.npz > 23.log 2> 23.err || die "LMM with VCF input"
@@ -50,7 +48,7 @@ python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --lmm --lo
 python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --lmm --load-lmm lmm.cache.npz --output-patterns patterns.txt > 27.log 2> 27.err || die "Output patterns"
 
 # test other pyseer commands
-python ../scree_plot-runner.py distances.tsv --max-dimensions 20 > /dev/null 2> /dev/null || die "Scree plot"
+python ../scree_plot-runner.py distances.tsv.gz --max-dimensions 20 > /dev/null 2> /dev/null || die "Scree plot"
 python ../similarity-runner.py samples.txt --kmers kmers.gz > /dev/null 2> /dev/null || die "Similarity w/ kmers"
 python ../similarity-runner.py samples.txt --vcf variants.vcf.gz > /dev/null 2> /dev/null || die "Similarity w/ vcf"
 python ../similarity-runner.py samples.txt --pres presence_absence.Rtab > /dev/null 2> /dev/null || die "Similarity w/ roary/piggy"
