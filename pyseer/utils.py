@@ -47,14 +47,20 @@ def format_output(item, lineage_dict, lmm=False, print_samples=False):
                                        item.kbeta,
                                        item.bse)])
     if lmm:
-        out += '\t' + '%.2E' % Decimal(item.frac_h2)
+        if np.isfinite(item.frac_h2):
+            frac_h2 = '%.2E' % Decimal(item.frac_h2)
+        else:
+            frac_h2 = ''
+        out += '\t' + frac_h2
     else:
-        out += '\t' + '%.2E' % Decimal(item.intercept) + '\t' + '\t'.join(
-                                                        ['%.2E' % Decimal(x)
-                                                         if np.isfinite(x)
-                                                         else ''
-                                                         for x in item.betas]
-                                                                  )
+        if np.isfinite(item.intercept):
+            intercept = '%.2E' % Decimal(item.intercept)
+        else:
+            intercept = ''
+        out += '\t' + intercept + '\t' + '\t'.join(['%.2E' % Decimal(x)
+                                                    if np.isfinite(x)
+                                                    else ''
+                                                    for x in item.betas])
 
     if item.max_lineage is not None:
         if np.isfinite(item.max_lineage):
