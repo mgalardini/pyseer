@@ -7,3 +7,4 @@ install:
   - pip install -r requirements.txt
 script:
   - cd tests && bash run_test.sh
+  - python setup.py test
