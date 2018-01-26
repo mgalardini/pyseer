@@ -19,10 +19,29 @@ import statsmodels.formula.api as smf
 import pyseer.classes as var_obj
 
 
-# Calculate a naive p-value from a chisq test (binary phenotype)
-# or a t-test (continuous phenotype) which is not adjusted for population
-# structure
 def pre_filtering(p, k, continuous):
+    """
+    Calculate a naive p-value from a chisq test (binary phenotype)
+    or a t-test (continuous phenotype) which is not adjusted for population
+    structure
+
+    Parameters
+    ----------
+    p : (n, 1) array
+        Phenotypes vector
+    k : (k, 1) array
+        Variant presence-absence vector
+    continous: boolean
+        Whether phenotypes are continuous or binary
+
+    Returns
+    -------
+    prep : float
+        Naive p-value
+
+    bad_chisq : boolean
+        Whether the chisq test had small values in the contingency table
+    """
     bad_chisq = False
     if continuous:
         prep = stats.ttest_ind(p[k == 1],
@@ -36,15 +55,8 @@ def pre_filtering(p, k, continuous):
                   t[0][(t[0] == 0) & (t[1] == 0)].shape[0]]]
 
         # check for small values
-        bad_chisq = 0
-        bad_entries = 0
-        for row in table:
-            for entry in row:
-                if entry <= 1:
-                    bad_chisq = True
-                elif entry <= 5:
-                    bad_entries += 1
-        if bad_entries > 1:
+        table = np.array(table)
+        if table[table <= 1].shape[0] > 0 or table[table <= 5].shape[0] > 1:
             bad_chisq = True
 
         prep = stats.chi2_contingency(table, correction=False)[1]
