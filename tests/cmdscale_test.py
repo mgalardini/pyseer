@@ -22,8 +22,8 @@ class TestCommandScale(unittest.TestCase):
         # precision problems between systems
         Y = Y[:, :10]
         e = e[:10]
-        self.assertTrue(np.array_equal(Y, self.Y))
-        self.assertTrue(np.array_equal(e, self.e))
+        self.assertTrue(abs((self.Y - Y).max()) < 1E-15)
+        self.assertTrue(abs((self.e - e).max()) < 1E-15)
 
 
 if __name__ == '__main__':
