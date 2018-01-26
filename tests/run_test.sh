@@ -55,10 +55,10 @@ python ../similarity-runner.py samples.txt --pres presence_absence.Rtab > /dev/n
 cat mash.tsv | python ../square_mash-runner.py > /dev/null 2> /dev/null || die "Mash squarer"
 
 # test the scripts folder
-python ../scripts/count_patterns.py patterns.txt > /dev/null 2> /dev/null || dir "Count patterns"
-python ../scripts/phylogeny_distance.py tree.nwk > /dev/null 2> /dev/null || dir "Tree distances"
-python ../scripts/phylogeny_distance.py tree.nwk --calc-C > /dev/null 2> /dev/null || dir "Tree distances (C)"
-python ../scripts/phylogeny_distance.py tree.nwk --topology > /dev/null 2> /dev/null || dir "Tree distances (topology)"
+python ../scripts/count_patterns.py patterns.txt > /dev/null 2> /dev/null || die "Count patterns"
+python ../scripts/phylogeny_distance.py tree.nwk > /dev/null 2> /dev/null || die "Tree distances"
+python ../scripts/phylogeny_distance.py tree.nwk --calc-C > /dev/null 2> /dev/null || die "Tree distances (C)"
+python ../scripts/phylogeny_distance.py tree.nwk --topology > /dev/null 2> /dev/null || die "Tree distances (topology)"
 
 # test all command line options (things that should fail or behave weirdly)
 python ../pyseer-runner.py --kmers kmers.txt --phenotypes subset.pheno --load-m pop_struct.pkl > /dev/null 2> /dev/null && die "Uncompressed kmers but no option"
