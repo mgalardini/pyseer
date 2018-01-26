@@ -5,7 +5,7 @@ from pyseer.cmdscale import cmdscale
 
 
 class TestCommandScale(unittest.TestCase):
-    input_file = 'tests/distances.tsv.gz'
+    input_file = 'tests/distances_smaller.tsv.gz'
     Y_file = 'tests/cmdscale.Y.txt.gz'
     e_file = 'tests/cmdscale.e.txt.gz'
     input_data = pd.read_table(input_file, index_col=0)
