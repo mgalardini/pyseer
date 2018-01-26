@@ -69,6 +69,6 @@ if __name__ == "__main__":
                 sys.exit(1)
             print('%s\t%.4f' % (c, corr))
     if not cmp(options.ierr, options.oerr, shallow=False):
+        # check but do not fail
         sys.stderr.write('Changes in stderr messages\n')
-        sys.exit(1)
 
