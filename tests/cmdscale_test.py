@@ -14,14 +14,14 @@ class TestCommandScale(unittest.TestCase):
     # ugly hack to take into account minor
     # precision problems between systems
     Y = Y[:, :10]
-    e = e[:, :10]
+    e = e[:10]
 
     def test_cmdscale(self):
         Y, e = cmdscale(self.input_data)
         # ugly hack to take into account minor
         # precision problems between systems
         Y = Y[:, :10]
-        e = e[:, :10]
+        e = e[:10]
         self.assertTrue(np.array_equal(Y, self.Y))
         self.assertTrue(np.array_equal(e, self.e))
 
