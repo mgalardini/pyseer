@@ -14,6 +14,10 @@ class TestCommandScale(unittest.TestCase):
 
     def test_cmdscale(self):
         Y, e = cmdscale(self.input_data)
+        lY = [True if x == y else False
+              for x,y in zip(Y.flatten(), self.Y.flatten())]
+        if len(set(lY)) == 1:
+            self.assertTrue(list(set(lY))[0])
         self.assertTrue(np.array_equal(Y, self.Y))
         self.assertTrue(np.array_equal(e, self.e))
 
