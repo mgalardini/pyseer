@@ -63,7 +63,8 @@ class TestFitNull(unittest.TestCase):
                                  disp=False)
         # no covariates
         null_res = fit_null(p, m, cov, False, firth=False)
-        self.assertTrue(abs((null_test.params - null_res.params).max()) < 1E-15)
+        self.assertTrue(abs((null_test.params - null_res.params).max())
+                        < 1E-15)
         # scipy >= 1.x.x removed a function used here
         # should not affect anything else in pyseer
         # so skipping this test for now
@@ -91,7 +92,8 @@ class TestFitNull(unittest.TestCase):
                                  method='newton',
                                  disp=False)
         null_res = fit_null(p, m, cov, False, firth=False)
-        self.assertTrue(abs((null_test.params - null_res.params).max()) < 1E-15)
+        self.assertTrue(abs((null_test.params - null_res.params).max())
+                        < 1E-15)
         # scipy >= 1.x.x removed a function used here
         # should not affect anything else in pyseer
         # so skipping this test for now
@@ -106,6 +108,36 @@ class TestFitNull(unittest.TestCase):
         null_test = fitll
         null_res = fit_null(p, m, cov, False, firth=True)
         self.assertAlmostEqual(null_test, null_res)
+        # perfectly separable data
+        p = np.array([1]*10 + [0]*90)
+        m = np.array([1]*10 + [0]*90).reshape(-1, 1)
+        cov = pd.DataFrame([])
+        self.assertEqual(fit_null(p, m, cov, False, False), None)
+
+    def test_fit_null_continuous(self):
+        p = np.random.random(size=100)
+        m = np.random.random(size=(100, 10))
+        cov = pd.DataFrame([])
+        v = np.concatenate((np.ones(100).reshape(-1, 1),
+                            m),
+                           axis=1)
+        null_mod = smf.OLS(p, v)
+        null_test = null_mod.fit(disp=False)
+        # no covariates
+        null_res = fit_null(p, m, cov, True, firth=False)
+        self.assertTrue(abs((null_test.params - null_res.params).max())
+                        < 1E-15)
+        # covariates
+        cov = pd.DataFrame(np.random.random(size=(100, 3)))
+        v = np.concatenate((np.ones(100).reshape(-1, 1),
+                            m,
+                            cov),
+                           axis=1)
+        null_mod = smf.OLS(p, v)
+        null_test = null_mod.fit(disp=False)
+        null_res = fit_null(p, m, cov, True, firth=False)
+        self.assertTrue(abs((null_test.params - null_res.params).max())
+                        < 1E-15)
 
 
 if __name__ == '__main__':

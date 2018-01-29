@@ -29,9 +29,9 @@ def pre_filtering(p, k, continuous):
     ----------
     p : (n, 1) array
         Phenotypes vector
-    k : (k, 1) array
+    k : (n, 1) array
         Variant presence-absence vector
-    continous: boolean
+    continous : boolean
         Whether phenotypes are continuous or binary
 
     Returns
@@ -69,6 +69,30 @@ def pre_filtering(p, k, continuous):
 # and return log-likelihood
 # (see below for full model)
 def fit_null(p, m, cov, continuous, firth=False):
+    """
+    Fit the null model i.e. regression without k-mer
+    y ~ Wa
+    and return log-likelihood
+
+    Parameters
+    ----------
+    p : (n, 1) array
+        Phenotypes vector
+    m : (n, k) array
+        Population structure matrix
+    cov : (n, j) pandas DataFrame
+        Covariants dataframe
+    continous : boolean
+        Whether phenotypes are continuous or binary
+    firth : boolean
+        For discrete phenotypes whether to use firth regression
+
+    Returns
+    -------
+    null_res : statsmodels.regression.linear_model.RegressionResultsWrapper
+               or float
+        Fitted model or log-likelihood (if firth)
+    """
     if cov.shape[1] > 0:
         v = np.concatenate((np.ones(m.shape[0]).reshape(-1, 1),
                             m,
