@@ -64,10 +64,6 @@ def pre_filtering(p, k, continuous):
     return(prep, bad_chisq)
 
 
-# Fit the null model i.e. regression without k-mer
-# y ~ Wa
-# and return log-likelihood
-# (see below for full model)
 def fit_null(p, m, cov, continuous, firth=False):
     """
     Fit the null model i.e. regression without k-mer
@@ -134,12 +130,27 @@ def fit_null(p, m, cov, continuous, firth=False):
     return null_res
 
 
-# Fits the model k ~ Wa using binomial error with logit link
-# k is the variant presence/absence
-# W are the lineages (either a projection of samples, or cluster indicators) and covariates
-# a is the slope to be fitted
-# Returns the index of the most significant lineage
 def fit_lineage_effect(lin, c, k):
+    """
+    Fits the model k ~ Wa using binomial error with logit link.
+    W are the lineages (either a projection of samples, or cluster indicators)
+    and covariates.
+    Returns the index of the most significant lineage
+
+    Parameters
+    ----------
+    lin : (n, k) array
+        Population structure matrix or lineage association binary matrix
+    c : (n, j) array
+        Covariants array
+    k : (n, 1) array
+        Variant presence-absence vector
+
+    Returns
+    -------
+    max_lineage : integer
+        Index of the most significant lineage
+    """
     if c.shape[0] == lin.shape[0]:
         X = np.concatenate((np.ones(lin.shape[0]).reshape(-1, 1),
                             lin,
