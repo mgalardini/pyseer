@@ -7,6 +7,7 @@ import statsmodels.formula.api as smf
 from pyseer.model import pre_filtering
 from pyseer.model import fit_null
 from pyseer.model import fit_firth
+from pyseer.model import fit_lineage_effect
 
 
 np.random.seed(42)
@@ -138,6 +139,55 @@ class TestFitNull(unittest.TestCase):
         null_res = fit_null(p, m, cov, True, firth=False)
         self.assertTrue(abs((null_test.params - null_res.params).max())
                         < 1E-15)
+
+
+class TestFitLineageEffect(unittest.TestCase):
+    def test_fit_lineage_effect(self):
+        k = np.random.randint(2, size=100)
+        m = np.random.random(size=(100, 10))
+        cov = pd.DataFrame([])
+        v = np.concatenate((np.ones(100).reshape(-1, 1),
+                            m),
+                           axis=1)
+        lineage_mod = smf.Logit(k, v)
+        lineage_res = lineage_mod.fit(method='newton',
+                                      disp=False)
+        wald_test = np.divide(np.absolute(lineage_res.params), lineage_res.bse)
+        lineage_test = np.argmax(wald_test[1:m.shape[1]+1])
+        # no covariates
+        max_lineage = fit_lineage_effect(m, cov, k)
+        self.assertEqual(lineage_test, max_lineage)
+        # no covariates, binary lineage Matrix
+        # as if the data was loaded from a file
+        m = np.random.randint(2, size=(100, 10))
+        v = np.concatenate((np.ones(100).reshape(-1, 1),
+                            m),
+                           axis=1)
+        lineage_mod = smf.Logit(k, v)
+        lineage_res = lineage_mod.fit(method='newton',
+                                      disp=False)
+        wald_test = np.divide(np.absolute(lineage_res.params), lineage_res.bse)
+        lineage_test = np.argmax(wald_test[1:m.shape[1]+1])
+        max_lineage = fit_lineage_effect(m, cov, k)
+        self.assertEqual(lineage_test, max_lineage)
+        # covariates
+        cov = np.random.random(size=(100, 3))
+        v = np.concatenate((np.ones(100).reshape(-1, 1),
+                            m,
+                            cov),
+                           axis=1)
+        lineage_mod = smf.Logit(k, v)
+        lineage_res = lineage_mod.fit(method='newton',
+                                      disp=False)
+        wald_test = np.divide(np.absolute(lineage_res.params), lineage_res.bse)
+        lineage_test = np.argmax(wald_test[1:m.shape[1]+1])
+        max_lineage = fit_lineage_effect(m, cov, k)
+        self.assertEqual(lineage_test, max_lineage)
+        # perfectly separable data
+        k = np.array([1]*10 + [0]*90)
+        m = np.array([1]*10 + [0]*90).reshape(-1, 1)
+        cov = pd.DataFrame([])
+        self.assertEqual(fit_lineage_effect(m, cov, k), None)
 
 
 if __name__ == '__main__':
