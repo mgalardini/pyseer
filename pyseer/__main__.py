@@ -285,34 +285,36 @@ def main():
     # lineage effects using null model - read BAPS clusters and fit pheno ~ lineage
     lineage_clusters = None
     lineage_dict = []
-    if options.lineage or not options.lmm:
-        if options.lineage:
-            if options.lineage_clusters:
-                lineage_clusters, lineage_dict = load_lineage(options.lineage_clusters, p)
-                lineage_fit = fit_null(p.values, lineage_clusters, cov,
-                                       options.continuous)
-            else:
-                lineage_dict = ["MDS" + str(i+1)
-                                for i in range(options.max_dimensions)]
-                lineage_clusters = m
-                lineage_fit = null_fit
+    if options.lineage:
+        if options.lineage_clusters:
+            lineage_clusters, lineage_dict = load_lineage(options.lineage_clusters, p)
+            lineage_fit = fit_null(p.values, lineage_clusters, cov,
+                                   options.continuous)
+            if lineage_fit is None:
+                sys.stderr.write('Could not fit lineage null model, exiting\n')
+                sys.exit(1)
+        else:
+            lineage_dict = ["MDS" + str(i+1)
+                            for i in range(options.max_dimensions)]
+            lineage_clusters = m
+            lineage_fit = null_fit
 
-            # Calculate, sort and print lineage effects
-            lineage_wald = {}
-            for lineage, slope, se in zip(lineage_dict, lineage_fit.params[1:],
-                                          lineage_fit.bse[1:]):
-                lineage_wald[lineage] = np.absolute(slope)/se
-            sys.stderr.write('Writing lineage effects to %s\n' %
-                             options.lineage_file)
-            with open(options.lineage_file, 'w') as lineage_out:
-                for lineage, wald in sorted(lineage_wald.items(),
-                                            key=operator.itemgetter(1),
-                                            reverse=True):
-                    lineage_out.write("\t".join([lineage, str(wald)]) + "\n")
+        # Calculate, sort and print lineage effects
+        lineage_wald = {}
+        for lineage, slope, se in zip(lineage_dict, lineage_fit.params[1:],
+                                      lineage_fit.bse[1:]):
+            lineage_wald[lineage] = np.absolute(slope)/se
+        sys.stderr.write('Writing lineage effects to %s\n' %
+                         options.lineage_file)
+        with open(options.lineage_file, 'w') as lineage_out:
+            for lineage, wald in sorted(lineage_wald.items(),
+                                        key=operator.itemgetter(1),
+                                        reverse=True):
+                lineage_out.write("\t".join([lineage, str(wald)]) + "\n")
 
-        # binary regression takes LLF as null, not full model fit
-        if not options.continuous:
-            null_fit = null_fit.llf
+    # binary regression takes LLF as null, not full model fit
+    if not options.continuous and not options.lmm:
+        null_fit = null_fit.llf
 
     # LMM setup - see _internal_single in fastlmm.association.single_snp
     if options.lmm:

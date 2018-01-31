@@ -76,7 +76,7 @@ def load_lineage(infile, p):
     else:
         lin = lin.loc[p.index]
 
-    lineages = set(lin.values)
+    lineages = sorted(set(lin.values))
     lineages.pop()
 
     lineage_design_mat = []

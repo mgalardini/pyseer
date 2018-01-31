@@ -86,8 +86,8 @@ def fit_null(p, m, cov, continuous, firth=False):
     Returns
     -------
     null_res : statsmodels.regression.linear_model.RegressionResultsWrapper
-               or float
-        Fitted model or log-likelihood (if firth)
+               or float or None
+        Fitted model or log-likelihood (if firth) or None if could not fit
     """
     if cov.shape[1] > 0:
         v = np.concatenate((np.ones(m.shape[0]).reshape(-1, 1),
@@ -148,8 +148,8 @@ def fit_lineage_effect(lin, c, k):
 
     Returns
     -------
-    max_lineage : integer
-        Index of the most significant lineage
+    max_lineage : integer or None
+        Index of the most significant lineage or None is could not fit
     """
     if c.shape[0] == lin.shape[0]:
         X = np.concatenate((np.ones(lin.shape[0]).reshape(-1, 1),
