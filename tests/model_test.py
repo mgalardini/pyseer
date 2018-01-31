@@ -8,6 +8,7 @@ from pyseer.model import pre_filtering
 from pyseer.model import fit_null
 from pyseer.model import fit_firth
 from pyseer.model import fit_lineage_effect
+from pyseer.model import firth_likelihood
 
 
 np.random.seed(42)
@@ -188,6 +189,20 @@ class TestFitLineageEffect(unittest.TestCase):
         m = np.array([1]*10 + [0]*90).reshape(-1, 1)
         cov = pd.DataFrame([])
         self.assertEqual(fit_lineage_effect(m, cov, k), None)
+
+
+class TestFirthFit(unittest.TestCase):
+    def test_firth_likelihood(self):
+        p = np.random.randint(2, size=100)
+        m = np.random.random(size=(100, 10))
+        mod = smf.Logit(p, m)
+        fll = firth_likelihood(np.random.random(10), mod)
+        self.assertAlmostEqual(fll, 97.24634664254657)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            fll = firth_likelihood(np.random.random(10) + 100,
+                                   mod)
+        self.assertAlmostEqual(fll, np.inf)
 
 
 if __name__ == '__main__':
