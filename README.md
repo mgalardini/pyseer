@@ -8,6 +8,7 @@ pyseer
 
 [![Build Status](https://travis-ci.org/mgalardini/pyseer.svg?branch=master)](https://travis-ci.org/mgalardini/pyseer)
 [![PyPI version](https://badge.fury.io/py/pyseer.svg)](https://badge.fury.io/py/pyseer)
+[![Documentation Status](https://readthedocs.org/projects/pyseer/badge/?version=latest)](http://pyseer.readthedocs.io/en/latest/?badge=version2)
 
 Motivation
 ----------
@@ -18,12 +19,12 @@ time formally implemented by [Lees, Vehkala et al.](https://www.nature.com/artic
 in the form of the [SEER](https://github.com/johnlees/seer) software.
 
 The reimplementation presented here should be consistent with the
-current version of seer. Based on our few
-tests the results are going to be very similar to the
-C++ implementation, though approximation at low p-values may cause small
-differences. However, **no guarantee whatsoever is given that the
-script works in the same way as the original**, especially for corner cases
-and across millions of kmers.
+current version of the C++ seer, though we do not guarantee this for all
+possible cases.
+
+In this version, as well as all the original features, many new features (input types,
+association models andoutput parsing) have been implemented. See the
+[documentation](http://pyseer.readthedocs.io/en/latest/) for full details.
 
 Citation
 --------
@@ -63,46 +64,6 @@ If you want multithreading:
 
     python pyseer-runner.py
 
-Population structure
---------------------
-
-`pyseer` accepts as input a tab-delimited square matrix of distances between samples, with
-the first row and column listing sample names. Such a square matrix can be easily obtained
-by piping the `mash dist` command into the provided `square_mash` command (also installed with `pyseer`):
-
-    mash dist samples.msh samples.msh | square_mash > mash.tsv
-
-**Note:** `square_mash` extracts the sample names as the string after the last `/` character
-and up to the first full stop (`.`).
-
-To pick the appropriate number of dimensions to use after MDS on the population structure you can
-run `pyseer` using the `--scree-plot` option:
-
-    pyseer kmers.gz phenotypes.tsv structure.tsv --scree-plot > scree.tsv
-
-Which will print to file something like this:
-
-```
-PC      eigenvalue
-PC1     0.00433
-PC2     0.00194
-PC3     0.00173
-PC4     0.00149
-PC5     0.00107
-PC6     0.00096
-PC7     0.00077
-PC8     0.00070
-PC9     0.00068
-PC10    0.00065
-[...]
-```
-
-Which can be plotted using the provided `scree_plot` script (note: not installed through pip)
-
-    python scripts/scree_plot scree.tsv
-
-Which generates a file named `scree_plot.png`
-
 Testing
 -------
 
@@ -111,26 +72,10 @@ by running:
 
     cd test/ && bash run_test.sh && cd ../
 
-Notes
------
+Documentation
+--------------------
 
-SEER's features present in this script:
-
-* binary and continuos phenotypes
-* binary phenotypes: Firth regression upon failure of Newton-Raphson
-* population structure correction
-* MAF filtering
-* kmers prefiltering
-* multi-threading
-* filtering of results based on LRT p-value
-* covariates and intercept betas are reported
-* user-defined covariates
-* automatic determination of binary/continuous phenotypes
-
-Additional features:
-
-* Multidimensional scaling from squared [mash](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-016-0997-x) matrix
-* List of samples without the kmer are also output
+Full documentation is available at [readthedocs](http://pyseer.readthedocs.io/en/latest/).
 
 Copyright
 ---------
