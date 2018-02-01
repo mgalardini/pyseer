@@ -36,8 +36,7 @@ def eq_seer(s1, s2):
             diff.add(p)
 
     for p in ['af', 'prep', 'pvalue',
-              'kbeta', 'bse', 'intercept',
-              'max_lineage']:
+              'kbeta', 'bse', 'intercept']:
         x = getattr(s1, p)
         y = getattr(s2, p)
         if not np.isfinite(x) and not np.isfinite(y):
@@ -48,6 +47,24 @@ def eq_seer(s1, s2):
             diff.add(p)
         if x != y:
             diff.add(p)
+
+    if s1.max_lineage is not None and s2.max_lineage is not None:
+        p = 'max_lineage'
+        x = getattr(s1, p)
+        y = getattr(s2, p)
+        if not np.isfinite(x) and not np.isfinite(y):
+            pass
+        else:
+            if np.isfinite(x) and not np.isfinite(y):
+                diff.add(p)
+            if np.isfinite(y) and not np.isfinite(x):
+                diff.add(p)
+            if x != y:
+                diff.add(p)
+    elif s1.max_lineage is None and s2.max_lineage is None:
+        pass
+    else:
+        diff.add('max_lineage')
 
     if s1.betas.shape[0] > 0 and s2.betas.shape[0] > 0:
         if s1.betas.shape[0] != s2.betas.shape[0]:
@@ -239,7 +256,7 @@ class TestFixedEffectsRegression(unittest.TestCase):
                                0.94439244, -0.13846857, -0.14140035,
                                0.38328562, -0.1986484, -1.51779346,
                                0.94618541]),
-                     np.nan, kstrains, nkstrains,
+                     None, kstrains, nkstrains,
                      set(),
                      False, False)
         self.assertEqual(eq_seer(var_obj, t_obj), set())
@@ -253,7 +270,7 @@ class TestFixedEffectsRegression(unittest.TestCase):
                      af, np.nan,
                      np.nan, np.nan, np.nan, np.nan,
                      np.array([]),
-                     np.nan, kstrains, nkstrains,
+                     None, kstrains, nkstrains,
                      set(['af-filter']),
                      True, False)
         self.assertEqual(eq_seer(var_obj, t_obj), set())
@@ -267,7 +284,7 @@ class TestFixedEffectsRegression(unittest.TestCase):
                      af, 0.5365065578449575,
                      np.nan, np.nan, np.nan, np.nan,
                      np.array([]),
-                     np.nan, kstrains, nkstrains,
+                     None, kstrains, nkstrains,
                      set(['pre-filtering-failed']),
                      True, False)
         self.assertEqual(eq_seer(var_obj, t_obj), set())
@@ -286,7 +303,7 @@ class TestFixedEffectsRegression(unittest.TestCase):
                                0.94439244, -0.13846857, -0.14140035,
                                0.38328562, -0.1986484, -1.51779346,
                                0.94618541]),
-                     np.nan, kstrains, nkstrains,
+                     None, kstrains, nkstrains,
                      set(['lrt-filtering-failed']),
                      False, True)
         self.assertEqual(eq_seer(var_obj, t_obj), set())
@@ -307,7 +324,7 @@ class TestFixedEffectsRegression(unittest.TestCase):
                      0.0,
                      890.8154121360252,
                      np.array([-88.72472137305188]),
-                     np.nan, kstrains, nkstrains,
+                     None, kstrains, nkstrains,
                      set(['bad-chisq']),
                      False, False)
         self.assertEqual(eq_seer(var_obj, t_obj), set())
@@ -331,7 +348,7 @@ class TestFixedEffectsRegression(unittest.TestCase):
                                0.65876263, -0.07939636, -1.61743885,
                                1.04396837, 0.13034889, -1.59225167,
                                0.1938934]),
-                     np.nan, kstrains, nkstrains,
+                     None, kstrains, nkstrains,
                      set(),
                      False, False)
         self.assertEqual(eq_seer(var_obj, t_obj), set())
@@ -392,7 +409,7 @@ class TestFixedEffectsRegression(unittest.TestCase):
                                0.10658197,  0.01046428, -0.08089156,
                                -0.13733075, 0.16774866, -0.17746121,
                                0.13386466]),
-                     np.nan, kstrains, nkstrains,
+                     None, kstrains, nkstrains,
                      set(),
                      False, False)
         self.assertEqual(eq_seer(var_obj, t_obj), set())
@@ -406,7 +423,7 @@ class TestFixedEffectsRegression(unittest.TestCase):
                      af, np.nan,
                      np.nan, np.nan, np.nan, np.nan,
                      np.array([]),
-                     np.nan, kstrains, nkstrains,
+                     None, kstrains, nkstrains,
                      set(['af-filter']),
                      True, False)
         self.assertEqual(eq_seer(var_obj, t_obj), set())
@@ -420,7 +437,7 @@ class TestFixedEffectsRegression(unittest.TestCase):
                      af, 0.29623810011571716,
                      np.nan, np.nan, np.nan, np.nan,
                      np.array([]),
-                     np.nan, kstrains, nkstrains,
+                     None, kstrains, nkstrains,
                      set(['pre-filtering-failed']),
                      True, False)
         self.assertEqual(eq_seer(var_obj, t_obj), set())
@@ -441,7 +458,7 @@ class TestFixedEffectsRegression(unittest.TestCase):
                                0.10658197,  0.01046428, -0.08089156,
                                -0.13733075, 0.16774866, -0.17746121,
                                0.13386466]),
-                     np.nan, kstrains, nkstrains,
+                     None, kstrains, nkstrains,
                      set(['lrt-filtering-failed']),
                      False, True)
         self.assertEqual(eq_seer(var_obj, t_obj), set())
@@ -464,7 +481,7 @@ class TestFixedEffectsRegression(unittest.TestCase):
                                -0.03593312, -0.17211066,
                                0.17065225, -0.18230721, 0.11787759,
                                0.09058623, 0.20484901, 0.14072312]),
-                     np.nan, kstrains, nkstrains,
+                     None, kstrains, nkstrains,
                      set(),
                      False, False)
         self.assertEqual(eq_seer(var_obj, t_obj), set())

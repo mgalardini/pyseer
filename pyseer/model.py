@@ -232,7 +232,7 @@ def fixed_effects_regression(variant, p, k, m, c, af, pattern,
         notes.add('af-filter')
         return var_obj.Seer(variant, pattern, af, np.nan, np.nan,
                             np.nan, np.nan, np.nan, np.array([]),
-                            np.nan, kstrains, nkstrains,
+                            None, kstrains, nkstrains,
                             notes, True, False)
 
     # pre-filtering
@@ -243,7 +243,7 @@ def fixed_effects_regression(variant, p, k, m, c, af, pattern,
         notes.add('pre-filtering-failed')
         return var_obj.Seer(variant, pattern, af, prep, np.nan,
                             np.nan, np.nan, np.nan, np.array([]),
-                            np.nan, kstrains, nkstrains,
+                            None, kstrains, nkstrains,
                             notes, True, False)
 
     # actual regression
@@ -306,7 +306,7 @@ def fixed_effects_regression(variant, p, k, m, c, af, pattern,
                     notes.add('firth-fail')
                     return var_obj.Seer(variant, pattern, af, prep, np.nan,
                                         np.nan, np.nan, np.nan, np.array([]),
-                                        kstrains, nkstrains,
+                                        None, kstrains, nkstrains,
                                         notes, False, True)
                 else:
                     intercept, kbeta, beta, bse, fitll = firth_fit
@@ -321,13 +321,13 @@ def fixed_effects_regression(variant, p, k, m, c, af, pattern,
         notes.add('matrix-inversion-error')
         return var_obj.Seer(variant, pattern, af, prep, np.nan,
                             np.nan, np.nan, np.nan, np.array([]),
-                            np.nan, kstrains, nkstrains,
+                            None, kstrains, nkstrains,
                             notes, False, True)
 
     if lineage_effects:
         max_lineage = fit_lineage_effect(lin, c, k)
     else:
-        max_lineage = np.nan
+        max_lineage = None
 
     if lrt_pvalue > lrtt or not np.isfinite(lrt_pvalue) or not np.isfinite(kbeta):
         notes.add('lrt-filtering-failed')
