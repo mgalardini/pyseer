@@ -191,7 +191,7 @@ def fixed_effects_regression(variant, p, k, m, c, af, pattern,
     if p is None:
         notes.add('af-filter')
         return var_obj.Seer(variant, pattern, af, np.nan, np.nan,
-                            np.nan, np.nan, np.nan, [],
+                            np.nan, np.nan, np.nan, np.array([]),
                             np.nan, kstrains, nkstrains,
                             notes, True, False)
 
@@ -202,7 +202,7 @@ def fixed_effects_regression(variant, p, k, m, c, af, pattern,
     if prep > pret or not np.isfinite(prep):
         notes.add('pre-filtering-failed')
         return var_obj.Seer(variant, pattern, af, prep, np.nan,
-                            np.nan, np.nan, np.nan, [],
+                            np.nan, np.nan, np.nan, np.array([]),
                             np.nan, kstrains, nkstrains,
                             notes, True, False)
 
@@ -265,11 +265,12 @@ def fixed_effects_regression(variant, p, k, m, c, af, pattern,
                 if firth_fit is None:  # Firth failure
                     notes.add('firth-fail')
                     return var_obj.Seer(variant, pattern, af, prep, np.nan,
-                                        np.nan, np.nan, np.nan, [],
+                                        np.nan, np.nan, np.nan, np.array([]),
                                         kstrains, nkstrains,
                                         notes, False, True)
                 else:
                     intercept, kbeta, beta, bse, fitll = firth_fit
+                    beta = np.array(beta)
                     lrstat = -2*(null_firth - fitll)
                     lrt_pvalue = 1
                     if lrstat > 0:  # check for non-convergence
@@ -279,14 +280,14 @@ def fixed_effects_regression(variant, p, k, m, c, af, pattern,
         # singular matrix error
         notes.add('matrix-inversion-error')
         return var_obj.Seer(variant, pattern, af, prep, np.nan,
-                            np.nan, np.nan, np.nan, [],
+                            np.nan, np.nan, np.nan, np.array([]),
                             np.nan, kstrains, nkstrains,
                             notes, False, True)
 
     if lineage_effects:
         max_lineage = fit_lineage_effect(lin, c, k)
     else:
-        max_lineage = None
+        max_lineage = np.nan
 
     if lrt_pvalue > lrtt or not np.isfinite(lrt_pvalue) or not np.isfinite(kbeta):
         notes.add('lrt-filtering-failed')
