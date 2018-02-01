@@ -16,6 +16,7 @@ with set_env(MKL_NUM_THREADS='1',
              NUMEXPR_NUM_THREADS='1',
              OMP_NUM_THREADS='1'):
     import numpy as np
+from scipy.stats import norm
 import pandas as pd
 from sklearn import manifold
 from multiprocessing import Pool
@@ -286,31 +287,47 @@ def main():
     lineage_clusters = None
     lineage_dict = []
     if options.lineage:
+        lineage_wald = {}
         if options.lineage_clusters:
             lineage_clusters, lineage_dict = load_lineage(options.lineage_clusters, p)
-            lineage_fit = fit_null(p.values, lineage_clusters, cov,
+
+            # The lineage design matrix is not full rank, so one lineage
+            # predictor needs to be removed. Do multiple single variable linear
+            # regressions (as lineages are orthogonal, same as multiple linear
+            # regression) and remove the one least associated with the phenotype
+            for lineage, lineage_design in zip(lineage_dict, lineage_clusters.T):
+                lineage_fit = fit_null(p.values, lineage_design.reshape(-1, 1), cov,
                                    options.continuous)
-            if lineage_fit is None:
-                sys.stderr.write('Could not fit lineage null model, exiting\n')
-                sys.exit(1)
+                if lineage_fit is None:
+                    sys.stderr.write('Could not fit lineage null model, exiting\n')
+                    sys.exit(1)
+
+                lineage_wald[lineage] = np.absolute(lineage_fit.params[1])/lineage_fit.bse[1]
+
+            min_lineage = min(lineage_wald.items(), key=operator.itemgetter(1))[0]
+            min_index = lineage_dict.index(min_lineage)
+            lineage_clusters = np.delete(lineage_clusters, min_index, 1)
         else:
             lineage_dict = ["MDS" + str(i+1)
                             for i in range(options.max_dimensions)]
             lineage_clusters = m
             lineage_fit = null_fit
 
-        # Calculate, sort and print lineage effects
-        lineage_wald = {}
-        for lineage, slope, se in zip(lineage_dict, lineage_fit.params[1:],
+            # Calculate lineage effects
+            for lineage, slope, se in zip(lineage_dict, lineage_fit.params[1:],
                                       lineage_fit.bse[1:]):
-            lineage_wald[lineage] = np.absolute(slope)/se
+                lineage_wald[lineage] = np.absolute(slope)/se
+
+        # sort and print lineage effects
         sys.stderr.write('Writing lineage effects to %s\n' %
                          options.lineage_file)
         with open(options.lineage_file, 'w') as lineage_out:
+            lineage_out.write("\t".join(["lineage", "Wald_test", "p-value"]) + "\n")
             for lineage, wald in sorted(lineage_wald.items(),
                                         key=operator.itemgetter(1),
                                         reverse=True):
-                lineage_out.write("\t".join([lineage, str(wald)]) + "\n")
+                pval = 2 * (1 - norm.cdf(wald))
+                lineage_out.write("\t".join([lineage, str(wald), str(pval)]) + "\n")
 
     # binary regression takes LLF as null, not full model fit
     if not options.continuous and not options.lmm:
