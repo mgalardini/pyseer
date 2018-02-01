@@ -175,16 +175,56 @@ def fit_lineage_effect(lin, c, k):
     return max_lineage
 
 
-# Fits the model y ~ Xb + Wa using either binomial error with
-# logit link (binary traits) or Gaussian error (continuous traits)
-# y is the phenotype
-# X is the variant presence/absence (fixed effects)
-# W are covariate fixed effects, including population structure
-# a and b are slopes to be fitted
 def fixed_effects_regression(variant, p, k, m, c, af, pattern,
                              lineage_effects, lin,
                              pret, lrtt, null_res, null_firth,
                              kstrains, nkstrains, continuous):
+    """Fits the model y ~ Xb + Wa using either binomial error with
+    logit link (binary traits) or Gaussian error (continuous traits)
+
+    y is the phenotype
+    X is the variant presence/absence (fixed effects)
+    W are covariate fixed effects, including population structure
+    a and b are slopes to be fitted
+
+    Parameters
+    ----------
+    variant : string
+    p : (n,) array
+        Phenotype array (binary or continuous)
+    k : (n,) array
+        Variant presence/absence array
+    m : (n, m) array
+        Population structure array
+    c : (n, j) array
+        Covariants array
+    af : float
+        Allele frequency
+    pattern : string
+    lineage_effects : boolean
+        Whether to fit lineages or not
+    lin : (n, k) array
+        Lineages array
+    pret : float
+        Pre-filtering p-value threshold
+    lrtt : float
+        Post-fitting p-value threshold
+    null_res : float or statsmodels.regression.linear_model.RegressionResultsWrapper
+        Null-fit likelihood (binary) or model (continuous)
+    null_firth : float
+        Firth regression likelihood
+    kstrains : list
+        Sample labels with the variant
+    nkstrains : list
+        Sample labels without the variant
+    continuous : boolean
+        Whether the phenotype is continuous or not
+
+    Returns
+    -------
+    result : pyseer.classes.Seer
+        Results container
+    """
     notes = set()
 
     # was this af-filtered?

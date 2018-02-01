@@ -11,6 +11,7 @@ from pyseer.model import fit_firth
 from pyseer.model import fit_lineage_effect
 from pyseer.model import firth_likelihood
 from pyseer.model import fixed_effects_regression
+from pyseer.classes import Seer
 
 
 DATA_DIR = 'tests/unit_tests_data'
@@ -21,6 +22,40 @@ M = os.path.join(DATA_DIR, 'm.txt')
 COV = os.path.join(DATA_DIR, 'cov.txt')
 LIN = os.path.join(DATA_DIR, 'lin.txt')
 FIRTH_VARS = os.path.join(DATA_DIR, 'firth_vars.txt')
+
+
+def eq_seer(s1, s2):
+    """Test whether two Seer objects are the same"""
+    diff = set()
+    for p in ['kmer', 'pattern',
+              'kstrains', 'nkstrains', 'notes',
+              'prefilter', 'filter']:
+        x = getattr(s1, p)
+        y = getattr(s2, p)
+        if x != y:
+            diff.add(p)
+
+    for p in ['af', 'prep', 'pvalue',
+              'kbeta', 'bse', 'intercept',
+              'max_lineage']:
+        x = getattr(s1, p)
+        y = getattr(s2, p)
+        if not np.isfinite(x) and not np.isfinite(y):
+            continue
+        if np.isfinite(x) and not np.isfinite(y):
+            diff.add(p)
+        if np.isfinite(y) and not np.isfinite(x):
+            diff.add(p)
+        if x != y:
+            diff.add(p)
+
+    if s1.betas.shape[0] > 0 and s2.betas.shape[0] > 0:
+        if s1.betas.shape[0] != s2.betas.shape[0]:
+            diff.add('betas')
+        if abs((s1.betas - s2.betas).max()) > 1E-7:
+            diff.add('betas')
+
+    return diff
 
 
 class TestPreFiltering(unittest.TestCase):
@@ -64,9 +99,9 @@ class TestFitNull(unittest.TestCase):
         m = np.loadtxt(M)
         cov = pd.DataFrame([])
         # no covariates
-        params = np.array([-1.41572498, 0.35847998, -0.03014792, 2.46252819, 0.96908425,
-                           -0.20952455, -0.27988125, 0.36798503, -0.03278285, -1.34132024,
-                           0.844149])
+        params = np.array([-1.41572498, 0.35847998, -0.03014792, 2.46252819,
+                           0.96908425, -0.20952455, -0.27988125, 0.36798503,
+                           -0.03278285, -1.34132024, 0.844149])
         null_res = fit_null(p, m, cov, False, firth=False)
         self.assertTrue(abs((params - null_res.params).max())
                         < 1E-7)
@@ -76,9 +111,10 @@ class TestFitNull(unittest.TestCase):
         # covariates
         cov = np.loadtxt(COV)
         cov = pd.DataFrame(cov)
-        params = np.array([-0.87072948, 0.26456701, 0.03485904, 2.80243184, 1.086393,
-                           -0.3882244, -0.46883396, 0.61387846, 0.09962477, -1.45376984,
-                           0.93929299, 0.07927743, -1.54631396, 0.1098796])
+        params = np.array([-0.87072948, 0.26456701, 0.03485904, 2.80243184,
+                           1.086393, -0.3882244, -0.46883396, 0.61387846,
+                           0.09962477, -1.45376984, 0.93929299, 0.07927743,
+                           -1.54631396, 0.1098796])
         null_res = fit_null(p, m, cov, False, firth=False)
         self.assertTrue(abs((params - null_res.params).max())
                         < 1E-7)
@@ -95,20 +131,20 @@ class TestFitNull(unittest.TestCase):
         p_cont = np.loadtxt(P_CONT)
         m = np.loadtxt(M)
         # no covariates
-        params = np.array([0.65572473, -0.16129649, 0.03417796, -0.08011702, 0.10902641,
-                           0.00599514, -0.09081684, -0.13653787, 0.17798003, -0.16793408,
-                           0.12959982])
+        params = np.array([0.65572473, -0.16129649, 0.03417796, -0.08011702,
+                           0.10902641, 0.00599514, -0.09081684, -0.13653787,
+                           0.17798003, -0.16793408, 0.12959982])
         null_res = fit_null(p_cont, m, pd.DataFrame([]), True, firth=False)
         self.assertTrue(abs((params - null_res.params).max())
                         < 1E-7)
         # covariates
         cov = np.loadtxt(COV)
         cov = pd.DataFrame(cov)
-        params = np.array([3.13564240e-01, 5.50424455e-02, 1.71810270e-04, 6.03266921e-01,
-                           2.29686618e-01, -7.61535306e-02, -1.08730249e-01, 1.27931038e-01,
-                           2.74059958e-02, -3.04257997e-01, 1.85369147e-01, 1.94048312e-02,
-                           -3.16794302e-01, 1.64952764e-02])
-        null_res = fit_null(p, m, cov, True, firth=False)
+        params = np.array([0.49070237, -0.17284083, 0.00710691, -0.11784811,
+                           0.07352861, 0.01219004, -0.04772721, -0.17089199,
+                           0.18198025, -0.17141095, 0.11330439, 0.08887165,
+                           0.20304982, 0.13802362])
+        null_res = fit_null(p_cont, m, cov, True, firth=False)
         self.assertTrue(abs((params - null_res.params).max())
                         < 1E-7)
 
@@ -163,7 +199,7 @@ class TestFirthFit(unittest.TestCase):
         self.assertAlmostEqual(kbeta, -0.31901219992017243)
         tbeta = [1.9588025,  0.7251749, -0.5605268, -0.5396909,  0.0594742,
                  -0.2001795, -1.4873298,  0.5050208]
-        self.assertTrue(abs((np.array(beta)- np.array(tbeta)).max())
+        self.assertTrue(abs((np.array(beta)-np.array(tbeta)).max())
                         < 1E-7)
         self.assertAlmostEqual(bse, 2.848207537910185)
         self.assertAlmostEqual(fitll, -58.249948818380204)
@@ -185,18 +221,145 @@ class TestFixedEffectsRegression(unittest.TestCase):
         variant = 'variant'
         af = 0.2
         pattern = 'test'
-        lineage_effects = False
-        lin = np.random.randint(2, size=(100, 4))
         null_fit = -9.9
         null_firth = -9.9
         kstrains = ['K%d' % i for i in range(k[k == 1].shape[0])]
         nkstrains = ['NK%d' % i for i in range(k[k == 0].shape[0])]
         var_obj = fixed_effects_regression(variant, p, k, m, cov, af,
-                                           pattern, lineage_effects, None,
+                                           pattern, False, None,
                                            1, 1, null_fit, null_firth,
                                            kstrains, nkstrains,
                                            False)
-        # TODO: test var_obj, probe different exit statuses
+        t_obj = Seer(variant, pattern,
+                     af, 0.5365065578449575, 1,
+                     -0.668215625696782,
+                     0.47087488598995186,
+                     -1.29962042280822,
+                     np.array([0.42265596, 0.10078512, 2.77587593,
+                               0.94439244, -0.13846857, -0.14140035,
+                               0.38328562, -0.1986484, -1.51779346,
+                               0.94618541]),
+                     np.nan, kstrains, nkstrains,
+                     set(),
+                     False, False)
+        self.assertEqual(eq_seer(var_obj, t_obj), set())
+        # fail af-filtering
+        var_obj = fixed_effects_regression(variant, None, k, m, cov, af,
+                                           pattern, False, None,
+                                           1, 1, null_fit, null_firth,
+                                           kstrains, nkstrains,
+                                           False)
+        t_obj = Seer(variant, pattern,
+                     af, np.nan,
+                     np.nan, np.nan, np.nan, np.nan,
+                     np.array([]),
+                     np.nan, kstrains, nkstrains,
+                     set(['af-filter']),
+                     True, False)
+        self.assertEqual(eq_seer(var_obj, t_obj), set())
+        # fail pre-filtering
+        var_obj = fixed_effects_regression(variant, p, k, m, cov, af,
+                                           pattern, False, None,
+                                           0.05, 1, null_fit, null_firth,
+                                           kstrains, nkstrains,
+                                           False)
+        t_obj = Seer(variant, pattern,
+                     af, 0.5365065578449575,
+                     np.nan, np.nan, np.nan, np.nan,
+                     np.array([]),
+                     np.nan, kstrains, nkstrains,
+                     set(['pre-filtering-failed']),
+                     True, False)
+        self.assertEqual(eq_seer(var_obj, t_obj), set())
+        # fail filtering
+        var_obj = fixed_effects_regression(variant, p, k, m, cov, af,
+                                           pattern, False, None,
+                                           1, 0.05, null_fit, null_firth,
+                                           kstrains, nkstrains,
+                                           False)
+        t_obj = Seer(variant, pattern,
+                     af, 0.5365065578449575, 1,
+                     -0.668215625696782,
+                     0.47087488598995186,
+                     -1.29962042280822,
+                     np.array([0.42265596, 0.10078512, 2.77587593,
+                               0.94439244, -0.13846857, -0.14140035,
+                               0.38328562, -0.1986484, -1.51779346,
+                               0.94618541]),
+                     np.nan, kstrains, nkstrains,
+                     set(['lrt-filtering-failed']),
+                     False, True)
+        self.assertEqual(eq_seer(var_obj, t_obj), set())
+        # bad-chisq
+        p = np.array([1]*10 + [0]*90)
+        k = np.array([1]*10 + [0]*90)
+        m = np.array([1]*10 + [0]*90).reshape(-1, 1)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            var_obj = fixed_effects_regression(variant, p, k, m, cov, af,
+                                               pattern, False, None,
+                                               1, 1, null_fit, null_firth,
+                                               kstrains, nkstrains,
+                                               False)
+        t_obj = Seer(variant, pattern,
+                     af, 1.5239706048320995e-23, 1,
+                     -88.72472137305186,
+                     0.0,
+                     890.8154121360252,
+                     np.array([-88.72472137305188]),
+                     np.nan, kstrains, nkstrains,
+                     set(['bad-chisq']),
+                     False, False)
+        self.assertEqual(eq_seer(var_obj, t_obj), set())
+        p = np.loadtxt(P_BINARY)
+        k = np.loadtxt(K)
+        m = np.loadtxt(M)
+        # covariates
+        cov = pd.DataFrame(np.loadtxt(COV))
+        var_obj = fixed_effects_regression(variant, p, k, m, cov, af,
+                                           pattern, False, None,
+                                           1, 1, null_fit, null_firth,
+                                           kstrains, nkstrains,
+                                           False)
+        t_obj = Seer(variant, pattern,
+                     af, 0.5365065578449575, 1,
+                     -0.7082070719359966,
+                     0.4852518061533321,
+                     -0.809194818156449,
+                     np.array([0.325464, 0.16147301, 3.17003634,
+                               1.05383182, -0.31762591, -0.32545411,
+                               0.65876263, -0.07939636, -1.61743885,
+                               1.04396837, 0.13034889, -1.59225167,
+                               0.1938934]),
+                     np.nan, kstrains, nkstrains,
+                     set(),
+                     False, False)
+        self.assertEqual(eq_seer(var_obj, t_obj), set())
+        # lineage
+        cov = pd.DataFrame([])
+        var_obj = fixed_effects_regression(variant, p, k, m, cov, af,
+                                           pattern, True, lin,
+                                           1, 1, null_fit, null_firth,
+                                           kstrains, nkstrains,
+                                           False)
+        t_obj = Seer(variant, pattern,
+                     af, 0.5365065578449575, 1,
+                     -0.668215625696782,
+                     0.47087488598995186,
+                     -1.29962042280822,
+                     np.array([0.42265596, 0.10078512, 2.77587593,
+                               0.94439244, -0.13846857, -0.14140035,
+                               0.38328562, -0.1986484, -1.51779346,
+                               0.94618541]),
+                     2, kstrains, nkstrains,
+                     set(),
+                     False, False)
+        self.assertEqual(eq_seer(var_obj, t_obj), set())
+        # TODO: probe different exit statuses:
+        # 1- prefectly-separated-data (is it actually possible?)
+        # 2- firth-fail
+        # 3- matrix-inversion-error
+        # 4- high-bse
 
     def test_fixed_effects_regression_continuos(self):
         p_cont = np.loadtxt(P_CONT)
@@ -208,8 +371,7 @@ class TestFixedEffectsRegression(unittest.TestCase):
         af = 0.2
         pattern = 'test'
         lineage_effects = False
-        lin = np.random.randint(2, size=(100, 4))
-        null_mod = smf.Logit(p, m)
+        null_mod = smf.Logit(p_cont, m)
         null_fit = null_mod.fit(disp=False)
         null_firth = -9.9
         kstrains = ['K%d' % i for i in range(k[k == 1].shape[0])]
@@ -219,7 +381,116 @@ class TestFixedEffectsRegression(unittest.TestCase):
                                            1, 1, null_fit, null_firth,
                                            kstrains, nkstrains,
                                            True)
-        # TODO: test var_obj, probe different exit statuses
+        t_obj = Seer(variant, pattern,
+                     af,
+                     0.29623810011571716,
+                     1.0267174980317177e-24,
+                     -0.043638262259610316,
+                     0.06006023185402142,
+                     0.6655803214920781,
+                     np.array([-0.1560651, 0.04372272, -0.06398297,
+                               0.10658197,  0.01046428, -0.08089156,
+                               -0.13733075, 0.16774866, -0.17746121,
+                               0.13386466]),
+                     np.nan, kstrains, nkstrains,
+                     set(),
+                     False, False)
+        self.assertEqual(eq_seer(var_obj, t_obj), set())
+        # fail af-filtering
+        var_obj = fixed_effects_regression(variant, None, k, m, cov, af,
+                                           pattern, False, None,
+                                           1, 1, null_fit, null_firth,
+                                           kstrains, nkstrains,
+                                           True)
+        t_obj = Seer(variant, pattern,
+                     af, np.nan,
+                     np.nan, np.nan, np.nan, np.nan,
+                     np.array([]),
+                     np.nan, kstrains, nkstrains,
+                     set(['af-filter']),
+                     True, False)
+        self.assertEqual(eq_seer(var_obj, t_obj), set())
+        # fail pre-filtering
+        var_obj = fixed_effects_regression(variant, p_cont, k, m, cov, af,
+                                           pattern, False, None,
+                                           0.05, 1, null_fit, null_firth,
+                                           kstrains, nkstrains,
+                                           True)
+        t_obj = Seer(variant, pattern,
+                     af, 0.29623810011571716,
+                     np.nan, np.nan, np.nan, np.nan,
+                     np.array([]),
+                     np.nan, kstrains, nkstrains,
+                     set(['pre-filtering-failed']),
+                     True, False)
+        self.assertEqual(eq_seer(var_obj, t_obj), set())
+        # fail filtering
+        var_obj = fixed_effects_regression(variant, p_cont, k, m, cov, af,
+                                           pattern, False, None,
+                                           1, 1E-50, null_fit, null_firth,
+                                           kstrains, nkstrains,
+                                           True)
+        t_obj = Seer(variant, pattern,
+                     af,
+                     0.29623810011571716,
+                     1.0267174980317177e-24,
+                     -0.043638262259610316,
+                     0.06006023185402142,
+                     0.6655803214920781,
+                     np.array([-0.1560651, 0.04372272, -0.06398297,
+                               0.10658197,  0.01046428, -0.08089156,
+                               -0.13733075, 0.16774866, -0.17746121,
+                               0.13386466]),
+                     np.nan, kstrains, nkstrains,
+                     set(['lrt-filtering-failed']),
+                     False, True)
+        self.assertEqual(eq_seer(var_obj, t_obj), set())
+        # covariates
+        cov = pd.DataFrame(np.loadtxt(COV))
+        var_obj = fixed_effects_regression(variant, p_cont, k, m, cov, af,
+                                           pattern, False, None,
+                                           1, 1, null_fit, null_firth,
+                                           kstrains, nkstrains,
+                                           True)
+        t_obj = Seer(variant, pattern,
+                     af,
+                     0.29623810011571716,
+                     9.291985115699727e-24,
+                     -0.04946894010582922,
+                     0.05897268709495734,
+                     0.49957867277580303,
+                     np.array([-0.16730353, 0.01750906, -0.09994545,
+                               0.07018266, 0.01718979,
+                               -0.03593312, -0.17211066,
+                               0.17065225, -0.18230721, 0.11787759,
+                               0.09058623, 0.20484901, 0.14072312]),
+                     np.nan, kstrains, nkstrains,
+                     set(),
+                     False, False)
+        self.assertEqual(eq_seer(var_obj, t_obj), set())
+        # lineage
+        cov = pd.DataFrame([])
+        var_obj = fixed_effects_regression(variant, p_cont, k, m, cov, af,
+                                           pattern, True, lin,
+                                           1, 1, null_fit, null_firth,
+                                           kstrains, nkstrains,
+                                           True)
+        t_obj = Seer(variant, pattern,
+                     af,
+                     0.29623810011571716,
+                     1.0267174980317177e-24,
+                     -0.043638262259610316,
+                     0.06006023185402142,
+                     0.6655803214920781,
+                     np.array([-0.1560651, 0.04372272, -0.06398297,
+                               0.10658197,  0.01046428, -0.08089156,
+                               -0.13733075, 0.16774866, -0.17746121,
+                               0.13386466]),
+                     2, kstrains, nkstrains,
+                     set(),
+                     False, False)
+        self.assertEqual(eq_seer(var_obj, t_obj), set())
+        # TODO: probe matrix-inversion
 
 
 if __name__ == '__main__':
