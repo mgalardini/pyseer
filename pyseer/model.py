@@ -20,8 +20,7 @@ import pyseer.classes as var_obj
 
 
 def pre_filtering(p, k, continuous):
-    """
-    Calculate a naive p-value from a chisq test (binary phenotype)
+    """Calculate a naive p-value from a chisq test (binary phenotype)
     or a t-test (continuous phenotype) which is not adjusted for population
     structure
 
@@ -65,8 +64,7 @@ def pre_filtering(p, k, continuous):
 
 
 def fit_null(p, m, cov, continuous, firth=False):
-    """
-    Fit the null model i.e. regression without k-mer
+    """Fit the null model i.e. regression without k-mer
     y ~ Wa
     and return log-likelihood
 
@@ -131,8 +129,7 @@ def fit_null(p, m, cov, continuous, firth=False):
 
 
 def fit_lineage_effect(lin, c, k):
-    """
-    Fits the model k ~ Wa using binomial error with logit link.
+    """Fits the model k ~ Wa using binomial error with logit link.
     W are the lineages (either a projection of samples, or cluster indicators)
     and covariates.
     Returns the index of the most significant lineage
@@ -302,16 +299,50 @@ def fixed_effects_regression(kmer, p, k, m, c, af, pattern,
                         notes, False, False)
 
 
-# Convenience function to calculate likelihood of Firth regression
 def firth_likelihood(beta, logit):
+    """Convenience function to calculate likelihood of Firth regression
+
+    Parameters
+    ----------
+    beta : (n,) array
+    logit : statsmodels.discrete.discrete_model.Logit
+
+    Returns
+    -------
+    likelihood : float
+    """
     return -(logit.loglike(beta) +
              0.5*np.log(np.linalg.det(-logit.hessian(beta))))
 
 
-# Do firth regression
-# Note information = -hessian, for some reason available but not implemented in statsmodels
-def fit_firth(logit_model, start_vec, kmer_name,
-              X, y, step_limit=1000, convergence_limit=0.0001):
+def fit_firth(logit_model, start_vec, X, y,
+              step_limit=1000, convergence_limit=0.0001):
+    """Do firth regression
+
+    Parameters
+    ----------
+    logit : statsmodels.discrete.discrete_model.Logit
+    start_vec : (n,) array
+                Pre-initialized array to speed-up convergence
+    X : (n, m) array
+    y : (n, ) array
+    step_limit : integer
+                 Maximum number of iterations
+    convergence_limit : float
+                        Convergence tolerance
+
+    Returns
+    -------
+    intercept : float
+    kbeta : float
+    beta : (n-2, ) list
+    bse : float
+    fitll : float
+
+    or
+
+    None
+    """
 
     beta_iterations = []
     beta_iterations.append(start_vec)
