@@ -181,7 +181,7 @@ def fit_lineage_effect(lin, c, k):
 # X is the variant presence/absence (fixed effects)
 # W are covariate fixed effects, including population structure
 # a and b are slopes to be fitted
-def fixed_effects_regression(kmer, p, k, m, c, af, pattern,
+def fixed_effects_regression(variant, p, k, m, c, af, pattern,
                              lineage_effects, lin,
                              pret, lrtt, null_res, null_firth,
                              kstrains, nkstrains, continuous):
@@ -190,7 +190,7 @@ def fixed_effects_regression(kmer, p, k, m, c, af, pattern,
     # was this af-filtered?
     if p is None:
         notes.add('af-filter')
-        return var_obj.Seer(kmer, pattern, af, np.nan, np.nan,
+        return var_obj.Seer(variant, pattern, af, np.nan, np.nan,
                             np.nan, np.nan, np.nan, [],
                             np.nan, kstrains, nkstrains,
                             notes, True, False)
@@ -201,7 +201,7 @@ def fixed_effects_regression(kmer, p, k, m, c, af, pattern,
         notes.add('bad-chisq')
     if prep > pret or not np.isfinite(prep):
         notes.add('pre-filtering-failed')
-        return var_obj.Seer(kmer, pattern, af, prep, np.nan,
+        return var_obj.Seer(variant, pattern, af, prep, np.nan,
                             np.nan, np.nan, np.nan, [],
                             np.nan, kstrains, nkstrains,
                             notes, True, False)
@@ -264,7 +264,7 @@ def fixed_effects_regression(kmer, p, k, m, c, af, pattern,
                 firth_fit = fit_firth(mod, start_vec, v, p)
                 if firth_fit is None:  # Firth failure
                     notes.add('firth-fail')
-                    return var_obj.Seer(kmer, pattern, af, prep, np.nan,
+                    return var_obj.Seer(variant, pattern, af, prep, np.nan,
                                         np.nan, np.nan, np.nan, [],
                                         kstrains, nkstrains,
                                         notes, False, True)
@@ -278,7 +278,7 @@ def fixed_effects_regression(kmer, p, k, m, c, af, pattern,
     except np.linalg.linalg.LinAlgError:
         # singular matrix error
         notes.add('matrix-inversion-error')
-        return var_obj.Seer(kmer, pattern, af, prep, np.nan,
+        return var_obj.Seer(variant, pattern, af, prep, np.nan,
                             np.nan, np.nan, np.nan, [],
                             np.nan, kstrains, nkstrains,
                             notes, False, True)
@@ -290,12 +290,12 @@ def fixed_effects_regression(kmer, p, k, m, c, af, pattern,
 
     if lrt_pvalue > lrtt or not np.isfinite(lrt_pvalue) or not np.isfinite(kbeta):
         notes.add('lrt-filtering-failed')
-        return var_obj.Seer(kmer, pattern, af, prep, lrt_pvalue,
+        return var_obj.Seer(variant, pattern, af, prep, lrt_pvalue,
                             kbeta, bse, intercept, beta,
                             max_lineage, kstrains, nkstrains,
                             notes, False, True)
 
-    return var_obj.Seer(kmer, pattern, af, prep, lrt_pvalue,
+    return var_obj.Seer(variant, pattern, af, prep, lrt_pvalue,
                         kbeta, bse, intercept, beta,
                         max_lineage, kstrains, nkstrains,
                         notes, False, False)
