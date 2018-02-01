@@ -110,9 +110,11 @@ def fit_null(p, m, cov, continuous, firth=False):
             null_res = null_mod.fit(disp=False)
         else:
             if firth:
-                (intercept, kbeta, beta, bse, fitll) = fit_firth(null_mod,
-                                                                 start_vec,
-                                                                 "null", v, p)
+                firth_res = fit_firth(null_mod, start_vec, v, p)
+                if firth_res is None:
+                    sys.stderr.write('Firth regression did not converge for null model\n')
+                    return None
+                (intercept, kbeta, beta, bse, fitll) = firth_res
                 null_res = fitll
             else:
                 null_res = null_mod.fit(start_params=start_vec,
@@ -259,7 +261,7 @@ def fixed_effects_regression(kmer, p, k, m, c, af, pattern,
 
             # Fit Firth regression with large SE, or nearly separable values
             if bad_chisq:
-                firth_fit = fit_firth(mod, start_vec, kmer, v, p)
+                firth_fit = fit_firth(mod, start_vec, v, p)
                 if firth_fit is None:  # Firth failure
                     notes.add('firth-fail')
                     return var_obj.Seer(kmer, pattern, af, prep, np.nan,

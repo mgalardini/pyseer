@@ -76,7 +76,6 @@ class TestFitNull(unittest.TestCase):
         # no covariates, firth regression
         (intercept, kbeta, beta, bse, fitll) = fit_firth(null_mod,
                                                          start_vec,
-                                                         'null',
                                                          v, p)
         null_test = fitll
         null_res = fit_null(p, m, cov, False, firth=True)
@@ -105,7 +104,6 @@ class TestFitNull(unittest.TestCase):
         # covariates, firth regression
         (intercept, kbeta, beta, bse, fitll) = fit_firth(null_mod,
                                                          start_vec,
-                                                         'null',
                                                          v, p)
         null_test = fitll
         null_res = fit_null(p, m, cov, False, firth=True)
