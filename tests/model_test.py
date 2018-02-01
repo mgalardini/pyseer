@@ -202,6 +202,35 @@ class TestFirthFit(unittest.TestCase):
                                    mod)
         self.assertAlmostEqual(fll, np.inf)
 
+    def test_fit_firth(self):
+        p = np.random.randint(2, size=100)
+        m = np.random.random(size=(100, 10))
+        mod = smf.Logit(p, m)
+        start_vec = np.zeros(m.shape[1])
+        start_vec[0] = np.log(np.mean(p)/(1-np.mean(p)))
+        (intercept, kbeta, beta, bse, fitll) = fit_firth(mod,
+                                                         start_vec,
+                                                         m, p)
+        self.assertAlmostEqual(intercept, -0.32005574538132137)
+        self.assertAlmostEqual(kbeta, -0.4993377857403157)
+        tbeta = [0.7004772,
+                 1.0211765,
+                 -1.0847237,
+                 -0.3792912,
+                 0.1944553,
+                 -0.7836003,
+                 -0.0828212,
+                 1.2193257]
+        np.testing.assert_almost_equal(beta, tbeta)
+        self.assertAlmostEqual(bse, 2.7015259394815527)
+        self.assertAlmostEqual(fitll, -58.87933036850816)
+        fitll = fit_firth(mod,
+                          start_vec,
+                          m, p,
+                          step_limit=10,
+                          convergence_limit=1E-10)
+        self.assertEqual(fitll, None)
+
 
 if __name__ == '__main__':
     unittest.main()
