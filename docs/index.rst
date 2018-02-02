@@ -31,8 +31,10 @@ code.
    :maxdepth: 2
    :caption: Contents:
 
+   self
    installation.rst
    usage.rst
+   options.rst
    tutorial.rst
    api.rst
 
