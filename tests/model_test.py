@@ -45,7 +45,7 @@ def eq_seer(s1, s2):
             diff.add(p)
         if np.isfinite(y) and not np.isfinite(x):
             diff.add(p)
-        if x != y:
+        if abs(x - y) > 1E-7:
             diff.add(p)
 
     if s1.max_lineage is not None and s2.max_lineage is not None:

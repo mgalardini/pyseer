@@ -10,5 +10,5 @@ before_script: # to get matplotlib to work
   - "sh -e /etc/init.d/xvfb start"
   - sleep 3 # give xvfb some time to start
 script:
+  - pytest -v tests
   - cd tests && bash run_test.sh
-  - cd .. && pytest
