@@ -24,22 +24,20 @@ def pre_filtering(p, k, continuous):
     or a t-test (continuous phenotype) which is not adjusted for population
     structure
 
-    Parameters
-    ----------
-    p : (n, 1) array
-        Phenotypes vector
-    k : (n, 1) array
-        Variant presence-absence vector
-    continous : boolean
-        Whether phenotypes are continuous or binary
+    Args:
+        p (numpy.array)
+            Phenotypes vector (n, 1)
+        k (numpy.array)
+            Variant presence-absence vector (n, 1)
+        continous (bool)
+            Whether phenotypes are continuous or binary
 
-    Returns
-    -------
-    prep : float
-        Naive p-value
-
-    bad_chisq : boolean
-        Whether the chisq test had small values in the contingency table
+    Returns:
+        prep (float)
+            Naive p-value
+        bad_chisq (boolean)
+            Whether the chisq test had small values in the
+            contingency table
     """
     bad_chisq = False
     if continuous:
@@ -65,27 +63,29 @@ def pre_filtering(p, k, continuous):
 
 def fit_null(p, m, cov, continuous, firth=False):
     """Fit the null model i.e. regression without k-mer
-    y ~ Wa
-    and return log-likelihood
 
-    Parameters
-    ----------
-    p : (n, 1) array
-        Phenotypes vector
-    m : (n, k) array
-        Population structure matrix
-    cov : (n, j) pandas DataFrame
-        Covariants dataframe
-    continous : boolean
-        Whether phenotypes are continuous or binary
-    firth : boolean
-        For discrete phenotypes whether to use firth regression
+    `y ~ Wa`
 
-    Returns
-    -------
-    null_res : statsmodels.regression.linear_model.RegressionResultsWrapper
-               or float or None
-        Fitted model or log-likelihood (if firth) or None if could not fit
+    Returns log-likelihood
+
+    Args:
+        p (numpy.array)
+            Phenotypes vector (n, 1)
+        m (numpy.array)
+            Population structure matrix (n, k)
+        cov (pandas.DataFrame)
+            Covariants dataframe (n, j)
+        continous (bool)
+            Whether phenotypes are continuous or binary
+
+    Kwargs:
+        firth (bool)
+            For binary phenotypes whether to use firth regression
+
+    Returns:
+        null_res (statsmodels.regression.linear_model.RegressionResultsWrapper or float or None)
+            Fitted model or log-likelihood (if firth) or
+            None if could not fit
     """
     if cov.shape[1] > 0:
         v = np.concatenate((np.ones(m.shape[0]).reshape(-1, 1),
@@ -131,24 +131,24 @@ def fit_null(p, m, cov, continuous, firth=False):
 
 
 def fit_lineage_effect(lin, c, k):
-    """Fits the model k ~ Wa using binomial error with logit link.
+    """Fits the model `k ~ Wa` using binomial error with logit link.
     W are the lineages (either a projection of samples, or cluster indicators)
     and covariates.
     Returns the index of the most significant lineage
 
-    Parameters
-    ----------
-    lin : (n, k) array
-        Population structure matrix or lineage association binary matrix
-    c : (n, j) array
-        Covariants array
-    k : (n, 1) array
-        Variant presence-absence vector
+    Args:
+        lin (numpy.array)
+            Population structure matrix or lineage association
+            binary matrix (n, k)
+        c (numpy.array)
+            Covariants matrix (n, j)
+        k (numpy.array)
+            Variant presence-absence vector (n, 1)
 
-    Returns
-    -------
-    max_lineage : integer or None
-        Index of the most significant lineage or None is could not fit
+    Returns:
+        max_lineage (int or None)
+            Index of the most significant lineage
+            or None is could not fit
     """
     if c.shape[0] == lin.shape[0]:
         X = np.concatenate((np.ones(lin.shape[0]).reshape(-1, 1),
@@ -179,51 +179,51 @@ def fixed_effects_regression(variant, p, k, m, c, af, pattern,
                              lineage_effects, lin,
                              pret, lrtt, null_res, null_firth,
                              kstrains, nkstrains, continuous):
-    """Fits the model y ~ Xb + Wa using either binomial error with
+    """Fits the model `y ~ Xb + Wa` using either binomial error with
     logit link (binary traits) or Gaussian error (continuous traits)
 
-    y is the phenotype
-    X is the variant presence/absence (fixed effects)
-    W are covariate fixed effects, including population structure
-    a and b are slopes to be fitted
+    * `y` is the phenotype
+    * `X` is the variant presence/absence (fixed effects)
+    * `W` are covariate fixed effects, including population structure
+    * `a` and `b` are slopes to be fitted
 
-    Parameters
-    ----------
-    variant : string
-    p : (n,) array
-        Phenotype array (binary or continuous)
-    k : (n,) array
-        Variant presence/absence array
-    m : (n, m) array
-        Population structure array
-    c : (n, j) array
-        Covariants array
-    af : float
-        Allele frequency
-    pattern : string
-    lineage_effects : boolean
-        Whether to fit lineages or not
-    lin : (n, k) array
-        Lineages array
-    pret : float
-        Pre-filtering p-value threshold
-    lrtt : float
-        Post-fitting p-value threshold
-    null_res : float or statsmodels.regression.linear_model.RegressionResultsWrapper
-        Null-fit likelihood (binary) or model (continuous)
-    null_firth : float
-        Firth regression likelihood
-    kstrains : list
-        Sample labels with the variant
-    nkstrains : list
-        Sample labels without the variant
-    continuous : boolean
-        Whether the phenotype is continuous or not
+    Args:
+        variant (str)
+            Variant identifier
+        p (numpy.array)
+            Phenotype vector (binary or continuous) (n, 1)
+        k (numpy.array)
+            Variant presence/absence vector (n, 1)
+        m (numpy.array)
+            Population structure matrix (n, m)
+        c (numpy.array)
+            Covariants matrix (n, j)
+        af (float)
+            Allele frequency
+        pattern (str)
+            Variant hashed pattern
+        lineage_effects (bool)
+            Whether to fit lineages or not
+        lin (numpy.array)
+            Lineages matrix (n, k)
+        pret (float)
+            Pre-filtering p-value threshold
+        lrtt (float)
+            Post-fitting p-value threshold
+        null_res (float or statsmodels.regression.linear_model.RegressionResultsWrapper)
+            Null-fit likelihood (binary) or model (continuous)
+        null_firth (float)
+            Firth regression likelihood
+        kstrains (iterable)
+            Sample labels with the variant
+        nkstrains (iterable)
+            Sample labels without the variant
+        continuous (bool)
+            Whether the phenotype is continuous or not
 
-    Returns
-    -------
-    result : pyseer.classes.Seer
-        Results container
+    Returns:
+        result (pyseer.classes.Seer)
+            Results container
     """
     notes = set()
 
@@ -345,14 +345,15 @@ def fixed_effects_regression(variant, p, k, m, c, af, pattern,
 def firth_likelihood(beta, logit):
     """Convenience function to calculate likelihood of Firth regression
 
-    Parameters
-    ----------
-    beta : (n,) array
-    logit : statsmodels.discrete.discrete_model.Logit
+    Args:
+        beta (numpy.array)
+            (n, 1)
+        logit (statsmodels.discrete.discrete_model.Logit)
+            Logistic model
 
-    Returns
-    -------
-    likelihood : float
+    Returns:
+        likelihood (float)
+            Firth likelihood
     """
     return -(logit.loglike(beta) +
              0.5*np.log(np.linalg.det(-logit.hessian(beta))))
@@ -362,29 +363,33 @@ def fit_firth(logit_model, start_vec, X, y,
               step_limit=1000, convergence_limit=0.0001):
     """Do firth regression
 
-    Parameters
-    ----------
-    logit : statsmodels.discrete.discrete_model.Logit
-    start_vec : (n,) array
-                Pre-initialized array to speed-up convergence
-    X : (n, m) array
-    y : (n, ) array
-    step_limit : integer
-                 Maximum number of iterations
-    convergence_limit : float
-                        Convergence tolerance
+    Args:
+        logit (statsmodels.discrete.discrete_model.Logit)
+            Logistic model
+        start_vec (numpy.array)
+            Pre-initialized vector to speed-up convergence (n, 1)
+        X (numpy.array)
+            (n, m)
+        y (numpy.array)
+            (n, )
 
-    Returns
-    -------
-    intercept : float
-    kbeta : float
-    beta : (n-2, ) list
-    bse : float
-    fitll : float
+    Kwargs:
+        step_limit (int)
+            Maximum number of iterations
+        convergence_limit (float)
+            Convergence tolerance
 
-    or
-
-    None
+    Returns:
+        intercept (float)
+           Intercept
+        kbeta (float)
+            Variant beta
+        beta (iterable)
+            Covariates betas (n-2)
+        bse (float)
+            Beta std-err
+        fitll (float or None)
+            Likelihood of fit or None if could not fit
     """
 
     beta_iterations = []

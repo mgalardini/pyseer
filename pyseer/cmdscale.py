@@ -13,24 +13,20 @@ with set_env(MKL_NUM_THREADS='1',
 # thanks to Francis Song for this function
 # source: http://www.nervouscomputer.com/hfs/cmdscale-in-python/
 def cmdscale(D):
-    """
-    Classical multidimensional scaling (MDS)
+    """Classical multidimensional scaling (MDS)
 
-    Parameters
-    ----------
-    D : (n, n) array
-        Symmetric distance matrix.
+    Args:
+        D (numpy.array)
+            Symmetric distance matrix (n, n)
 
-    Returns
-    -------
-    Y : (n, p) array
-        Configuration matrix. Each column represents a dimension. Only the
-        p dimensions corresponding to positive eigenvalues of B are returned.
-        Note that each dimension is only determined up to an overall sign,
-        corresponding to a reflection.
-
-    e : (n,) array
-        Eigenvalues of B.
+    Returns:
+        Y (numpy.array)
+            Configuration matrix (n, p). Each column represents a dimension. Only the
+            p dimensions corresponding to positive eigenvalues of B are returned.
+            Note that each dimension is only determined up to an overall sign,
+            corresponding to a reflection.
+        e (numpy.array)
+            Eigenvalues of B (n, 1)
     """
     # Number of points
     n = len(D)
