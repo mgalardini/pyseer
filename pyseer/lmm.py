@@ -23,10 +23,32 @@ from .model import pre_filtering
 from .model import fit_lineage_effect
 
 
-# Initialises LMM using K matrix
-# see _internal_single in fastlmm.association.single_snp
 def initialise_lmm(p, cov, K_in, lmm_cache_in=None, lmm_cache_out=None):
+    """Initialises LMM using the similarity matrix
+    see _internal_single in fastlmm.association.single_snp
 
+    Args:
+        p (pandas.Series)
+            Phenotypes vector (n, 1)
+        cov (pandas.DataFrame)
+            Covariance matrix (n, m)
+        K_in (str)
+            Similarity matrix filename
+
+    Kwargs:
+        lmm_chache_in (str or None)
+            Filename for an input LMM cache, None if it has to be computed
+        lmm_chache_out (str or None)
+            Filename to save the LMM cache, None otherwise.
+
+    Returns:
+        p (pandas.Series)
+            Phenotype vector with the samples present in the similarity matrix
+        lmm (pyseer.fastlmm.lmm_cov.LMM)
+            Initialised LMM model
+        h2 (float)
+            Trait's variance explained by covariates
+    """
     if lmm_cache_in is not None and os.path.exists(lmm_cache_in):
         if cov.shape[0] == p.shape[0]:
             covar = np.c_[cov.values, np.ones((p.shape[0], 1))]
