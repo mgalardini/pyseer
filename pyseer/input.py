@@ -119,7 +119,7 @@ def load_lineage(infile, p):
 
     if (len(p.index.difference(lin.index)) > 0):
         sys.stderr.write("All samples with a phenotype must be present in lineage file\n")
-        sys.exit(0)
+        sys.exit(1)
     else:
         lin = lin.loc[lin.index.intersection(p.index)]
 
@@ -164,7 +164,7 @@ def load_covariates(infile, covariates, p):
 
     if (len(p.index.difference(c.index)) > 0):
         sys.stderr.write("All samples with a phenotype must be present in covariate file\n")
-        sys.exit(0)
+        sys.exit(1)
     else:
         c = c.loc[c.index.intersection(p.index)]
 
@@ -194,7 +194,10 @@ def load_covariates(infile, covariates, p):
                                           c['covariate%d' % cnum].values],
                                          index=c.index,
                                          name='covariate%d_%d' % (cnum, i)))
-        cov = pd.concat(cov, axis=1)
+        if len(cov) > 0:
+            cov = pd.concat(cov, axis=1)
+        else:
+            cov = pd.DataFrame([])
     return cov
 
 
