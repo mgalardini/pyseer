@@ -138,7 +138,7 @@ def fit_lmm(lmm, h2, variants, variant_mat, lineage_effects,
     variant_mat = variant_mat[:, ~np.all(variant_mat == 0, axis=0)]
 
     if variant_mat.shape[1] == 0:
-        return []
+        return all_variants
 
     # fit LMM to block
     res = fit_lmm_block(lmm, h2, variant_mat)
