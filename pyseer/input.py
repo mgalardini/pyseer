@@ -20,6 +20,18 @@ from .cmdscale import cmdscale
 
 
 def load_phenotypes(infile, column):
+    """Load phenotypes vector
+
+    Args:
+        infile (str)
+            Matrix input file
+        column (str or None)
+            Phenotype column name or None to pick the last column
+
+    Returns:
+        p (pandas.Series)
+            Phenotype vector (n, 1)
+    """
     p = pd.read_table(infile, index_col=0)
     if column is None:
         p = p[p.columns[-1]]
@@ -32,6 +44,25 @@ def load_phenotypes(infile, column):
 
 def load_structure(infile, p, max_dimensions, mds_type="classic", n_cpus=1,
                    seed=None):
+    """Load population structure and apply multidimensional scaling
+
+    Args:
+        infile (str)
+            Population structure (distance matrix) input file
+        p (pandas.Series)
+            Phenotype vector (n, 1)
+        max_dimensions (int)
+            Maximum dimensions to consider when applying
+            `metric` or `non-metric` MDS
+        mds_type (str)
+            MDS algorithm to apply. One of `classic`,
+            `metric` or `non-metric`. Any other input will trigger
+            the `metric` MDS
+        n_cpus (int)
+            Number of CPUs to be used for the `metric` or `non-metric`MDS
+        seed (int or None)
+            Random seed for `metric` or `non-metric` MDS, None if not required
+    """
     m = pd.read_table(infile,
                       index_col=0)
     sys.stderr.write("Structure matrix has dimension " + str(m.shape) + "\n")
@@ -68,8 +99,19 @@ def load_structure(infile, p, max_dimensions, mds_type="classic", n_cpus=1,
     return m
 
 
-# Loads custom cluster/lineage definitions
 def load_lineage(infile, p):
+    """Load custom lineage clusters definitions
+
+    Args:
+        infile (str)
+            Input file for lineage clusters
+        p (pandas.Series)
+            Phenotypes vector (n, 1)
+
+    Returns:
+        result (tuple of (numpy.array, list))
+            Lineage binary matrix and cluster labels
+    """
     lin = pd.Series([x.rstrip().split()[1]
                      for x in open(infile)],
                     index=[x.split()[0]
@@ -97,6 +139,24 @@ def load_lineage(infile, p):
 
 
 def load_covariates(infile, covariates, p):
+    """Load and encode a covariates matrix
+
+    Args:
+        infile (str)
+            Input file for the covariates matrix
+        covariates (iterable or None)
+            List of string indicating which columns to use and their
+            interpretation. Example: `2q` indicates that the second column
+            from the file is a quantitative variable, `2` indicates that
+            that same column is categorical. If None, the matrix is loaded
+            but nothing is done with it.
+        p (pandas.Series)
+            Phenotypes vector (n, 1)
+
+    Returns:
+        cov (pandas.DataFrame)
+            Covariance matrix (n, m)
+    """
     c = pd.read_table(infile,
                       header=None,
                       index_col=0)
@@ -139,6 +199,14 @@ def load_covariates(infile, covariates, p):
 
 
 def load_burden(infile, burden_regions):
+    """Load burden regions for VCF analysis
+
+    Args:
+        infile (str)
+            Input file for burden regions
+        burden_regions (list)
+            List to be filled in-place
+    """
     with open(infile, "r") as region_file:
         for region in region_file:
             (name, region) = region.rstrip().split()
@@ -338,8 +406,18 @@ def load_var_block(var_type, p, burden, burden_regions, infile,
 
     yield None, None, True
 
-# Calculates the hash of a presence/absence vector
+
 def hash_pattern(k):
+    """Calculates the hash of a presence/absence vector
+
+    Args:
+        k (numpy.array)
+            Variant presence/absence binary vector (n, 1)
+
+    Returns:
+        hash (byte)
+            Hashed pattern
+    """
     pattern = k.view(np.uint8)
     hashed = hashlib.md5(pattern)
     return (binascii.b2a_base64(hashed.digest()))
