@@ -2,6 +2,8 @@
 
 '''Functions to read data into pyseer and iterate over instances'''
 
+import sys
+
 from .utils import set_env
 # avoid numpy taking up more than one thread
 with set_env(MKL_NUM_THREADS='1',
@@ -95,7 +97,7 @@ def load_covariates(infile, covariates, p):
             cnum = int(col.rstrip('q'))
             if cnum == 1 or cnum > c.shape[1] + 1:
                 sys.stderr.write('Covariates columns values should be > 1 and lower ' +
-                                 'than total number of columns (%d)\n' % (c.shape[1] + 1))
+                                 'or equal than total number of columns (%d)\n' % (c.shape[1] + 1))
                 return None
             if col[-1] == 'q':
                 # quantitative
