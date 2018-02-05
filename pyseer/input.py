@@ -62,6 +62,10 @@ def load_structure(infile, p, max_dimensions, mds_type="classic", n_cpus=1,
             Number of CPUs to be used for the `metric` or `non-metric`MDS
         seed (int or None)
             Random seed for `metric` or `non-metric` MDS, None if not required
+
+    Returns:
+        m (pandas.DataFrame)
+            Population structure after MDS (n, m)
     """
     m = pd.read_table(infile,
                       index_col=0)
