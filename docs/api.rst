@@ -7,6 +7,12 @@ model.py
 .. automodule:: pyseer.model
    :members:
 
+lmm.py
+--------
+
+.. automodule:: pyseer.lmm
+   :members:
+
 utils.py
 --------
 

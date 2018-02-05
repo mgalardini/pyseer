@@ -98,10 +98,39 @@ def initialise_lmm(p, cov, K_in, lmm_cache_in=None, lmm_cache_out=None):
     return(p, lmm, h2)
 
 
-# Fits LMM and returns LMM tuples for printing
 def fit_lmm(lmm, h2, variants, variant_mat, lineage_effects,
             lineage_clusters, covariates, continuous,
             filter_pvalue, lrt_pvalue):
+    """Fits LMM and returns LMM tuples for printing
+
+    Args:
+        lmm (pyseer.fastlmm.lmm_cov.LMM)
+            Initialised LMM model
+        h2 (float)
+            Trait's variance explained by covariates
+        variants (iterable)
+            Tuples with variant object, phenotype vector and variant vector
+            (pyseer.classes.LMM, numpy.array, numpy.array)
+        variant_mat (numpy.array)
+            Variants presence absence matrix (n, k)
+        lineage_effects (bool)
+            Whether to fit lineage effects
+        lineage_clusters (numpy.array)
+            Population structure matrix or lineage association
+            binary matrix (n, k)
+        covariates (numpy.array)
+            Covariates matrix (n, m)
+        continuous (bool)
+            Whether the phenotype is continuous
+        filter_pvalue (float)
+            Pre-filtering p-value threshold
+        lrt_pvalue (float)
+            Post-fitting p-value threshold
+
+    Returns:
+        all_variants (iterable)
+            All variant objects fitted or filtered
+    """
     all_variants = []
     filtered_variants = []
     for var_idx, variant in enumerate(variants):
@@ -175,9 +204,22 @@ def fit_lmm(lmm, h2, variants, variant_mat, lineage_effects,
 
     return all_variants
 
-# Actually fits the LMM to numpy variant array
-# see map/reduce section of _internal_single in fastlmm.association.single_snp
 def fit_lmm_block(lmm, h2, variant_block):
+    """Actually fits the LMM to numpy variant array
+    see map/reduce section of _internal_single in fastlmm.association.single_snp
+
+    Args:
+        lmm (pyseer.fastlmm.lmm_cov.LMM)
+            Initialised LMM model
+        h2 (float)
+            Trait's variance explained by covariates
+        variant_block (numpy.array)
+            Variants presence absence matrix (n, k)
+
+    Results:
+        lmm_results (dict)
+            LMM results for this variants block
+    """
     res = lmm.nLLeval(h2=h2, dof=None, scale=1.0,
                       penalty=0.0, snps=variant_block)
 
