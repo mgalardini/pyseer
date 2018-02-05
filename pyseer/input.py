@@ -41,6 +41,11 @@ def load_structure(infile, p, max_dimensions, mds_type="classic", n_cpus=1,
     intersecting_samples = p.index.intersection(m.index)
     m = m.loc[intersecting_samples, intersecting_samples]
 
+    if len(intersecting_samples) == 0:
+        sys.stderr.write('None of the phenotyped samples were found in ' +
+                         'population structure matrix\n')
+        sys.exit(1)
+
     # MDS
     if mds_type == "classic":
         projection, evals = cmdscale(m)
