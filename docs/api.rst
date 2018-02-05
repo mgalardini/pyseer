@@ -1,6 +1,12 @@
 Reference documentation
 ========================
 
+input.py
+--------
+
+.. automodule:: pyseer.input
+   :members:
+
 model.py
 --------
 
