@@ -147,12 +147,12 @@ If computational resources are limited, you can use the unadjusted p-value as
 a pre-filter ``--filter-pvalue``. :math:`10^{-5}` is a reasonable value, or
 three orders of magnitude below your final significance threshold. If you just
 want to plot the significant results, or save space in the output you can also
-print just those passing a final threshol with ``--lrt-pvalue``.
+print just those passing a final threshold with ``--lrt-pvalue``.
 
 .. warning:: We would recommend not filtering on p-value if possible.
    It is possible that variants not significant before correction may be
-   significant afterwards, and taking a final threshold will stop inflation
-   being tested with a Q-Q plot.
+   significant afterwards, and taking a final threshold will prevent a Q-Q plot
+   from being used to test for inflation of p-values.
 
 Population structure
 --------------------
@@ -167,11 +167,13 @@ needs a matrix with distances between all pairs of samples in the analysis::
 
 This file is included with ``--distances``. The default is to perform classical MDS on
 this matrix and retain 10 dimensions. The type of MDS performed can be changed
-with the ``--mds`` option to metric or non-metric if desired.
+with the ``--mds`` option to metric or non-metric if desired. Once the MDS has run once,
+the ``--save-m`` argument can be used to save the result to file. Subsequent runs can
+then be provided with this decomposition directly using ``load-m`` rather than recomputing the MDS.
 
-Once the MDS has run once, the ``--save-m`` argument can be used to save the
-result to file. Subsequent runs can then be provided with this decomposition
-directly using ``load-m`` rather than recomputing the MDS.
+An alternative to using a distance matrix in the fixed effects analysis is to provide clusters of samples with the same genetic
+background (e.g. from BAPS) as a categorical covariate with the
+``--use-covariates`` option.
 
 The mixed effects model (:ref:`mixed_model`) needs a matrix with
 covariances/similarities included with ``--similarities`` between all pairs of samples in the analysis::
@@ -206,7 +208,7 @@ These distances can only be used with the fixed effects model.
 Phylogeny based
 ^^^^^^^^^^^^^^^
 If you have a high quality phylogeny (removing recombination, using a more
-accurate model of evolution) these distances may be more accurate than those from mash.
+accurate model of evolution) using this to calculate pairwise distances may be more accurate than mash.
 For the fixed effects model you can extract the
 patristic distances between all samples. Using a newick file::
 
@@ -236,7 +238,7 @@ each line.
    Using too few variants or those which don't represent vertical evolution may
    be inaccurate (e.g. the roary gene presence/absence list). Choosing too many
    will be prohibitive in terms of memory use and runtime (e.g. all k-mers).
-   Core genome SNPs is a good tradeoff.
+   A VCF of SNPs from the core genome is a good tradeoff in many cases.
 
 Association models
 ------------------
@@ -262,7 +264,7 @@ Fixed effects (SEER)
 ^^^^^^^^^^^^^^^^^^^^
 
 If provided with a valid phenotype and variant file this is the default
-analysis run by `pyseer`. In summary, a generalized linear model is run on each
+analysis run by ``pyseer``. In summary, a generalized linear model is run on each
 k-mer (variant), amounting to multiple linear regression for continuous
 phenotypes and logistic regression for binary phenotypes. Firth regression is
 used in the latter case when large effect sizes are predicted.
@@ -304,6 +306,24 @@ included and selection of the number of components to retain is not necessary.
 In comparison to the fixed effect model this has shown to better control inflation of
 p-values (https://elifesciences.org/articles/26255).
 
+In addition this model will output the narrow sense heritability :math:`h^2`, which is the
+proportion of variance in phenotype explained by the genetic variation when
+maximizing the log-likelihood:
+
+.. math::
+   LL(\sigma^2_E, \sigma^2_G, \beta) = \log N (y | X\beta; \sigma^2_GK + \sigma^2_EI) \\
+   h^2 = \frac{\sigma^2_G}{\sigma^2_G + \sigma^2_E}
+
+This assumes effect sizes are normally distributed, with a variance proportional
+to the total genetic variance (the GCTA model). See
+`this paper <http://dx.doi.org/10.1093/molbev/msx328>`_ for more information on
+the heritability of pathogen traits.
+
+.. warning:: pyseer will print the :math:`h^2` estimate to STDERR, but it will
+   only be valid under the assumptions of the model used. You may wish to
+   compare estimates from other software, and particular care should be taken
+   with binary phenotypes.
+
 Lineage effects (bugwas)
 ^^^^^^^^^^^^^^^^^^^^^^^^
 `Earle et al <https://www.nature.com/articles/nmicrobiol201641>`_ introduced
@@ -343,7 +363,7 @@ can supply custom lineage definitions such as BAPS clusters with the
    sample_3        BAPS_27
    sample_4        BAPS_3
 
-.. note:: One of these clusters will be removed to make the regressions of full rank.
+.. note:: One of these clusters will be removed to ensure the regressions are of full rank.
    Therefore there is one cluster variants will never be assigned to. This
    is chosen as the cluster least associated with the phenotype.
 
@@ -456,8 +476,8 @@ Annotating k-mers
 
 K-mers can also be annotated with the gene they are in, or nearby. This
 requires a list of annotations. Trusted references are used first, and
-allow a close match of k-mer (using ``bwa mem``). Draft annotations (ideally
-those the k-mers were counted from) are used second, and require an exact match
+allow a close match of k-mer (using ``bwa mem``). Draft annotations, ideally
+those the k-mers were counted from, are used second, and require an exact match
 of the k-mer (using ``bwa fastmap``).
 
 K-mers will be iteratively mapped to references in the order provided, either until all the
