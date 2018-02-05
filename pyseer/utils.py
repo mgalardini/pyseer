@@ -44,8 +44,6 @@ def format_output(item, lineage_dict, lmm=False, print_samples=False):
             Variant results container
         lineage_dict (list)
             Lineage labels
-
-    Kwargs:
         lmm (bool)
             Whether the variant was fitted through LMM
         print_samples (bool)

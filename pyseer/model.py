@@ -77,8 +77,6 @@ def fit_null(p, m, cov, continuous, firth=False):
             Covariants dataframe (n, j)
         continous (bool)
             Whether phenotypes are continuous or binary
-
-    Kwargs:
         firth (bool)
             For binary phenotypes whether to use firth regression
 
@@ -372,8 +370,6 @@ def fit_firth(logit_model, start_vec, X, y,
             (n, m)
         y (numpy.array)
             (n, )
-
-    Kwargs:
         step_limit (int)
             Maximum number of iterations
         convergence_limit (float)

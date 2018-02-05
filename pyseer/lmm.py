@@ -34,8 +34,6 @@ def initialise_lmm(p, cov, K_in, lmm_cache_in=None, lmm_cache_out=None):
             Covariance matrix (n, m)
         K_in (str)
             Similarity matrix filename
-
-    Kwargs:
         lmm_chache_in (str or None)
             Filename for an input LMM cache, None if it has to be computed
         lmm_chache_out (str or None)
@@ -216,7 +214,7 @@ def fit_lmm_block(lmm, h2, variant_block):
         variant_block (numpy.array)
             Variants presence absence matrix (n, k)
 
-    Results:
+    Returns:
         lmm_results (dict)
             LMM results for this variants block
     """
