@@ -74,7 +74,7 @@ def load_lineage(infile, p):
         sys.stderr.write("All samples with a phenotype must be present in lineage file\n")
         sys.exit(0)
     else:
-        lin = lin.loc[p.index]
+        lin = lin.loc[lin.index.intersection(p.index)]
 
     lineages = sorted(set(lin.values))
 
@@ -101,7 +101,7 @@ def load_covariates(infile, covariates, p):
         sys.stderr.write("All samples with a phenotype must be present in covariate file\n")
         sys.exit(0)
     else:
-        c = c.loc[p.index]
+        c = c.loc[c.index.intersection(p.index)]
 
     # which covariates to use?
     if covariates is None:
