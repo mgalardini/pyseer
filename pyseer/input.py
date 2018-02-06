@@ -181,7 +181,7 @@ def load_covariates(infile, covariates, p):
             cnum = int(col.rstrip('q'))
             if cnum == 1 or cnum > c.shape[1] + 1:
                 sys.stderr.write('Covariates columns values should be '
-                                 '> 1 and lower than total number of ' +
+                                 '> 1 and less than or equal to total number of ' +
                                  'columns (%d)\n' % (c.shape[1] + 1))
                 return None
             if col[-1] == 'q':
