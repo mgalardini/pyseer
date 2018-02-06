@@ -121,7 +121,7 @@ requires a VCF file of SNPs and INDELs. First predict the function of mutations
 or `bcftools csq <http://www.htslib.org/doc/bcftools.html#csq>`_) and filter the
 VCF file appropriately on variant frequency and predicted effect::
 
-   bcftools view -Q 0.01 -i 'CSQ[*] ~ "stop_gained" snps_indels.vcf.gz | CSQ[*] ~ "frameshift_variant"' | nice bgzip -c > low_freq_vars.vcf.gz
+   bcftools view -Q 0.01 -i 'CSQ[*] ~ "stop_gained" snps_indels.vcf.gz | CSQ[*] ~ "frameshift_variant"' | bgzip -c > low_freq_vars.vcf.gz
 
 Then run ``pyseer`` providing a list of regions to group variants by to the
 ``--burden`` option and the filtered VCF file with ``--vcf``.
@@ -197,7 +197,7 @@ mash
 First of all create a sketch of all your samples (assuming assembled contigs in fasta
 files)::
 
-   for i in $(ls *.fa); do mash sketch -s 10000 -o samples $i; done
+   mash sketch -s 10000 -o samples *.fa
 
 Calculate the pairwise distances and create a distance matrix::
 
