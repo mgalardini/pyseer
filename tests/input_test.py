@@ -11,6 +11,7 @@ from pyseer.input import load_lineage
 from pyseer.input import load_covariates
 from pyseer.input import load_burden
 from pyseer.input import read_variant
+from pyseer.input import read_vcf_var
 from pyseer.input import hash_pattern
 
 
@@ -446,6 +447,41 @@ class TestVariantLoading(unittest.TestCase):
             t = read_variant(infile, p.head(5), 'vcf',
                              False, [], False,
                              p.head(5).index, [])
+
+    def test_read_vcf_var(self):
+        infile = VariantFile(VCF)
+        variant = next(infile)
+        d = {}
+        var_name = read_vcf_var(variant, d)
+        self.assertEqual(var_name, 'FM211187_16_G_A')
+        self.assertEqual(d,
+                         {'sample_1011': 1,
+                          'sample_1042': 1,
+                          'sample_1054': 1,
+                          'sample_1072': 1,
+                          'sample_1128': 1,
+                          'sample_1647': 1,
+                          'sample_188': 1,
+                          'sample_328': 1,
+                          'sample_353': 1,
+                          'sample_446': 1,
+                          'sample_718': 1})
+        # multiple alleles
+        for variant in infile:
+            if len(variant.alts) > 1:
+                d = {}
+                var_name = read_vcf_var(variant, d)
+                self.assertEqual(var_name, None)
+                self.assertEqual(d, {})
+                break
+        # non-passing variant
+        for variant in infile:
+            if len(variant.filter.keys()) > 0 and "PASS" not in variant.filter.keys():
+                d = {}
+                var_name = read_vcf_var(variant, d)
+                self.assertEqual(var_name, None)
+                self.assertEqual(d, {})
+                break
 
 
 class TestHashing(unittest.TestCase):
