@@ -224,7 +224,8 @@ def load_burden(infile, burden_regions):
 # and pres/abs dictionary
 def read_variant(infile, p, var_type, burden, burden_regions,
                  uncompressed, all_strains, sample_order):
-
+    if var_type not in {'kmers', 'vcf', 'Rtab'}:
+        raise ValueError('Variants type not supported')
     if var_type is "vcf":
         # burden tests read through regions and slice vcf
         if burden:
@@ -283,7 +284,13 @@ def read_variant(infile, p, var_type, burden, burden_regions,
         elif var_type == "Rtab":
             split_line = line_in.rstrip().split()
             var_name, strains = split_line[0], split_line[1:]
+            # sanity check
+            if len(strains) != len(sample_order):
+                raise ValueError('Unexpected mismatch between header and data row')
             for present, sample in zip(strains, sample_order):
+                # sanity check
+                if present not in {'0', '1'}:
+                    raise ValueError('Rtab file not binary')
                 if present is not '0':
                     d[sample] = 1
 
