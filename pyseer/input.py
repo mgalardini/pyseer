@@ -345,9 +345,17 @@ def read_variant(infile, p, var_type, burden, burden_regions,
     return (eof, k, var_name, kstrains, nkstrains, af)
 
 
-# Parses vcf variants from pysam. Returns None if filtered variant.
-# Mutates passed dictionary d
 def read_vcf_var(variant, d):
+    """Parses vcf variants from pysam
+
+    Returns None if filtered variant. Mutates passed dictionary d
+
+    Args:
+        variant (pysam.libcbcf.VariantRecord)
+            Variant to be parsed
+        d (dict)
+            Dictionary to be populated in-place
+    """
     var_name = "_".join([variant.contig, str(variant.pos)] +
                         [str(allele) for allele in variant.alleles])
 
@@ -356,7 +364,7 @@ def read_vcf_var(variant, d):
         sys.stderr.write("Multiple alleles at %s_%s. Skipping\n" %
                          (variant.contig, str(variant.pos)))
         var_name = None
-    elif variant.filter.keys() == True and "PASS" not in variant.filter.keys():
+    elif len(variant.filter.keys()) > 0 and "PASS" not in variant.filter.keys():
         var_name = None
     else:
         for sample, call in variant.samples.items():
