@@ -22,7 +22,7 @@ COV = os.path.join(DATA_DIR, 'covariates.txt')
 B = os.path.join(DATA_DIR, 'burden_regions.txt')
 KMER = os.path.join(DATA_DIR, 'kmers.gz')
 PRES = os.path.join(DATA_DIR, 'presence_absence_smaller.Rtab')
-VCF = os.path.join(DATA_DIR, 'variants.vcf.gz')
+VCF = os.path.join(DATA_DIR, 'variants_smaller.vcf.gz')
 
 
 class TestLoadFunctions(unittest.TestCase):
