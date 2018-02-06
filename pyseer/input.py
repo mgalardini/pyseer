@@ -220,10 +220,44 @@ def load_burden(infile, burden_regions):
             burden_regions.append((name, region))
 
 
-# Read input line and parse depending on input file type. Return a variant name
-# and pres/abs dictionary
 def read_variant(infile, p, var_type, burden, burden_regions,
                  uncompressed, all_strains, sample_order):
+    """Read input line and parse depending on input file type
+
+    Return a variant name and pres/abs vector
+
+    Args:
+        infile (opened file)
+            Handle to opened variant file
+        p (pandas.Series)
+            Phenotypes vector (n, 1)
+        var_type (str)
+            Variants type (one of: kmers, vcf or Rtab)
+        burden (bool)
+            Whether to slice a vcf file by burden regions
+        burden_regions (collections.deque)
+            Burden regions to slice the vcf with
+        uncompressed (bool)
+            Whether the kmers file is uncompressed
+        all_strains (set-like)
+            All sample labels that should be present
+        sample_order
+            Sampes order to interpret each Rtab line
+
+    Returns:
+        eof (bool)
+            Whether we are at the end of the file
+        k (numpy.array)
+            Variant presence/absence vector
+        var_name (str)
+            Variant name
+        kstrains (list)
+            Samples in which the variant is present
+        nkstrains (list)
+            Samples in which the variant is absent
+        af (float)
+            Allele frequency
+    """
     if var_type not in {'kmers', 'vcf', 'Rtab'}:
         raise ValueError('Variants type not supported')
     if var_type is "vcf":
