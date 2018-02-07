@@ -360,7 +360,7 @@ def read_vcf_var(variant, d):
                         [str(allele) for allele in variant.alleles])
 
     # Do not support multiple alleles. Use 'bcftools norm' to split these
-    if len(variant.alts) > 1:
+    if variant.alts != None and len(variant.alts) > 1:
         sys.stderr.write("Multiple alleles at %s_%s. Skipping\n" %
                          (variant.contig, str(variant.pos)))
         var_name = None
