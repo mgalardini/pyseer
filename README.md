@@ -7,8 +7,8 @@ pyseer
     python pyseer-runner.py --phenotypes phenotypes.tsv --kmers kmers.gz --distances structure.tsv --min-af 0.01 --max-af 0.99 --cpu 15 --filter-pvalue 1E-8
 
 [![Build Status](https://travis-ci.org/mgalardini/pyseer.svg?branch=master)](https://travis-ci.org/mgalardini/pyseer)
-[![PyPI version](https://badge.fury.io/py/pyseer.svg)](https://badge.fury.io/py/pyseer)
 [![Documentation Status](https://readthedocs.org/projects/pyseer/badge/?version=latest)](http://pyseer.readthedocs.io/en/latest/?badge=version2)
+[![PyPI version](https://badge.fury.io/py/pyseer.svg)](https://badge.fury.io/py/pyseer)
 
 Motivation
 ----------
@@ -33,6 +33,11 @@ Citation
 the genetic basis of bacterial phenotypes." Nature communications 7 (2016): 12797.``
 
 ``doi: 10.1038/ncomms12797``
+
+Documentation
+--------------------
+
+Full documentation is available at [readthedocs](http://pyseer.readthedocs.io/en/latest/).
 
 Prerequisites
 -------------
@@ -63,19 +68,6 @@ If you want multithreading:
 **For the impatient**, just clone/download this repository and run:
 
     python pyseer-runner.py
-
-Testing
--------
-
-While waiting on proper unit tests to be implemented, you can check that the script doesn't crash
-by running:
-
-    cd test/ && bash run_test.sh && cd ../
-
-Documentation
---------------------
-
-Full documentation is available at [readthedocs](http://pyseer.readthedocs.io/en/latest/).
 
 Copyright
 ---------

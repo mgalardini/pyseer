@@ -14,9 +14,10 @@ These genomes were first reported `here <https://www.nature.com/articles/ng.2625
 studies in bacteria was performed using this data, and we will try and
 replicate `their results <http://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1004547>`_.
 
-The data for this tutorial can be accessed at TODO. Extract the archive::
+The data for this tutorial can be accessed `here <https://drive.google.com/open?id=1pOnTS-KW_iNZ5t8kRpMLoTB9Jca3_MJt>`_.
+Extract the archive::
 
-   tar xf pyseer_tutorial.tar.gz
+   tar xf pyseer_tutorial.tar.bz2
 
 To find the following files:
 
@@ -362,7 +363,7 @@ the strongest results in *pbp2x* and *pbp2b* as before. Zooming in:
    :alt: Zoomed Manhattan of penicillin resistance k-mers
    :align: center
 
-The whole *pbp2b* gene is covered by significant k-mers, whereas only a small
+The whole *pbp2x* gene is covered by significant k-mers, whereas only a small
 part of *pbp1a* is hit. This could be due to the fact that only some sites
 in *pbp1a* can be variable, only some of the variable sites affect penicllin
 resistance, or due to the ability to map k-mers to this region.
