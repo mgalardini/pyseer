@@ -12,7 +12,7 @@ interest, while accounting for potentially very strong confounding population
 structure. This allows for genome-wide association studies (GWAS) to be performed in
 clonal organisms such as bacteria and viruses.
 
-.. image:: https://raw.githubusercontent.com/mgalardini/pyseer/version2/docs/pyseer_logo.png
+.. image:: pyseer_logo.png
    :alt: pyseer - python version of seer
    :align: right
 
@@ -33,9 +33,10 @@ code.
 
    self
    installation.rst
-   usage.rst
    options.rst
+   usage.rst
    tutorial.rst
+   multiprocessing.rst
    api.rst
 
 Index:

@@ -63,18 +63,24 @@ def main():
     bwa_index(options.reference)
 
     # run bwa mem -k 8
+    mapped = 0
+    total = 0
     with open(options.output, 'w') as outfile:
-        outfile.write("\t".join(["SNP", "BP", "minLOG10(P)", "log10(p)", "r^2"]))
+        outfile.write("\t".join(["SNP", "BP", "minLOG10(P)", "log10(p)", "r^2"]) + "\n")
 
         mapped_kmers = bwa_iter(options.reference, tmp_fa.name, "mem")
         for mapping, kmer_line in zip(mapped_kmers, seer_results):
+            total += 1
             p_val = float(kmer_line.split("\t")[p_val_col])
             if mapping.mapped and p_val > 0:
+                mapped += 1
                 log10p = -log10(p_val)
                 for (contig, start, end, strand) in mapping.positions:
                     outfile.write("\t".join(["26", ".", str(start) + ".." + str(end), str(log10p), "0"]) + "\n")
 
     # Clean up
+    sys.stderr.write("Read " + str(total) + " k-mers\n")
+    sys.stderr.write("Mapped " + str(mapped) + " k-mers\n")
     tmp_fa.close()
 
 if __name__ == "__main__":

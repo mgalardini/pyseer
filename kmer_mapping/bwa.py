@@ -63,10 +63,11 @@ def bwa_iter(reference, fasta, algorithm):
                         secondary = sam_fields[15].split(":")
                         if secondary[0] == "XA" and secondary[1] == "Z":
                             for secondary_mapping in secondary[2].split(";"):
-                                (contig, pos, cigar, edit_distance) = secondary_mapping.split(",")
-                                if cigar == sam_fields[5]:
-                                    strand = position[0]
-                                    positions.append((contig, position[-1], int(position[-1]) + len(sam_fields[9]) - 1, strand))
+                                if secondary_mapping != '':
+                                    (contig, pos, cigar, edit_distance) = secondary_mapping.split(",")
+                                    if cigar == sam_fields[5]:
+                                        strand = pos[0]
+                                        positions.append((contig, pos[1:], int(pos[1:]) + len(sam_fields[9]) - 1, strand))
 
                 yield(BWA(mapped, positions))
         # read bwa fastmap output

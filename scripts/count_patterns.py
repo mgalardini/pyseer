@@ -40,7 +40,7 @@ if __name__ == "__main__":
 
     command = ("LC_ALL=C sort -u " +
                "--parallel=" + str(options.cores) +
-               " -S " + str(options.memory - mem_adjust) + "M" +
+               " -S " + str(int(options.memory) - mem_adjust) + "M" +
                " -T " + options.temp +
                " " + options.patterns +
                " | wc -l")

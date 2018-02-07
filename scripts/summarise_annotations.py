@@ -21,17 +21,17 @@ def get_options():
 
 
 def update_summary(summary, gene, pval, af, beta):
-    if summary[gene][maxp] is not None:
-        summary[gene][count] += 1
-        summary[gene][af] += af
-        summary[gene][beta] += beta
-        if log10p > summary[gene][maxp]:
-            summary[gene][maxp] = log10p
+    if summary[gene] != {}:
+        summary[gene]['count'] += 1
+        summary[gene]['af'] += af
+        summary[gene]['beta'] += beta
+        if log10p > summary[gene]['maxp']:
+            summary[gene]['maxp'] = log10p
     else:
-        summary[gene][count] = 1
-        summary[gene][af] = af
-        summary[gene][beta] = beta
-        summary[gene][maxp] = log10p
+        summary[gene]['count'] = 1
+        summary[gene]['af'] = af
+        summary[gene]['beta'] = beta
+        summary[gene]['maxp'] = log10p
 
 
 if __name__ == "__main__":
@@ -47,7 +47,7 @@ if __name__ == "__main__":
             anot_fields = line.rstrip().split("\t")
             af = float(anot_fields[1])
             pvalue = float(anot_fields[3])
-            beta = float(anot_fields[4])
+            beta = abs(float(anot_fields[4]))
             annotations = anot_fields[-1].split(",")
 
             if pvalue > 0:
@@ -56,18 +56,25 @@ if __name__ == "__main__":
                     (position, down, inside, up) = annotation.split(";")
                     if inside != "":
                         update_summary(summary, inside, log10p, af, beta)
-                    elif options.nearby
+                    elif options.nearby:
                         if down != "":
                             update_summary(summary, down, log10p, af, beta)
                         if up != "":
                             update_summary(summary, up, log10p, af, beta)
 
     # write output
-    print("\t".join(["gene", "hits", "maxp", "avg_af", "avg_beta"]))
+    print("\t".join(["gene", "hits", "maxp", "avg_af", "avg_maf", "avg_beta"]))
     for gene in summary:
-        print("\t".join([gene, 
-                         str(summary[gene][count]), 
-                         str(summary[gene][maxp]),
-                         str(summary[gene][af]/summary[gene][count]),
-                         str(summary[gene][beta]/summary[gene][count])]))
+        af = summary[gene]['af']/summary[gene]['count']
+        if af > 0.5:
+            maf = 1 - af
+        else:
+            maf = af
+
+        print("\t".join([gene,
+                         str(summary[gene]['count']),
+                         str(summary[gene]['maxp']),
+                         str(af),
+                         str(maf),
+                         str(summary[gene]['beta']/summary[gene]['count'])]))
 

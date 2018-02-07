@@ -54,12 +54,15 @@ sketches yourself::
 or use the pre-computed ``mash_sketch.msh`` directly. Next, use these to
 calculate distances between all pairs of samples::
 
-   mash dist mash_sketch.msh mash_sketch.msh| python square_mash-runner.py > mash.tsv
+   mash dist mash_sketch.msh mash_sketch.msh| square_mash > mash.tsv
+
+.. note:: Alternatively, we could extract patristic distances from a phylogeny:
+   ``python scripts/phylogeny_distance.py core_genome_aln.tree > phylogeny_dists.tsv``
 
 Let's perform an MDS and these distances and look at a scree plot to choose the number of
 dimensions to retain::
 
-   python scree_plot-runner.py mash.tsv
+   scree_plot mash.tsv
 
 .. image:: scree_plot.png
    :alt: scree plot of MDS components
@@ -70,7 +73,7 @@ subjective, and you may choose to include many more.
 
 We can now run the analysis on the COGs::
 
-   python pyseer-runner.py --phenotypes resistances.pheno --pres gene_presence_absence.Rtab --distances mash.tsv --save-m mash_mds --max-dimensions 8 > penicillin_COGs.txt
+   pyseer --phenotypes resistances.pheno --pres gene_presence_absence.Rtab --distances mash.tsv --save-m mash_mds --max-dimensions 8 > penicillin_COGs.txt
 
 Which prints the following to STDERR::
 
@@ -113,7 +116,7 @@ We will now perform an analysis using the SNPs produced from mapping reads
 against the provided reference genome. To speed up the program we will load the
 MDS decomposition from the COG analysis above::
 
-   python pyseer-runner.py --phenotypes resistances.pheno --vcf snps.vcf.gz --load-m output/mash_mds.pkl --lineage --print-samples > penicillin_SNPs.txt
+   pyseer --phenotypes resistances.pheno --vcf snps.vcf.gz --load-m mash_mds.pkl --lineage --print-samples > penicillin_SNPs.txt
 
 This gives similar log messages::
 
@@ -181,9 +184,36 @@ a Manhattan plot similar to this:
    :alt: Manhattan plot of penicillin resistance SNPs
    :align: center
 
-Although there are flat lines suggesting lineage effects from population
-structure that has not been fully controlled for, the three highest peaks are
-in the *pbp2x*, *pbp1a* and *pbp2b* genes, which are the correct loci.
+The three highest peaks are in the *pbp2x*, *pbp1a* and *pbp2b* genes,
+which are the correct loci. There are also flat lines, suggesting
+these may be lineage effects from population structure that has not been fully
+controlled for. In actual fact, if we inspect the SNPs along these two lines
+(``p = 2.10E-14`` and ``p = 1.58E-15``) we see that all of them are annotated
+with the note ``bad-chisq`` and are at the lower end of the included minor allele
+frequency threshold (1.3% and 1.2% respectively). These are therefore variants
+which were underpowered, and the associations are spurious. They should be
+filtered out, and we should probably have used a MAF cutoff of at least 2%
+given the total number of samples we have. As a rule of thumb, a MAF cutoff
+corresponding to a MAC of at least 10 isn't a bad start. Let's run it again::
+
+   pyseer --phenotypes resistances.pheno --vcf snps.vcf.gz --load-m output/mash_mds.pkl --min-af 0.02 --max-af 0.98 > penicillin_SNPs.txt
+
+   Read 603 phenotypes
+   Detected binary phenotype
+   Loaded projection with dimension (603, 269)
+   Analysing 603 samples found in both phenotype and structure matrix
+   198248 loaded variants
+   106949 filtered variants
+   91299 tested variants
+   91225 printed variants
+
+A lot more low frequency variants have been filtered out this time, and if we
+make a plot file our Manhattan plot looks much cleaner:
+
+.. image:: pbp_manhattan_clean.png
+   :alt: Clean Manhattan plot of penicillin resistance SNPs
+   :align: center
+
 
 K-mer association with mixed effects model
 ------------------------------------------
@@ -198,7 +228,7 @@ First, count the k-mers from the assemblies::
    tar xf assemblies.tar.bz2
    fsm-lite -l fsm_file_list.txt -s 6 -S 610 -v -t fsm_kmers | gzip -c - > fsm_kmers.txt.gz
 
-This will require you to have `fsm-lite <https://github.com/nvalimak/fsm-lite>`_. installed
+This will require you to have `fsm-lite <https://github.com/nvalimak/fsm-lite>`_ installed
 If you do not have the time/resources to do this, you can follow the rest of these steps using the
 SNPs as above.
 
@@ -206,20 +236,21 @@ To correct for population structure we must supply ``pyseer`` with the kinship
 matrix :math:`K` using the ``--similarities`` argument (or ``--load-lmm`` if using
 a previous analysis where ``--save-lmm`` was used).
 
-We will use the patristic distances from the core genome phylogeny, which
+We will use the distances from the core genome phylogeny, which
 has been midpointed rooted::
 
    python scripts/phylogeny_distance.py --calc-C core_genome_aln.tree > phylogeny_K.tsv
 
 .. note:: Alternatively, we could extract a kinship matrix from the mapped SNPs by calculating :math:`K = GG^T`
-   ``python similarity-runner.py --vcf snps.vcf.gz samples.txt > gg.snps.txt``
+   ``similarity --vcf snps.vcf.gz samples.txt > gg.snps.txt``
 
 We can now run ``pyseer`` with ``--lmm``. Due to the large number of k-mers we are going to test, we will increase the
 number of CPUs used to 8::
 
-   python pyseer-runner.py --lmm --phenotypes resistances.pheno --kmers fsm_kmers.txt.gz --similarity phylogeny_K.tsv --output-patterns kmer_patterns.txt --cpu 8 > penicillin_kmers.txt
+   pyseer --lmm --phenotypes resistances.pheno --kmers fsm_kmers.txt.gz --similarity phylogeny_K.tsv --output-patterns kmer_patterns.txt --cpu 8 > penicillin_kmers.txt
 
-The heritability :math:`h^2` estimated from the kinship matrix :math:`K` is printed to STDERR::
+The heritability :math:`h^2` estimated from the kinship matrix :math:`K` is printed to STDERR,
+and after about 5 hours the results have finished being written::
 
    Read 603 phenotypes
    Detected binary phenotype
@@ -227,25 +258,47 @@ The heritability :math:`h^2` estimated from the kinship matrix :math:`K` is prin
    Similarity matrix has dimension (616, 616)
    Analysing 603 samples found in both phenotype and similarity matrix
    h^2 = 0.90
+   15167239 loaded variants
+   1042215 filtered variants
+   14125024 tested variants
+   14124993 printed variants
 
-.. warning:: The heritability estimate shouldn't be interpreted as a quantitative measure
+.. note:: The heritability estimate shouldn't be interpreted as a quantitative measure
    for this binary phenotype, but a high heritability is consistent with the mechanism of penicillin
-   resistance in this species.
+   resistance in this species (the sequence can give up to `99% prediction
+   accuracy <http://mbio.asm.org/content/7/3/e00756-16>`_ of penicillin resistance).
+
+The results look similar, though also include the heritability of each variant
+tested::
+
+   variant af      filter-pvalue   lrt-pvalue      beta    beta-std-err    variant_h2      notes
+   TTTTTTTTTTTT    8.11E-01        1.51E-06        1.05E-01        6.13E-02        3.78E-02        6.60E-02
+   TTTTTTTTTTTTT   7.08E-01        6.20E-06        4.03E-01        -3.34E-02       3.98E-02        3.41E-02
+   TTTTTTTTTTTTTT  5.97E-01        6.39E-05        1.81E-01        -4.05E-02       3.03E-02        5.45E-02
+   TTTTTTTTTTTTTTT 3.55E-01        5.92E-04        7.90E-01        -6.84E-03       2.57E-02        1.09E-02
+   TTTTTTTTTTTTTTTT        1.48E-01        2.11E-03        7.38E-01        1.13E-02        3.37E-02        1.37E-02
+   TTTTTTTTTTTTTTTTT       6.47E-02        3.94E-01        4.89E-01        3.11E-02        4.49E-02        2.83E-02
+   TTTTTTTTTTTTTTTTTT      3.48E-02        2.73E-02        2.59E-01        -6.73E-02       5.96E-02        4.60E-02
+   TTTTTTTTTTTTTTTTTTT     2.32E-02        2.18E-01        6.96E-01        -2.81E-02       7.19E-02        1.59E-02
+   TTTTTTTTTTTTTTTTTTTT    1.66E-02        2.58E-01        9.46E-01        -5.63E-03       8.37E-02        2.74E-03
 
 The downstream processing of the k-mer results in ``penicillin_kmers.txt`` will be
 shown in the next section. Before that, we can determine a significance threshold
 using the number of unique k-mer patterns::
 
    python scripts/count_patterns.py kmer_patterns.txt
+   Patterns:       2627332
+   Threshold:      1.90E-08
 
-#TODO run this, compare with total
+This is over five times lower than the total number of k-mers tested, so stops
+us from being hyper-conservative with the multiple testing correction.
 
-We can also create a Q-Q plot to check that p-values are not inflated. We will
+We can also create a Q-Q plot to check that p-values are not inflated. Let's
 first extract the p-value column::
 
    sed '1d' penicillin_kmers.txt | cut -f 4 > pvals.txt
 
-Then we can use the qqman R package to produce a Q-Q plot. Run the following
+Then we can use the ``qqman`` R package to produce a Q-Q plot. Run the following
 commands in ``R``::
 
    require(qqman)
@@ -254,14 +307,146 @@ commands in ``R``::
    qq(pvals$V1)
    dev.off()
 
-This produces the following Q-Q plot, which is well controlled at low p-values
-and doesn't show any 'shelves' sympotmatic of lineage effects:
+.. warning:: Save the Q-Q plot as a png.
+   If you produce a pdf with 14 million points it will probably not render.
+
+This produces the following Q-Q plot:
 
 .. image:: lmm_qq.png
    :alt: Q-Q plot of penicillin resistance k-mers
    :align: center
 
+When interpreting this plot, check that it is well controlled at low p-values and doesn't
+show any large 'shelves' symptomatic of poorly controlled confounding population
+structure. Although this plot is far above the null (as indeed, there are many
+k-mers associated with penicillin resistance), the p-values up to 0.01 are as expected
+which is what we're after.
+
 
 Interpreting significant k-mers
 -------------------------------
+For the final step we will work with only those k-mers which exceeded the
+significance threshold in the mixed model analysis. We will filter these from
+the output using a simple ``awk`` command::
+
+   cat <(head -1 penicillin_kmers.txt) <(awk '$4<1.90E-08 {print $0}' penicillin_kmers.txt) > significant_kmers.txt
+
+There are 5327 significant k-mers.
+
+Mapping to a single reference
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Let's use ``bwa mem`` to map these to
+the reference provided::
+
+   phandango significant_kmers.txt Spn23F.fa Spn23F_kmers.plot
+
+   Read 5327 k-mers
+   Mapped 2425 k-mers
+
+Not all the k-mers have been mapped, which is usually the case. Note there are 2459
+mapping lines in the output, as 34 secondary mappings we included. It is a good idea
+to map to range of references to help with an interpretion for all of the significant
+k-mers. The k-mer annotation step, described next, also helps cover all k-mers. Let's
+look at the plot file in `phandango <http://jameshadfield.github.io/phandango/#/>`_:
+
+.. image:: kmer_phandango.png
+   :alt: Manhattan of penicillin resistance k-mers
+   :align: center
+
+In this view we no longer see all of the Manhattan plot as we have filtered out
+the low p-value k-mers. There is generally less noise due to LD/population structure when
+compared to our previous result above. There are peaks in the three *pbp* genes again, with
+the strongest results in *pbp2x* and *pbp2b* as before. Zooming in:
+
+.. image:: kmer_phandango_zoom.png
+   :alt: Zoomed Manhattan of penicillin resistance k-mers
+   :align: center
+
+The whole *pbp2b* gene is covered by significant k-mers, whereas only a small
+part of *pbp1a* is hit. This could be due to the fact that only some sites
+in *pbp1a* can be variable, only some of the variable sites affect penicllin
+resistance, or due to the ability to map k-mers to this region.
+
+Annotating k-mers
+^^^^^^^^^^^^^^^^^
+We can annotate these k-mers with the genes they are found in, or are near. To
+try and map every k-mer we can include a number of different reference
+annotations, as well as all the draft annotations of the sequences the k-mers
+were counted from. For the purposes of this tutorial we will demonstrate with
+a single type of each annotation, but this could be expanded by adding all
+the annotated assemblies to the input.
+
+We'll start by creating a ``references.txt`` file listing the annotations we
+wish to use::
+
+   Spn23F.fa	Spn23F.gff	ref
+   6952_7#3.fa	6952_7#3.fa	draft
+
+Now run the script. This will iterate down the list of annotations, annotating the k-mers which
+haven't already been mapped to a previous annotation (requires ``bedtools``)::
+
+   annotate_hits significant_kmers.txt references.txt annotated_kmers.txt
+
+   Reference 1
+   5327 kmers remain
+   Draft reference 2
+   2902 kmers remain
+
+.. note:: If this runs slowly you can split the ``significant_kmers.txt`` file into
+   pieces to parallelise the process.
+
+Annotations marked ``ref`` can partially match between k-mer and reference
+sequence, whereas those marked ``draft`` require an exact match. In this case
+the single draft didn't add any matches.
+The genes a k-mer is in, as well as the nearest upstream and downstream are added to the
+output::
+
+   TTTTTTTCTACAATAAAATAGGCTCCATAATATCTATAGTGGATTTACCCACTACAAATATTATAGAACCCGTTTTATTATGGAAAGACTTATTGGACTT    6.47E-02        2.08E-12        2.10E-09        7.97E-01        1.31E-01        2.41E-01        FM211187:252213-252312;FM211187.832;;FM211187.834
+   TTTTTTTATAGATTTCAGGATCAGCCAAATAGTAATCCG 8.42E-01        1.03E-36        2.99E-10        -4.38E-01       6.83E-02        2.53E-01        FM211187:723388-723417;FM211187.2367;;FM211187.2371
+   TTTTTTTATAGATTTCAGGATCAGCCAAATAGTAATCCGCCAGCTGGCGTT     8.39E-01        3.38E-35        4.04E-09        -3.95E-01       6.62E-02        2.37E-01        FM211187:1614084-1614122;penA;penA;penA
+
+The output format is ``contig:position;upstream;in;downstream``.
+The first line shows the k-mer was mapped to ``FM211187:252213-252312``, the
+nearest gene downstream having ID ``FM211187.832`` and upstream having ID ``FM211187.834``.
+The third line shows that k-mer overlaps *penA* -- note when a ``gene=`` field
+is found this is used in preference to the ``ID=`` field.
+
+Finally, we can summarise these annotations to create a plot of significant
+genes. We will only use genes k-mers are actually in, but if we wanted to we
+could also include up/downstream genes by using the ``--nearby`` option::
+
+   python scripts/summarise_annotations.py annoated_kmers.txt > gene_hits.txt
+
+We'll use ``ggplot2`` in ``R`` to plot these results::
+
+   require(ggplot2)
+   require(ggrepel)
+
+   gene_hits = read.table("gene_hits.txt", stringsAsFactors=FALSE)
+
+   ggplot(gene_hits, aes(x=avg_beta, y=maxp, colour=avg_maf, size=hits, label=gene)) + 
+      geom_point(alpha=0.5) + 
+      geom_text_repel(aes(size=60), show.legend = FALSE, colour='black') +
+      scale_size("Number of k-mers", range=c(1,10)) + 
+      scale_colour_gradient('Average MAF') + 
+      theme_bw(base_size=14) + 
+      ggtitle("Penicillin resistance") +
+      xlab("Average effect size") +
+      ylab("Maximum -log10(p-value)")
+
+You can customise this however you wish (for example adding the customary italics on gene
+names); these commands will produce a plot like this:
+
+.. image:: pen_plot.png
+   :alt: Summary of gene annotations
+   :align: center
+
+The main hits have high p-values and are common, and in this case are covered
+by many k-mers. In this case *penA* (*pbp2b*) and *penX* (*pbp2x*) are the main
+hits. Other top genes *recR* and *ddl* are adjacent to the *pbp* genes and `are
+in LD with them <https://academic.oup.com/mbe/article/16/12/1687/2925385>`_,
+creating an artifical association.
+The results with large effect sizes (recall that the odds-ratio is given by
+:math:`e^{\beta}`) and relatively low p-values also have low MAF, and are
+probably false positives.
 

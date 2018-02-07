@@ -2,7 +2,7 @@ Usage
 =====
 Quick start::
 
-   python pyseer-runner.py --phenotypes phenotypes.tsv --kmers kmers.gz --distances structure.tsv --min-af 0.01 --max-af 0.99 --cpu 15 --filter-pvalue 1E-8 > pyseer.assoc
+   pyseer --phenotypes phenotypes.tsv --kmers kmers.gz --distances structure.tsv --min-af 0.01 --max-af 0.99 --cpu 15 --filter-pvalue 1E-8 > pyseer.assoc
 
 Will run the original ``seer`` model on given phenotypes and k-mers, using
 MDS scaling of the pairwise distances provided to correct for population
@@ -201,7 +201,7 @@ files)::
 
 Calculate the pairwise distances and create a distance matrix::
 
-   mash dist samples.msh samples.msh | python ./square_mash-runner.py > mash.tsv
+   mash dist samples.msh samples.msh | square_mash > mash.tsv
 
 These distances can only be used with the fixed effects model.
 
@@ -229,7 +229,7 @@ matrix (design matrix) of variant presence absence to calculate the kinship
 matrix :math:`K = GG^T`. To use this method for the ``--similarity`` option use
 the similarity script with any valid pyseer input variant type::
 
-   python similarity-runner.py --vcf core_gene_snps.vcf sample_list.txt > genotype_kinship.tsv
+   similarity --vcf core_gene_snps.vcf sample_list.txt > genotype_kinship.tsv
 
 Where ``sample_list.txt`` is a file containing sample names to keep, one on
 each line.
@@ -277,11 +277,11 @@ The most important adjustment to this analysis is choosing the number of MDS
 components with the ``--max-dimensions`` argument. Once you have your
 ``--distances`` matrix, draw a scree plot::
 
-   python scree_plot-runner.py mash.tsv
+   scree_plot mash.tsv
 
 This will show the variance explained (the eigenvalues of each MDS component)
 for the first 30 dimensions (increased using ``--max-dimensions`` to
-``scree_plot-runner.py``). You can pick a value at the 'knee' of this plot, or
+``scree_plot``). You can pick a value at the 'knee' of this plot, or
 choose to include much of the total variation. Consider choosing around the
 first 30 components.
 
@@ -459,7 +459,7 @@ Mapping to references (phandango)
 K-mers can be mapped to reference genomes using the provided script and a fasta
 file of the reference::
 
-   python phandango-runner.py pyseer_kmers.assoc reference_1.fa reference_1.plot
+   phandango pyseer_kmers.assoc reference_1.fa reference_1.plot
 
 These ``.plot`` files can be dragged and dropped into `phandango <http://jameshadfield.github.io/phandango/#/>`_
 along with a reference annotation file (the ``.gff`` file corresponding to the
@@ -483,7 +483,7 @@ of the k-mer (using ``bwa fastmap``).
 K-mers will be iteratively mapped to references in the order provided, either until all the
 references are used, or all k-mers have been mapped::
 
-   python annotate_hits-runner.py pyseer_kmers.assoc references.txt kmer_annotation.txt
+   annotate_hits pyseer_kmers.assoc references.txt kmer_annotation.txt
 
 The ``references.txt`` file contains the sequence, annotation and type of the
 references to be used::
