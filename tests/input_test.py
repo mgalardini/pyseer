@@ -12,6 +12,8 @@ from pyseer.input import load_covariates
 from pyseer.input import load_burden
 from pyseer.input import read_variant
 from pyseer.input import read_vcf_var
+from pyseer.input import iter_variants
+from pyseer.input import load_var_block
 from pyseer.input import hash_pattern
 
 
@@ -484,6 +486,163 @@ class TestVariantLoading(unittest.TestCase):
                 break
 
 
+class TestIterVariants(unittest.TestCase):
+    def test_iter_variants_kmers(self):
+        p = pd.read_table(P,
+                          index_col=0)['binary']
+        m = None
+        cov = pd.DataFrame([0, 1])
+        infile = gzip.open(KMER)
+        i_var = iter_variants(p, m, cov, 'kmers',
+                              False, [], infile,
+                              p.index, [], False,
+                              [], 0.2, 0.8,
+                              1, 1, None, None,
+                              False, False)
+        # fist variant doesn't pass af filter
+        v = next(i_var)
+        for i in v:
+            self.assertEqual(i, None)
+        v = next(i_var)
+        v = next(i_var)
+        self.assertEqual(v[0], 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')
+        self.assertTrue(abs((v[1] - p.values).max()) < 1E-7)
+        k = np.array([1, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1,
+                      1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0,
+                      0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 0, 1, 0,
+                      1, 1, 1, 0, 1])
+        self.assertTrue(abs((v[2] - k).max()) < 1E-7)
+        self.assertEqual(v[3], None)
+        self.assertTrue(abs((v[4] - cov.values).max()) < 1E-7)
+        self.assertEqual(v[5], 0.5)
+        self.assertEqual(v[6], b'Rq/qSUjyLCAe/81lbP0wPA==\n')
+        self.assertEqual(v[7], False)
+        self.assertEqual(v[8], [])
+        self.assertEqual(v[9], 1)
+        self.assertEqual(v[10], 1)
+        self.assertEqual(v[11], None)
+        self.assertEqual(v[12], None)
+        kstrains = ['sample_%d' % x for x in [1, 12, 13, 15, 16, 18, 19, 2,
+                                              20, 26, 29, 32, 33, 35, 36, 37,
+                                              39, 4, 40, 44, 46, 47, 48,
+                                              50, 9]]
+        nkstrains = ['sample_%d' % x for x in [10, 11, 14, 17, 21, 22, 23,
+                                               24, 25, 27, 28, 3, 30, 31,
+                                               34, 38, 41, 42, 43, 45, 49,
+                                               5, 6, 7, 8]]
+        self.assertEqual(v[13], kstrains)
+        self.assertEqual(v[14], nkstrains)
+        self.assertEqual(v[15], False)
+        # Read until the end
+        with self.assertRaises(StopIteration):
+            while True:
+                next(i_var)
+
+    def test_iter_variants_rtab(self):
+        p = pd.read_table(P,
+                          index_col=0)['binary']
+        m = None
+        cov = pd.DataFrame([0, 1])
+        infile = open(PRES)
+        header = infile.readline().rstrip()
+        sample_order = header.split()[1:]
+        i_var = iter_variants(p, m, cov, 'Rtab',
+                              False, [], infile,
+                              p.index, sample_order, False,
+                              [], 0.01, 0.99,
+                              1, 1, None, None,
+                              False, False)
+        # fist variant doesn't pass af filter
+        v = next(i_var)
+        for i in v:
+            self.assertEqual(i, None)
+        # lets' try again with lenient af filter
+        infile = open(PRES)
+        header = infile.readline().rstrip()
+        sample_order = header.split()[1:]
+        i_var = iter_variants(p, m, cov, 'Rtab',
+                              False, [], infile,
+                              p.index, sample_order, False,
+                              [], 0.0, 1.0,
+                              1, 1, None, None,
+                              False, False)
+        v = next(i_var)
+        self.assertEqual(v[0], 'COG_1')
+        self.assertTrue(abs((v[1] - p.values).max()) < 1E-7)
+        k = np.ones(50)
+        self.assertTrue(abs((v[2] - k).max()) < 1E-7)
+        self.assertEqual(v[3], None)
+        self.assertTrue(abs((v[4] - cov.values).max()) < 1E-7)
+        self.assertEqual(v[5], 1)
+        self.assertEqual(v[6], b'xxPKpdegG31U5Mx9EHcYXg==\n')
+        self.assertEqual(v[7], False)
+        self.assertEqual(v[8], [])
+        self.assertEqual(v[9], 1)
+        self.assertEqual(v[10], 1)
+        self.assertEqual(v[11], None)
+        self.assertEqual(v[12], None)
+        kstrains = sorted(['sample_%d' % x
+                           for x in range(1, 51)])
+        nkstrains = []
+        self.assertEqual(v[13], kstrains)
+        self.assertEqual(v[14], nkstrains)
+        self.assertEqual(v[15], False)
+        # Read until the end
+        with self.assertRaises(StopIteration):
+            while True:
+                next(i_var)
+
+    def test_iter_variants_vcf(self):
+        p = pd.read_table(P,
+                          index_col=0)['binary']
+        m = None
+        cov = pd.DataFrame([0, 1])
+        infile = VariantFile(VCF)
+        i_var = iter_variants(p, m, cov, 'vcf',
+                              False, [], infile,
+                              p.index, [], False,
+                              [], 0.2, 0.8,
+                              1, 1, None, None,
+                              False, False)
+        # fist variant doesn't pass af filter
+        v = next(i_var)
+        for i in v:
+            self.assertEqual(i, None)
+        # let's try again with lenient af filter
+        infile = VariantFile(VCF)
+        i_var = iter_variants(p, m, cov, 'vcf',
+                              False, [], infile,
+                              p.index, [], False,
+                              [], 0.0, 1.0,
+                              1, 1, None, None,
+                              False, False)
+        v = next(i_var)
+        self.assertEqual(v[0], 'FM211187_16_G_A')
+        self.assertTrue(abs((v[1] - p.values).max()) < 1E-7)
+        k = np.zeros(50)
+        self.assertTrue(abs((v[2] - k).max()) < 1E-7)
+        self.assertEqual(v[3], None)
+        self.assertTrue(abs((v[4] - cov.values).max()) < 1E-7)
+        self.assertEqual(v[5], 0)
+        self.assertEqual(v[6], b'p119Qi/QC/MSCLAT502DlA==\n')
+        self.assertEqual(v[7], False)
+        self.assertEqual(v[8], [])
+        self.assertEqual(v[9], 1)
+        self.assertEqual(v[10], 1)
+        self.assertEqual(v[11], None)
+        self.assertEqual(v[12], None)
+        kstrains = []
+        nkstrains = sorted(['sample_%d' % x
+                           for x in range(1, 51)])
+        self.assertEqual(v[13], kstrains)
+        self.assertEqual(v[14], nkstrains)
+        self.assertEqual(v[15], False)
+        # Read until the end
+        with self.assertRaises(StopIteration):
+            while True:
+                next(i_var)
+
+
 class TestHashing(unittest.TestCase):
     def test_hash_pattern(self):
         p = pd.read_table(P,
@@ -494,6 +653,98 @@ class TestHashing(unittest.TestCase):
         with self.assertRaises(AttributeError):
             hash_pattern([0, 1, 0, 1, 1, 1])
             hash_pattern(p)
+
+
+class TestLoadVarBlock(unittest.TestCase):
+    def test_load_var_block_kmers(self):
+        p = pd.read_table(P,
+                          index_col=0)['binary']
+        m = None
+        cov = pd.DataFrame([0, 1])
+        infile = gzip.open(KMER)
+        i_var = load_var_block('kmers', p.head(5), False, [], infile,
+                               p.head(5).index, [], 0.2, 0.8,
+                               False, 4)
+        variants, variant_mat, eof = next(i_var)
+        self.assertEqual(eof, False)
+        self.assertEqual(variant_mat.shape, (5, 4))
+        self.assertEqual(len(variants), 4)
+        t = np.array([[0., 0., 1., 0.],
+                      [0., 0., 1., 0.],
+                      [0., 0., 0., 0.],
+                      [0., 0., 1., 0.],
+                      [0., 0., 0., 0.]])
+        self.assertTrue(abs((variant_mat - t).max()) < 1E-7)
+        t = [None, None, b'WZMmBpWOV4GTJ81l+lQgBA==\n', None]
+        self.assertEqual([x[0].pattern for x in variants], t)
+        # read until the end of the file
+        while not eof:
+            variants, variant_mat, eof = next(i_var)
+        variants, variant_mat, eof = next(i_var)
+        self.assertEqual(eof, True)
+        self.assertEqual(variants, None)
+        self.assertEqual(variant_mat, None)
+
+    def test_load_var_block_rtab(self):
+        p = pd.read_table(P,
+                          index_col=0)['binary']
+        m = None
+        cov = pd.DataFrame([0, 1])
+        infile = open(PRES)
+        header = infile.readline().rstrip()
+        sample_order = header.split()[1:]
+        i_var = load_var_block('Rtab', p.head(5), False, [], infile,
+                               p.head(5).index, sample_order, 0.0, 1.0,
+                               False, 4)
+        variants, variant_mat, eof = next(i_var)
+        self.assertEqual(eof, False)
+        self.assertEqual(variant_mat.shape, (5, 4))
+        self.assertEqual(len(variants), 4)
+        t = np.array([[1., 1., 1., 1.],
+                      [1., 1., 1., 1.],
+                      [1., 1., 1., 1.],
+                      [1., 1., 1., 1.],
+                      [1., 1., 1., 1.]])
+        self.assertTrue(abs((variant_mat - t).max()) < 1E-7)
+        t = [b'2UFzg+SaUQpQxlmqSQ5lmQ==\n',]*4
+        self.assertEqual([x[0].pattern for x in variants], t)
+        # read until the end of the file
+        while not eof:
+            variants, variant_mat, eof = next(i_var)
+        variants, variant_mat, eof = next(i_var)
+        self.assertEqual(eof, True)
+        self.assertEqual(variants, None)
+        self.assertEqual(variant_mat, None)
+
+    def test_load_var_block_vcf(self):
+        p = pd.read_table(P,
+                          index_col=0)['binary']
+        m = None
+        cov = pd.DataFrame([0, 1])
+        infile = VariantFile(VCF)
+        i_var = load_var_block('vcf', p.head(5), False, [], infile,
+                               p.head(5).index, [], 0.0, 1.0,
+                               False, 4)
+        variants, variant_mat, eof = next(i_var)
+        self.assertEqual(eof, False)
+        self.assertEqual(variant_mat.shape, (5, 4))
+        self.assertEqual(len(variants), 4)
+        t = np.array([[0., 0., 0., 0.],
+                      [0., 0., 0., 0.],
+                      [0., 0., 0., 0.],
+                      [0., 0., 0., 0.],
+                      [0., 0., 0., 0.]])
+        self.assertTrue(abs((variant_mat - t).max()) < 1E-7)
+        t = [b'/Us46UKS4AJRufOcR+5XEA==\n',
+            ] + [None,] + [b'/Us46UKS4AJRufOcR+5XEA==\n',]*2
+        self.assertEqual([x[0].pattern for x in variants], t)
+        # read until the end of the file
+        while not eof:
+            variants, variant_mat, eof = next(i_var)
+        variants, variant_mat, eof = next(i_var)
+        self.assertEqual(eof, True)
+        self.assertEqual(variants, None)
+        self.assertEqual(variant_mat, None)
 
 
 if __name__ == '__main__':

@@ -380,11 +380,86 @@ def read_vcf_var(variant, d):
     return(var_name)
 
 
-# Iterable to pass single variants to fixed effects regression
 def iter_variants(p, m, cov, var_type, burden, burden_regions, infile,
                   all_strains, sample_order, lineage_effects, lineage_clusters,
                   min_af, max_af, filter_pvalue, lrt_pvalue, null_fit,
                   firth_null, uncompressed, continuous):
+    """Make an iterable to pass single variants to fixed effects regression
+
+    Args:
+        p (pandas.DataFrame)
+            Phenotype vector (n, 1)
+        m (numpy.array)
+            Population structure matrix (n, k)
+        cov (pandas.DataFrame)
+            Covariates matrix (n, m)
+        var_type (str)
+            Variants type (one of: kmers, vcf or Rtab)
+        burden (bool)
+            Whether to slice a vcf file by burden regions
+        burden_regions (collections.deque)
+            Burden regions to slice the vcf with
+        infile (opened file)
+            Handle to opened variant file
+        all_strains (set-like)
+            All sample labels that should be present
+        sample_order
+            Sampes order to interpret each Rtab line
+        lineage_effects (bool)
+            Whether to fit lineage effects
+        lineage clusters (list)
+            Lineage clusters indexes
+        min_af (float)
+            Minimum allele frequency (inclusive)
+        max_af (bool)
+            maximum allele frequency (inclusive)
+        filter_pvalue (float)
+            Pre-filtering p-value threshold
+        lrt_pvalue (float)
+            Filtering p-value threshold
+        null_fit (float or statsmodels.regression.linear_model.RegressionResultsWrapper)
+            Null-fit likelihood (binary) or model (continuous)
+        firth_null (float)
+            Firth regression likelihood
+        uncompressed (bool)
+            Whether the kmers file is uncompressed
+        continuous (bool)
+            Whether the phenotype is continuous or not
+
+    Returns:
+        var_name (str)
+            Variant name
+        v (numpy.array)
+            Phenotypes vector (n, 1)
+        k (numpy.array)
+            Variant presence/absence vector (n, 1)
+        m (numpy.array)
+            Population structure matrix (n, k)
+        c (numpy.array)
+            Covariates matrix (n, m)
+        af (float)
+            Allele frequency
+        pattern (bytes)
+            Variant hash
+        lineage_effects (bool)
+            Whether to fit lineage effects
+        lineage clusters (list)
+            Lineage clusters indexes
+        filter_pvalue (float)
+            Pre-filtering p-value threshold
+        lrt_pvalue (float)
+            Filtering p-value threshold
+        null_fit (float or statsmodels.regression.linear_model.RegressionResultsWrapper)
+            Null-fit likelihood (binary) or model (continuous)
+        firth_null (float)
+            Firth regression likelihood
+        kstrains (iterable)
+            Sample labels with the variant
+        nkstrains (iterable)
+            Sample labels without the variant
+        continuous (bool)
+            Whether the phenotype is continuous or not
+    """
     while True:
         eof, k, var_name, kstrains, nkstrains, af = read_variant(infile,
                                                                  p,
@@ -417,6 +492,7 @@ def iter_variants(p, m, cov, var_type, burden, burden_regions, infile,
 def iter_variants_lmm(variant_iter, lmm, h2,
                       lineage, lineage_clusters,
                       covariates, continuous, filter_pvalue, lrt_pvalue):
+    """Make an iterable to pass single variants to fixed effects regression"""
     for variants, variant_mat, eof in variant_iter:
         if len(variants) == 0:
             break
@@ -431,6 +507,41 @@ def iter_variants_lmm(variant_iter, lmm, h2,
 def load_var_block(var_type, p, burden, burden_regions, infile,
                    all_strains, sample_order, min_af, max_af,
                    uncompressed, block_size):
+    """Make in iterable to load blocks of variants for LMM
+
+    Args:
+        var_type (str)
+            Variants type (one of: kmers, vcf or Rtab)
+        p (pandas.DataFrame)
+            Phenotype vector (n, 1)
+        burden (bool)
+            Whether to slice a vcf file by burden regions
+        burden_regions (collections.deque)
+            Burden regions to slice the vcf with
+        infile (opened file)
+            Handle to opened variant file
+        all_strains (set-like)
+            All sample labels that should be present
+        sample_order
+            Sampes order to interpret each Rtab line
+        min_af (float)
+            Minimum allele frequency (inclusive)
+        max_af (bool)
+            maximum allele frequency (inclusive)
+        uncompressed (bool)
+            Whether the kmers file is uncompressed
+        block_size (int)
+            How many variants to be loaded at once
+
+    Returns:
+        variants (iterable)
+            A collection of pyseer.classes.LMM objects describing the
+            loaded variants (n,)
+        variant_mat (numpy.array)
+            Variant bloack presence/absence matrix (n, block_size)
+        eof (bool)
+            Whether we are at the end of the file
+    """
     while True:
         variants = []
         # pre-allocation of memory
