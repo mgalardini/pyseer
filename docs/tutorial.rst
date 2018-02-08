@@ -11,7 +11,7 @@ This tutorial shows how to use ``pyseer`` to perform a GWAS for penicillin
 resistance using 616 *S.*\ |nbsp| \ *pneumoniae* genomes collected from Massachusetts.
 These genomes were first reported `here <https://www.nature.com/articles/ng.2625>`_ and can be accessed
 `here <https://www.nature.com/articles/sdata201558>`_. One of the earliest GWAS
-studies in bacteria was performed using this data, and we will try and
+studies in bacteria was performed using this data, and we will try to
 replicate `their results <http://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1004547>`_.
 
 The data for this tutorial can be accessed `here <https://drive.google.com/open?id=1pOnTS-KW_iNZ5t8kRpMLoTB9Jca3_MJt>`_.
@@ -416,21 +416,21 @@ Finally, we can summarise these annotations to create a plot of significant
 genes. We will only use genes k-mers are actually in, but if we wanted to we
 could also include up/downstream genes by using the ``--nearby`` option::
 
-   python scripts/summarise_annotations.py annoated_kmers.txt > gene_hits.txt
+   python scripts/summarise_annotations.py annotated_kmers.txt > gene_hits.txt
 
 We'll use ``ggplot2`` in ``R`` to plot these results::
 
    require(ggplot2)
    require(ggrepel)
 
-   gene_hits = read.table("gene_hits.txt", stringsAsFactors=FALSE)
+   gene_hits = read.table("gene_hits.txt", stringsAsFactors=FALSE, header=TRUE)
 
-   ggplot(gene_hits, aes(x=avg_beta, y=maxp, colour=avg_maf, size=hits, label=gene)) + 
-      geom_point(alpha=0.5) + 
+   ggplot(gene_hits, aes(x=avg_beta, y=maxp, colour=avg_maf, size=hits, label=gene)) +
+      geom_point(alpha=0.5) +
       geom_text_repel(aes(size=60), show.legend = FALSE, colour='black') +
-      scale_size("Number of k-mers", range=c(1,10)) + 
-      scale_colour_gradient('Average MAF') + 
-      theme_bw(base_size=14) + 
+      scale_size("Number of k-mers", range=c(1,10)) +
+      scale_colour_gradient('Average MAF') +
+      theme_bw(base_size=14) +
       ggtitle("Penicillin resistance") +
       xlab("Average effect size") +
       ylab("Maximum -log10(p-value)")
@@ -449,5 +449,9 @@ in LD with them <https://academic.oup.com/mbe/article/16/12/1687/2925385>`_,
 creating an artifical association.
 The results with large effect sizes (recall that the odds-ratio is given by
 :math:`e^{\beta}`) and relatively low p-values also have low MAF, and are
-probably false positives.
+probably false positives. This can be seen better by changing the axes:
+
+.. image:: pen_plot_maf.png
+   :alt: Summary of gene annotations vs MAF
+   :align: center
 
