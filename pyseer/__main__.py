@@ -322,7 +322,7 @@ def main():
         sys.stderr.write('Writing lineage effects to %s\n' %
                          options.lineage_file)
         with open(options.lineage_file, 'w') as lineage_out:
-            lineage_out.write("\t".join(["lineage", "Wald_test", "p-value"]) + "\n")
+            lineage_out.write("\t".join(["lineage", "wald_test", "p-value"]) + "\n")
             for lineage, wald in sorted(lineage_wald.items(),
                                         key=operator.itemgetter(1),
                                         reverse=True):
