@@ -17,7 +17,7 @@ replicate `their results <http://journals.plos.org/plosgenetics/article?id=10.13
 The data for this tutorial can be accessed `here <https://drive.google.com/open?id=1pOnTS-KW_iNZ5t8kRpMLoTB9Jca3_MJt>`_.
 Extract the archive::
 
-   tar xf pyseer_tutorial.tar.bz2
+   tar xvf pyseer_tutorial.tar.bz2
 
 To find the following files:
 
@@ -49,8 +49,11 @@ The first step is to estimate the population structure. We will do this using
 a pairwise distance matrix produced using ``mash``. Either create the mash
 sketches yourself::
 
-   tar xf assemblies.tar.bz2
-   mash sketch -s 10000 -o mash_sketch *.fa
+   mkdir assemblies
+   cd assemblies
+   tar xf ../assemblies.tar.bz2
+   cd ..
+   mash sketch -s 10000 -o mash_sketch assemblies/*.fa
 
 or use the pre-computed ``mash_sketch.msh`` directly. Next, use these to
 calculate distances between all pairs of samples::
@@ -63,7 +66,7 @@ calculate distances between all pairs of samples::
 Let's perform an MDS and these distances and look at a scree plot to choose the number of
 dimensions to retain::
 
-   scree_plot mash.tsv
+   scree_plot_pyseer mash.tsv
 
 .. image:: scree_plot.png
    :alt: scree plot of MDS components
@@ -137,7 +140,7 @@ chosen). Turning on the test for lineage effects with ``--lineage`` uses the
 MDS components as the lineage, and writes the lineages most associated with
 the phenotype to ``lineage_effects.txt``::
 
-   lineage Wald_test       p-value
+   lineage wald_test       p-value
    MDS3    10.3041807281   0.0
    MDS10   6.61332035523   3.75794950713e-11
    MDS5    6.03559150525   1.58381441295e-09
@@ -226,8 +229,10 @@ other association model available in ``pyseer``, the linear mixed model.
 
 First, count the k-mers from the assemblies::
 
-   tar xf assemblies.tar.bz2
-   fsm-lite -l fsm_file_list.txt -s 6 -S 610 -v -t fsm_kmers | gzip -c - > fsm_kmers.txt.gz
+   mkdir -p assemblies
+   cd assemblies
+   tar xvf ../assemblies.tar.bz2
+   fsm-lite -l ../fsm_file_list.txt -s 6 -S 610 -v -t fsm_kmers | gzip -c - > ../fsm_kmers.txt.gz
 
 This will require you to have `fsm-lite <https://github.com/nvalimak/fsm-lite>`_ installed
 If you do not have the time/resources to do this, you can follow the rest of these steps using the
