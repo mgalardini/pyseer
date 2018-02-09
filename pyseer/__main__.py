@@ -41,10 +41,6 @@ from .lmm import fit_lmm
 
 from .utils import format_output
 
-# Number of variants to process at a time
-lmm_block_size = 1000
-variants_per_core = 1000
-
 
 def get_options():
     import argparse
@@ -182,6 +178,10 @@ def get_options():
                        type=int,
                        default=1,
                        help='Processes [Default: 1]')
+    other.add_argument('--block_size',
+                       type=int,
+                       default=3000,
+                       help='Number of variants per core [Default: 3000]')
 
     other.add_argument('--version', action='version',
                        version='%(prog)s '+__version__)
@@ -209,6 +209,9 @@ def main():
         sys.exit(1)
     if (options.lmm and not (options.distances or options.load_m) and options.lineage):
         sys.stderr.write('Must also provide a distance matrix to report lineage effects\n')
+        sys.exit(1)
+    if (options.block_size < 1):
+        sys.stderr.write('Block size must be at least 1\n')
         sys.exit(1)
 
     # silence warnings
@@ -416,7 +419,7 @@ def main():
                 ret = pool.starmap(fixed_effects_regression,
                                    itertools.islice(
                                                 v_iter,
-                                                options.cpu*variants_per_core))
+                                                options.cpu*options.block_size))
                 if not ret:
                     break
                 for x in ret:
@@ -456,7 +459,7 @@ def main():
         v_iter = load_var_block(var_type, p, burden, burden_regions,
                                 infile, all_strains, sample_order,
                                 options.min_af, options.max_af,
-                                options.uncompressed, lmm_block_size)
+                                options.uncompressed, options.block_size)
         lmm_iter = iter_variants_lmm(v_iter, lmm, h2,
                                      options.lineage, lineage_clusters,
                                      cov.values,

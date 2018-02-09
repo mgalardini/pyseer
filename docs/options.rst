@@ -94,4 +94,6 @@ Command line options
                            threshold
      --uncompressed        Uncompressed kmers file [Default: gzipped]
      --cpu CPU             Processes [Default: 1]
+     --block_size BLOCK_SIZE
+                           Number of variants per core [Default: 3000]
      --version             show program's version number and exit
