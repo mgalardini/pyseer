@@ -45,11 +45,13 @@ setup(
         'Programming Language :: Python :: 3.6',
     ],
     keywords='gwas bacteria k-mer',
-    packages = ["pyseer"],
+    packages = ["pyseer",
+                "pyseer.fastlmm"],
     entry_points = {
         "console_scripts": [
             'pyseer = pyseer.__main__:main',
-            'square_mash = pyseer.mash:main'
+            'square_mash = pyseer.mash:main',
+            'scree_plot_pyseer = pyseer.scree_plot:main'
             ]
     },
     install_requires=['numpy',
