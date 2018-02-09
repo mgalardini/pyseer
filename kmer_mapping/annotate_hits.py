@@ -39,28 +39,15 @@ def get_options():
     return parser.parse_args()
 
 
-# Return overlapping and closest annotations in GFF file
-def create_annotation(gff_bed, contig, start, end, strand):
-    start = str(start)
-    end = str(end)
-
-    query_interval = pybedtools.BedTool(' '.join([contig, start, end, 'kmer', '0', strand]), from_string=True)
-    in_gene = extract_gene(query_interval.intersect(b=gff_bed, s=False, stream=True, wb=True))
-    up_gene = extract_gene(query_interval.closest(b=gff_bed, s=False, D="ref", iu=True, stream=True))
-    down_gene = extract_gene(query_interval.closest(b=gff_bed, s=False, D="ref", id=True, stream=True))
-    pybedtools.cleanup() # delete the bed file
-
-    # return contig:pos;gene_down;gene_in;gene_up
-    annotation_string = ";".join([contig + ":" + start + "-" + end, down_gene, in_gene, up_gene])
-    return annotation_string
-
-
 # returns first overlapping feature with gene= annotation. Otherwise first feature ID
-def extract_gene(bedtools_intervals):
-    ID = None
-    gene = None
-
+def extract_genes(bedtools_intervals):
+    annotations = {}
     for match in bedtools_intervals.features():
+        kmer_id, hit_id = match.fields[3].split("_")
+        annotations[int(kmer_id)] = {}
+
+        ID = None
+        gene = None
         for tag in match.fields[15].split(";"):
             parse_tag = re.search('^(.+)="(.+)"$', tag)
             if parse_tag:
@@ -69,16 +56,15 @@ def extract_gene(bedtools_intervals):
                     break
                 elif parse_tag.group(1) == "ID" and ID is None:
                     ID = parse_tag.group(2)
-        if gene is not None:
-            break
+        if gene is None:
+            if ID is not None:
+                gene = ID
+            else:
+                gene = ""
 
-    if gene is None:
-        if ID is not None:
-            gene = ID
-        else:
-            gene = ""
+        annotations[int(kmer_id)][int(hit_id)] = gene
 
-    return gene
+    return annotations
 
 def main():
     options = get_options()
@@ -145,27 +131,60 @@ def main():
         subprocess.run("gff2bed < " + ref_gff + " > " + tmp_bed.name, shell=True, check=True)
         ref_annotation = pybedtools.BedTool(tmp_bed.name)
         filtered_ref = ref_annotation.filter(lambda x: True if x[7] == "CDS" else False).saveas('tmp_bed')
+        ref_annotation = pybedtools.BedTool('tmp_bed')
 
         next_seer_remaining = open(remaining_next_tmp, 'w')
         next_fasta_remaining = open(remaining_fa_next_tmp, 'w')
 
         # run bwa mem -k 8 for ref, bwa fastmap for draft of remaining.fa
         new_idx = 0
-        mapped_kmers = bwa_iter(ref_fa, remaining_fa_tmp, bwa_algorithm)
-        for mapping, kmer_line in zip(mapped_kmers, seer_remaining):
-            if mapping.mapped:
-                kmers_remaining -= 1
-                annotations = []
-                for (contig, start, end, strand) in mapping.positions:
-                    annotations.append(create_annotation(filtered_ref, contig, start, end, strand))
-                output_file.write("\t".join([kmer_line.rstrip(), ",".join(annotations)]) + "\n")
-            else:
-                # if unmapped write to seer_remaining and remaining.fa
-                next_seer_remaining.write(kmer_line)
+        kmer_lines = []
+        map_pos = {}
 
-                new_idx += 1
-                next_fasta_remaining.write(">" + str(new_idx) + "\n")
-                next_fasta_remaining.write(kmer_line.split("\t")[0] + "\n")
+        mapped_kmers = bwa_iter(ref_fa, remaining_fa_tmp, bwa_algorithm)
+        with tempfile.NamedTemporaryFile('w', prefix=options.tmp_prefix + "/") as query_bed:
+            kmer_idx = 0
+            for mapping, kmer_line in zip(mapped_kmers, seer_remaining):
+                if mapping.mapped:
+                    kmers_remaining -= 1
+                    kmer_lines.append(kmer_line.rstrip())
+                    map_pos[kmer_idx] = []
+                    for hit_idx, (contig, start, end, strand) in enumerate(mapping.positions):
+                        map_pos[kmer_idx].append(contig + ":" + str(start) + "-" + str(end))
+                        query_bed.write('\t'.join([contig, str(start), str(end), str(kmer_idx) + "_" + str(hit_idx), '0', strand]) + "\n")
+                    kmer_idx += 1
+                else:
+                    # if unmapped write to seer_remaining and remaining.fa
+                    next_seer_remaining.write(kmer_line)
+
+                    new_idx += 1
+                    next_fasta_remaining.write(">" + str(new_idx) + "\n")
+                    next_fasta_remaining.write(kmer_line.split("\t")[0] + "\n")
+
+            query_bed.flush()
+            query_interval = pybedtools.BedTool(query_bed.name)
+            sorted_query = query_interval.sort()
+
+            in_genes = extract_genes(query_interval.intersect(b=ref_annotation, s=False, stream=True, wb=True))
+            up_genes = extract_genes(sorted_query.closest(b=ref_annotation, s=False, D="ref", iu=True, stream=True))
+            down_genes = extract_genes(sorted_query.closest(b=ref_annotation, s=False, D="ref", id=True, stream=True))
+            pybedtools.cleanup() # delete the bed file
+
+            for kmer_idx, kmer_line  in enumerate(kmer_lines):
+                annotations = []
+                for hit_idx, hit in enumerate(map_pos[kmer_idx]):
+                    annotation = hit + ";"
+                    if kmer_idx in down_genes and hit_idx in down_genes[kmer_idx]:
+                        annotation += down_genes[kmer_idx][hit_idx]
+                    annotation += ";"
+                    if kmer_idx in in_genes and hit_idx in in_genes[kmer_idx]:
+                        annotation += in_genes[kmer_idx][hit_idx]
+                    annotation += ";"
+                    if kmer_idx in up_genes and hit_idx in up_genes[kmer_idx]:
+                        annotation += up_genes[kmer_idx][hit_idx]
+                    annotations.append(annotation)
+
+                output_file.write("\t".join([kmer_line, ",".join(annotations)]) + "\n")
 
         # Clean up
         seer_remaining.close()
@@ -174,6 +193,7 @@ def main():
         tmp_bed.close()
         os.rename(remaining_next_tmp, remaining_tmp)
         os.rename(remaining_fa_next_tmp, remaining_fa_tmp)
+        os.remove('tmp_bed')
 
         # Open next kmer file
         seer_remaining = open(remaining_tmp, 'r')
