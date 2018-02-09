@@ -36,5 +36,5 @@ Run unit tests::
 
 Test functions and output::
 
-   cd test/ && bash run_test.sh && cd ../
+   cd tests/ && bash run_test.sh && cd ../
 

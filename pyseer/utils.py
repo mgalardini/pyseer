@@ -36,7 +36,7 @@ with set_env(MKL_NUM_THREADS='1',
     import numpy as np
 
 
-def format_output(item, lineage_dict, lmm=False, print_samples=False):
+def format_output(item, lineage_dict=None, lmm=False, print_samples=False):
     """Format results for a variant for stdout printing
 
     Args:
@@ -78,11 +78,11 @@ def format_output(item, lineage_dict, lmm=False, print_samples=False):
                                                     else ''
                                                     for x in item.betas])
 
-    if item.max_lineage is not None:
-        if np.isfinite(item.max_lineage):
+    if lineage_dict is not None:
+        if item.max_lineage is not None and np.isfinite(item.max_lineage):
             out += '\t' + lineage_dict[item.max_lineage]
         else:
-            out += '\t'
+            out += '\tNA'
     if print_samples:
         out += '\t' + '\t'.join((','.join(item.kstrains),
                                  ','.join(item.nkstrains)))

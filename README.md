@@ -14,16 +14,16 @@ Motivation
 ----------
 
 Kmers-based GWAS analysis is particularly well suited for bacterial samples,
-given their high genetic variability. This approach has been for the first
-time formally implemented by [Lees, Vehkala et al.](https://www.nature.com/articles/ncomms12797),
+given their high genetic variability. This approach has been
+implemented by [Lees, Vehkala et al.](https://www.nature.com/articles/ncomms12797),
 in the form of the [SEER](https://github.com/johnlees/seer) software.
 
 The reimplementation presented here should be consistent with the
-current version of the C++ seer, though we do not guarantee this for all
-possible cases.
+current version of the C++ seer (though we do not guarantee this for all
+possible cases).
 
 In this version, as well as all the original features, many new features (input types,
-association models andoutput parsing) have been implemented. See the
+association models and output parsing) have been implemented. See the
 [documentation](http://pyseer.readthedocs.io/en/latest/) for full details.
 
 Citation

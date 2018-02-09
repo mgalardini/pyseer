@@ -13,7 +13,7 @@ die () {
 }
 
 # unpack the test data
-zcat presence_absence.Rtab.gz > presence_absence.Rtab
+gzip -d -c presence_absence.Rtab.gz > presence_absence.Rtab
 
 # test all command line options
 python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --distances distances.tsv.gz --save-m pop_struct > 1.log 2> 1.err || die "Save population structure"

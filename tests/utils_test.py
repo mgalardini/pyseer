@@ -268,13 +268,13 @@ class TestOutputFormatter(unittest.TestCase):
                      bfilter)
 
     def test_formatting_fixed(self):
-        self.assertEqual(format_output(self.fixed, self.lineage_dict,
+        self.assertEqual(format_output(self.fixed, lineage_dict=None,
                                        print_samples=False),
                          self.out1)
-        self.assertEqual(format_output(self.fixed_nan, self.lineage_dict,
+        self.assertEqual(format_output(self.fixed_nan, lineage_dict=None,
                                        print_samples=False),
                          self.out1nan)
-        self.assertEqual(format_output(self.fixed, self.lineage_dict,
+        self.assertEqual(format_output(self.fixed, lineage_dict=None,
                                        print_samples=True),
                          self.out2)
         self.assertEqual(format_output(self.fixed_lineage, self.lineage_dict,
@@ -288,13 +288,13 @@ class TestOutputFormatter(unittest.TestCase):
             format_output(self.bad_fixed, [])
 
     def test_formatting_random(self):
-        self.assertEqual(format_output(self.random, self.lineage_dict,
+        self.assertEqual(format_output(self.random, lineage_dict=None,
                                        lmm=True, print_samples=False),
                          self.out5)
-        self.assertEqual(format_output(self.random_nan, self.lineage_dict,
+        self.assertEqual(format_output(self.random_nan, lineage_dict=None,
                                        lmm=True, print_samples=False),
                          self.out5nan)
-        self.assertEqual(format_output(self.random, self.lineage_dict,
+        self.assertEqual(format_output(self.random, lineage_dict=None,
                                        lmm=True, print_samples=True),
                          self.out6)
         self.assertEqual(format_output(self.random_lineage, self.lineage_dict,

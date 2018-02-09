@@ -288,8 +288,8 @@ def main():
 
     # lineage effects using null model - read BAPS clusters and fit pheno ~ lineage
     lineage_clusters = None
-    lineage_dict = []
     if options.lineage:
+        lineage_dict = []
         lineage_wald = {}
         if options.lineage_clusters:
             lineage_clusters, lineage_dict = load_lineage(options.lineage_clusters, p)
@@ -331,6 +331,8 @@ def main():
                                         reverse=True):
                 pval = 2 * (1 - norm.cdf(wald))
                 lineage_out.write("\t".join([lineage, str(wald), str(pval)]) + "\n")
+    else:
+        lineage_dict = None
 
     # binary regression takes LLF as null, not full model fit
     if not options.continuous and not options.lmm:
