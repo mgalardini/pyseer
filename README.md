@@ -4,7 +4,7 @@ pyseer
 [SEER](https://github.com/johnlees/seer), reimplemented in python by
 [Marco Galardini](https://github.com/mgalardini) and [John Lees](https://github.com/johnlees)
 
-    python pyseer-runner.py --phenotypes phenotypes.tsv --kmers kmers.gz --distances structure.tsv --min-af 0.01 --max-af 0.99 --cpu 15 --filter-pvalue 1E-8
+    pyseer --phenotypes phenotypes.tsv --kmers kmers.gz --distances structure.tsv --min-af 0.01 --max-af 0.99 --cpu 15 --filter-pvalue 1E-8
 
 [![Build Status](https://travis-ci.org/mgalardini/pyseer.svg?branch=master)](https://travis-ci.org/mgalardini/pyseer)
 [![Documentation Status](https://readthedocs.org/projects/pyseer/badge/?version=latest)](http://pyseer.readthedocs.io/en/latest/?badge=version2)
@@ -38,6 +38,10 @@ Documentation
 --------------------
 
 Full documentation is available at [readthedocs](http://pyseer.readthedocs.io/en/latest/).
+You can also build the docs locally (requires `sphinx`) by typing:
+
+    cd docs/
+    make html
 
 Prerequisites
 -------------
@@ -52,18 +56,22 @@ Between parenthesis the versions the script was tested against:
 * `statsmodels` (0.8.0)
 * `pysam` (0.13)
 
-If you would like to use the `scree_plot` script you will also need to have `matplotlib` installed
+If you would like to use the `scree_plot_pyseer` script you will also need to have
+`matplotlib` installed.
+If you would like to use the scripts to map and annotate kmers, you will also need
+`bwa`, `bedtools`,
+`bedops` and `pybedtools` installed.
 
 Installation
 ------------
 
 The easiest way to install `pyseer` is through `pip`:
 
-    pip install pyseer
+    python -m pip install pyseer
 
-If you want multithreading:
+If you want multithreading make sure that you are using a version 3 python interpreter:
 
-    pip3 install pyseer
+    python3 -m pip install pyseer
 
 **For the impatient**, just clone/download this repository and run:
 
