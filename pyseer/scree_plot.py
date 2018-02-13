@@ -59,7 +59,7 @@ def main():
     if options.max_dimensions >= 5:
         plt.tight_layout()
 
-    plt.savefig('scree_plot.png', dpi=150)
+    plt.savefig(options.output, dpi=150)
 
 
 if __name__ == "__main__":
