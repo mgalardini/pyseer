@@ -48,7 +48,7 @@ python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --lmm --lo
 python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --lmm --load-lmm lmm.cache.npz --output-patterns patterns.txt > 27.log 2> 27.err || die "Output patterns"
 
 # test other pyseer commands
-python ../scree_plot-runner.py distances.tsv.gz --max-dimensions 20 > /dev/null 2> /dev/null || die "Scree plot"
+python ../scree_plot_pyseer-runner.py distances.tsv.gz --max-dimensions 20 > /dev/null 2> /dev/null || die "Scree plot"
 python ../similarity-runner.py samples.txt --kmers kmers.gz > /dev/null 2> /dev/null || die "Similarity w/ kmers"
 python ../similarity-runner.py samples.txt --vcf variants.vcf.gz > /dev/null 2> /dev/null || die "Similarity w/ vcf"
 python ../similarity-runner.py samples.txt --pres presence_absence.Rtab > /dev/null 2> /dev/null || die "Similarity w/ roary/piggy"
@@ -69,7 +69,6 @@ python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --load-m k
 python ../pyseer-runner.py --kmers kmers.gz --phenotypes supersubset.pheno --load-m pop_struct.pkl > /dev/null 2> /dev/null && die "Null model failure"
 python ../pyseer-runner.py --kmers kmers.gz --phenotypes supersubset.pheno --load-m pop_struct.pkl --phenotype-column continuous > /dev/null 2> /dev/null || die "Weak results for continuous phenotype"
 python ../pyseer-runner.py --kmers kmers.gz --phenotypes monosubset.pheno --load-m pop_struct.pkl > /dev/null 2> /dev/null && die "Extremely skewed binary phenotypes"
-python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --scree-plot --load-m pop_struct.pkl > /dev/null 2> /dev/null && die "Conflicting options"
 
 # Now compare the outputs
 for t in $(seq 1 27);
