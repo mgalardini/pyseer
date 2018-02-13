@@ -26,11 +26,11 @@ def get_options():
 
     parser.add_argument("--bwa",
                         help="Location of bwa executable "
-                        "[default=bwa]",
+                        "[Default: bwa]",
                         default="bwa")
     parser.add_argument("--tmp-prefix",
-                        help="Directory to store temporary files"
-                        "default=cwd",
+                        help="Directory to store temporary files "
+                        "[Default: cwd]",
                         default=os.getcwd())
     return parser.parse_args()
 

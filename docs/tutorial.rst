@@ -233,6 +233,7 @@ First, count the k-mers from the assemblies::
    cd assemblies
    tar xvf ../assemblies.tar.bz2
    fsm-lite -l ../fsm_file_list.txt -s 6 -S 610 -v -t fsm_kmers | gzip -c - > ../fsm_kmers.txt.gz
+   cd ..
 
 This will require you to have `fsm-lite <https://github.com/nvalimak/fsm-lite>`_ installed
 If you do not have the time/resources to do this, you can follow the rest of these steps using the
@@ -299,26 +300,14 @@ using the number of unique k-mer patterns::
 This is over five times lower than the total number of k-mers tested, so stops
 us from being hyper-conservative with the multiple testing correction.
 
-We can also create a Q-Q plot to check that p-values are not inflated. Let's
-first extract the p-value column::
+We can also create a Q-Q plot to check that p-values are not inflated. We can do that 
+by using the `qq_plot.py` script::
 
-   sed '1d' penicillin_kmers.txt | cut -f 4 > pvals.txt
-
-Then we can use the ``qqman`` R package to produce a Q-Q plot. Run the following
-commands in ``R``::
-
-   require(qqman)
-   png("qqplot.png", width = 1000, height = 1000)
-   pvals = read.table("pvals.txt", header=F)
-   qq(pvals$V1)
-   dev.off()
-
-.. warning:: Save the Q-Q plot as a png.
-   If you produce a pdf with 14 million points it will probably not render.
+   python scripts/qq_plot.py penicillin_kmers.txt
 
 This produces the following Q-Q plot:
 
-.. image:: lmm_qq.png
+.. image:: lmm_qq_python.png
    :alt: Q-Q plot of penicillin resistance k-mers
    :align: center
 
@@ -344,7 +333,7 @@ Mapping to a single reference
 Let's use ``bwa mem`` to map these to
 the reference provided::
 
-   phandango significant_kmers.txt Spn23F.fa Spn23F_kmers.plot
+   phandango_mapper significant_kmers.txt Spn23F.fa Spn23F_kmers.plot
 
    Read 5327 k-mers
    Mapped 2425 k-mers
@@ -389,9 +378,10 @@ wish to use::
    6952_7#3.fa	6952_7#3.fa	draft
 
 Now run the script. This will iterate down the list of annotations, annotating the k-mers which
-haven't already been mapped to a previous annotation (requires ``bedtools``)::
+haven't already been mapped to a previous annotation (requires ``bedtools``, ``bedops`` and the
+``pybedtools`` package)::
 
-   annotate_hits significant_kmers.txt references.txt annotated_kmers.txt
+   annotate_hits_pyseer significant_kmers.txt references.txt annotated_kmers.txt
 
    Reference 1
    5327 kmers remain
@@ -427,6 +417,7 @@ We'll use ``ggplot2`` in ``R`` to plot these results::
 
    require(ggplot2)
    require(ggrepel)
+   library(ggrepel)
 
    gene_hits = read.table("gene_hits.txt", stringsAsFactors=FALSE, header=TRUE)
 

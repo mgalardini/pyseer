@@ -91,6 +91,10 @@ def bwa_iter(reference, fasta, algorithm):
                 else:
                     hits = []
                     fastmap_fields = fastmap_line.split("\t")
+                    # in case a line is missing a few fields
+                    if len(fastmap_fields) < 5:
+                        continue
+                    #
                     if fastmap_fields[1] == 0 and fastmap_fields[2] == length: #  full hits only
                         mapped = True
                         for hit in fastmap_fields[4:]:
