@@ -77,9 +77,14 @@ installation to convert them to the correct input format.
    We would recommend the use of SNPs and genes *in addition* to k-mers, or for
    a quick first pass analysis.
 
-Short variation (SNPs and INDELs) can be read from a VCF file using the ``PySAM`` module. Sample names are taken
-from the header row. Only one ``ALT`` variant per row is supported, if you have
-multiple alternative variants use::
+Short variation (SNPs and INDELs) can be read from a VCF file using the ``PySAM`` module.
+If you have multiple VCF files (e.g. one per sample) you can combine them with
+``bcftools``::
+
+   bcftools merge -m none -0 -O z *.vcf.gz > merged.vcf.gz
+
+Sample names are taken from the header row. Only one ``ALT`` variant per row is supported,
+if you have multiple alternative variants use::
 
    bcftools norm -m - <in.vcf> > out.vcf
 
@@ -87,7 +92,7 @@ to split them into multiple rows otherwise they will be skipped. If ``FILTER``
 fields are present only those with 'PASS' will be processed.
 
 .. note::
-   The ``GT`` field is used to determine variant presence/absence. 
+   The ``GT`` field is used to determine variant presence/absence.
    '0' or '.' is absence, anything else is presence.
 
 COG or intergenic region variation is represented as an .Rtab file by `roary <https://sanger-pathogens.github.io/Roary/>`_ and
@@ -493,7 +498,7 @@ references to be used::
    sample1.fa	sample1.gff	draft
    sample2.fa	sample2.gff	draft
 
-For each k-mer, each match will be returned in the format 'contig:pos;gene_down;gene_in;gene_up' 
+For each k-mer, each match will be returned in the format 'contig:pos;gene_down;gene_in;gene_up'
 i.e. the closest downstream gene, the gene the k-mer is in (if it is), the closest
 upstream gene. The gene name will be chosen if in the GFF, otherwise the gene
 ID will be used.

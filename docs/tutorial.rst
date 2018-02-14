@@ -28,7 +28,7 @@ assemblies.tar.bz2           Archive of genome assemblies.
 fsm_file_list.txt            Input to run fsm-lite.
 snps.vcf.gz                  SNPs mapped against the Spn23F reference.
 gene_presence_absence.Rtab   Output from roary run on these genomes.
-core_genome_aln.tree         IQTREE phylogeny (using ``-m GTR``) from the core genome alignment.
+core_genome_aln.tree         `IQ-TREE <http://www.iqtree.org/>`_ phylogeny (using ``-m GTR``) from the core genome alignment.
 resistances.pheno            Whether an isolate was resistant to penicillin, to be used as the phenotype.
 mash_sketch.msh              mash sketch output, from running ``mash sketch -s 10000 -o mash_sketch *.fa``.
 Spn23F.fa                    `23FSpn <http://jb.asm.org/content/191/5/1480>`_ sequence.
@@ -73,7 +73,10 @@ dimensions to retain::
    :align: center
 
 There is a drop after about 8 dimensions, so we will use this many. This is
-subjective, and you may choose to include many more.
+subjective, and you may choose to include many more. This is
+a sensitivity/specificity tradeoff -- choosing more components is more likely
+to reduce false positives from population structure, at the expense of power.
+Using more components will also slightly increase computation time.
 
 We can now run the analysis on the COGs::
 
@@ -118,7 +121,7 @@ appear in exactly the same set of samples.
 
 We will now perform an analysis using the SNPs produced from mapping reads
 against the provided reference genome. To speed up the program we will load the
-MDS decomposition from the COG analysis above::
+MDS decomposition ``mash_mds.pkl`` which was created by the COG analysis above::
 
    pyseer --phenotypes resistances.pheno --vcf snps.vcf.gz --load-m mash_mds.pkl --lineage --print-samples > penicillin_SNPs.txt
 
