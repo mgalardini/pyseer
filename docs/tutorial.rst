@@ -303,12 +303,12 @@ using the number of unique k-mer patterns::
 This is over five times lower than the total number of k-mers tested, so stops
 us from being hyper-conservative with the multiple testing correction.
 
-We can also create a Q-Q plot to check that p-values are not inflated. We can do that 
-by using the `qq_plot.py` script::
+We can also create a Q-Q plot to check that p-values are not inflated. We can do that
+by using the ``qq_plot.py`` script::
 
    python scripts/qq_plot.py penicillin_kmers.txt
 
-This produces the following Q-Q plot:
+which produces the following Q-Q plot:
 
 .. image:: lmm_qq_python.png
    :alt: Q-Q plot of penicillin resistance k-mers
