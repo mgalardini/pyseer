@@ -7,7 +7,7 @@ pyseer
     pyseer --phenotypes phenotypes.tsv --kmers kmers.gz --distances structure.tsv --min-af 0.01 --max-af 0.99 --cpu 15 --filter-pvalue 1E-8
 
 [![Build Status](https://travis-ci.org/mgalardini/pyseer.svg?branch=master)](https://travis-ci.org/mgalardini/pyseer)
-[![Documentation Status](https://readthedocs.org/projects/pyseer/badge/?version=latest)](http://pyseer.readthedocs.io/en/latest/?badge=version2)
+[![Documentation Status](https://readthedocs.org/projects/pyseer/badge/?version=master)](http://pyseer.readthedocs.io/)
 [![PyPI version](https://badge.fury.io/py/pyseer.svg)](https://badge.fury.io/py/pyseer)
 
 Motivation
@@ -24,7 +24,7 @@ possible cases).
 
 In this version, as well as all the original features, many new features (input types,
 association models and output parsing) have been implemented. See the
-[documentation](http://pyseer.readthedocs.io/en/latest/) for full details.
+[documentation](http://pyseer.readthedocs.io/) for full details.
 
 Citation
 --------
@@ -37,7 +37,7 @@ the genetic basis of bacterial phenotypes." Nature communications 7 (2016): 1279
 Documentation
 --------------------
 
-Full documentation is available at [readthedocs](http://pyseer.readthedocs.io/en/latest/).
+Full documentation is available at [readthedocs](http://pyseer.readthedocs.io/).
 You can also build the docs locally (requires `sphinx`) by typing:
 
     cd docs/
