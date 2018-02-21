@@ -332,7 +332,7 @@ the heritability of pathogen traits.
 Lineage effects (bugwas)
 ^^^^^^^^^^^^^^^^^^^^^^^^
 `Earle et al <https://www.nature.com/articles/nmicrobiol201641>`_ introduced
-the distinction between 'lineage' and 'locus' effects. Also see `this review <https://figshare.com/articles/The_background_of_bacterial_GWAS/5550037/files/9624721.pdf>`_.
+the distinction between 'lineage' and 'locus' effects. Also see `this review <https://figshare.com/articles/The_background_of_bacterial_GWAS/5550037>`_.
 The p-values output by ``pyseer`` are aimed at finding 'locus' effects. To find
 lineage effects Earle et al proposed ordering variants by those associated with
 both the phenotype and a lineage highly associated with a phenotype. They
