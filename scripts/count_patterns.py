@@ -17,6 +17,7 @@ def get_options():
 
     parser.add_argument('--alpha',
                         default=0.05,
+                        type=float,
                         help='Family-wise error rate')
     parser.add_argument('--cores',
                         default=1,
