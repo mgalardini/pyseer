@@ -462,7 +462,6 @@ class TestVariantLoading(unittest.TestCase):
                           'sample_1054': 1,
                           'sample_1072': 1,
                           'sample_1128': 1,
-                          'sample_1647': 1,
                           'sample_188': 1,
                           'sample_328': 1,
                           'sample_353': 1,
