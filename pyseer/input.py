@@ -373,7 +373,7 @@ def read_vcf_var(variant, d):
             # when all instances are 1.
             # Shouldn't matter for bacteria, but some people call hets
             for haplotype in call['GT']:
-                if str(haplotype) is not "." and haplotype != 0:
+                if str(haplotype) is not "." and haplotype is not None and haplotype != 0:
                     d[sample] = 1
                     break
 

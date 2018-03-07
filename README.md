@@ -24,10 +24,16 @@ possible cases).
 
 In this version, as well as all the original features, many new features (input types,
 association models and output parsing) have been implemented. See the
-[documentation](http://pyseer.readthedocs.io/) for full details.
+[documentation](http://pyseer.readthedocs.io/) and
+[preprint](https://www.biorxiv.org/content/early/2018/02/15/266312) for full details.
 
 Citation
 --------
+
+``Lees, John A., Galardini, M., et al. "pyseer: a comprehensive tool for microbial
+pangenome-wide association studies". bioRxiv 266312 (2018).``
+
+``doi: 10.1101/266312``
 
 ``Lees, John A., et al. "Sequence element enrichment analysis to determine
 the genetic basis of bacterial phenotypes." Nature communications 7 (2016): 12797.``
