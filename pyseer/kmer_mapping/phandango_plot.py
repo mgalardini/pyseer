@@ -43,10 +43,16 @@ def main():
     seer_results = open(options.kmers, 'r')
     header_vals = seer_results.readline().rstrip().split("\t")
     p_val_col = 0
+    found = False
     for column in header_vals:
         if column == "lrt-pvalue":
+            found = True
             break
         p_val_col += 1
+
+    if not found:
+        sys.stderr.write("Could not find 'lrt-pvalue' field in header\n")
+        sys.exit(1)
 
     tmp_fa = tempfile.NamedTemporaryFile(prefix=options.tmp_prefix + "/")
     kmer_idx = 0
