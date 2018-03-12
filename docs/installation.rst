@@ -27,6 +27,7 @@ We used the following versions, though higher should also work:
 * ``DendroPy`` (4.3.0) -- for phylogeny distances
 * ``pybedtools`` (0.7.10) -- for annotating k-mers
 * ``bedtools`` (2.27.0) -- for annotating k-mers
+* ``bedops`` (2.4.9) -- for annotating k-mers
 
 Test installation
 -----------------
