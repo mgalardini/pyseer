@@ -37,12 +37,12 @@ setup(
     url='https://github.com/mgalardini/pyseer',
     author='Marco Galardini and John Lees',
     author_email='marco@ebi.ac.uk',
-    license='GPL3',
+    license='Apache Software License',
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Science/Research',
         'Topic :: Scientific/Engineering :: Bio-Informatics',
-        'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
+        'License :: OSI Approved :: Apache Software License',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
@@ -68,6 +68,7 @@ setup(
                       'scikit-learn',
                       'pysam',
                       'DendroPy',
-                      'matplotlib'],
+                      'matplotlib',
+                      'pybedtools'],
     test_suite="tests",
 )
