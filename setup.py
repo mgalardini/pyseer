@@ -64,6 +64,10 @@ setup(
     install_requires=['numpy',
                       'scipy',
                       'pandas',
-                      'statsmodels'],
+                      'statsmodels',
+                      'scikit-learn',
+                      'pysam',
+                      'DendroPy',
+                      'matplotlib'],
     test_suite="tests",
 )
