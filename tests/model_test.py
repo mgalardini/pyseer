@@ -327,7 +327,8 @@ class TestFixedEffectsRegression(unittest.TestCase):
                      None, kstrains, nkstrains,
                      set(['bad-chisq']),
                      False, False)
-        self.assertEqual(eq_seer(var_obj, t_obj), set())
+        #self.assertEqual(eq_seer(var_obj, t_obj), set())
+        self.assertEqual(var_obj.notes, t_obj.notes)
         p = np.loadtxt(P_BINARY)
         k = np.loadtxt(K)
         m = np.loadtxt(M)
