@@ -282,11 +282,11 @@ The most important adjustment to this analysis is choosing the number of MDS
 components with the ``--max-dimensions`` argument. Once you have your
 ``--distances`` matrix, draw a scree plot::
 
-   scree_plot mash.tsv
+   scree_plot_pyseer mash.tsv
 
 This will show the variance explained (the eigenvalues of each MDS component)
 for the first 30 dimensions (increased using ``--max-dimensions`` to
-``scree_plot``). You can pick a value at the 'knee' of this plot, or
+``scree_plot_pyseer``). You can pick a value at the 'knee' of this plot, or
 choose to include much of the total variation. Consider choosing around the
 first 30 components.
 
@@ -488,7 +488,7 @@ of the k-mer (using ``bwa fastmap``).
 K-mers will be iteratively mapped to references in the order provided, either until all the
 references are used, or all k-mers have been mapped::
 
-   annotate_hits pyseer_kmers.assoc references.txt kmer_annotation.txt
+   annotate_hits_pyseer pyseer_kmers.assoc references.txt kmer_annotation.txt
 
 The ``references.txt`` file contains the sequence, annotation and type of the
 references to be used::

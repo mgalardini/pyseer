@@ -49,7 +49,7 @@ def extract_genes(bedtools_intervals):
         ID = None
         gene = None
         for tag in match.fields[15].split(";"):
-            parse_tag = re.search('^(.+)="(.+)"$', tag)
+            parse_tag = re.search('^(.+)=(.+)$', tag)
             if parse_tag:
                 if parse_tag.group(1) == "gene":
                     gene = parse_tag.group(2)
@@ -197,6 +197,9 @@ def main():
 
         # Open next kmer file
         seer_remaining = open(remaining_tmp, 'r')
+
+    sys.stderr.write(str(kmers_remaining) + " kmers remain unannotated\n")
+
 
 if __name__ == "__main__":
     main()
