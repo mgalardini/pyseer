@@ -42,15 +42,15 @@ def main():
     # seer_remaining = seer_results
     seer_results = open(options.kmers, 'r')
     header_vals = seer_results.readline().rstrip().split("\t")
-    p_val_col = 0
-    found = False
-    for column in header_vals:
+    lrt_idx = None
+    lin_idx = None
+    for idx, column in enumerate(header_vals):
         if column == "lrt-pvalue":
-            found = True
-            break
-        p_val_col += 1
+            lrt_idx = idx
+        elif column == "lineage":
+            lin_idx = idx
 
-    if not found:
+    if not lrt_idx:
         sys.stderr.write("Could not find 'lrt-pvalue' field in header\n")
         sys.exit(1)
 
@@ -71,23 +71,27 @@ def main():
     # run bwa mem -k 8
     mapped = 0
     total = 0
-    with open(options.output, 'w') as outfile:
+    with open(options.output, 'w') as outfile, open(options.output + ".lineage", 'w') as linfile:
         outfile.write("\t".join(["SNP", "BP", "minLOG10(P)", "log10(p)", "r^2"]) + "\n")
 
         mapped_kmers = bwa_iter(options.reference, tmp_fa.name, "mem")
         for mapping, kmer_line in zip(mapped_kmers, seer_results):
             total += 1
-            p_val = float(kmer_line.split("\t")[p_val_col])
+            p_val = float(kmer_line.split("\t")[lrt_idx])
             if mapping.mapped and p_val > 0:
                 mapped += 1
                 log10p = -log10(p_val)
                 for (contig, start, end, strand) in mapping.positions:
                     outfile.write("\t".join(["26", ".", str(start) + ".." + str(end), str(log10p), "0"]) + "\n")
+                    if lin_idx:
+                        linfile.write(kmer_line.split("\t")[lin_idx] + "\n")
 
     # Clean up
     sys.stderr.write("Read " + str(total) + " k-mers\n")
     sys.stderr.write("Mapped " + str(mapped) + " k-mers\n")
     tmp_fa.close()
+    if not lin_idx:
+        os.remove(options.output + ".lineage")
 
 if __name__ == "__main__":
     main()
