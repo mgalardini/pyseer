@@ -56,6 +56,7 @@ Command line options
      --max-dimensions MAX_DIMENSIONS
                            Maximum number of dimensions to consider after MDS
                            [Default: 10]
+     --no-distances        Allow run without a distance matrix
 
    Association options:
      --continuous          Force continuous phenotype [Default: binary auto-

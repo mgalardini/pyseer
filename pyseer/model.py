@@ -85,16 +85,11 @@ def fit_null(p, m, cov, continuous, firth=False):
             Fitted model or log-likelihood (if firth) or
             None if could not fit
     """
+    v = np.ones(m.shape[0]).reshape(-1, 1)
+    if m.shape[1] > 0:
+        v = np.concatenate((v, m), axis=1)
     if cov.shape[1] > 0:
-        v = np.concatenate((np.ones(m.shape[0]).reshape(-1, 1),
-                            m,
-                            cov.values),
-                           axis=1)
-    else:
-        # no covariates
-        v = np.concatenate((np.ones(m.shape[0]).reshape(-1, 1),
-                            m),
-                           axis=1)
+        v = np.concatenate((v, cov.values), axis=1)
 
     if continuous:
         null_mod = mod = smf.OLS(p, v)
@@ -245,7 +240,19 @@ def fixed_effects_regression(variant, p, k, m, c, af, pattern,
                             notes, True, False)
 
     # actual regression
-    if c.shape[0] == m.shape[0]:
+    if m.shape[0] != k.shape[0]:
+        # no distances
+        if c.shape[0] == k.shape[0]:
+            v = np.concatenate((np.ones(m.shape[0]).reshape(-1, 1),
+                                k.reshape(-1, 1),
+                                c),
+                               axis=1)
+        else:
+            v = np.concatenate((np.ones(m.shape[0]).reshape(-1, 1),
+                                k.reshape(-1, 1)),
+                               axis=1)
+    elif c.shape[0] == m.shape[0]:
+        # covariates and distances
         v = np.concatenate((np.ones(m.shape[0]).reshape(-1, 1),
                             k.reshape(-1, 1),
                             m,

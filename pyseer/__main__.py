@@ -103,6 +103,11 @@ def get_options():
                            default=10,
                            help='Maximum number of dimensions to consider '
                                 'after MDS [Default: 10]')
+    distances.add_argument('--no-distances',
+                           action='store_true',
+                           default=False,
+                           help='Allow run without a distance '
+                                'matrix')
 
     association = parser.add_argument_group('Association options')
     association.add_argument('--continuous',
@@ -203,12 +208,16 @@ def main():
     if options.burden and not options.vcf:
         sys.stderr.write('Burden test can only be performed with VCF input\n')
         sys.exit(1)
-    if (options.lmm and (options.distances or options.load_m) and not options.lineage) or (not options.lmm and (options.similarity or options.load_lmm)):
-        sys.stderr.write('Must use distance matrix with fixed effects, or similarity matrix with random effects\n')
-        sys.stderr.write('Unless performing a lineage analysis with random effects\n')
-        sys.exit(1)
-    if (options.lmm and not (options.distances or options.load_m) and options.lineage):
-        sys.stderr.write('Must also provide a distance matrix to report lineage effects\n')
+    if not options.no_distances:
+        if (options.lmm and (options.distances or options.load_m) and not options.lineage) or (not options.lmm and (options.similarity or options.load_lmm)):
+            sys.stderr.write('Must use distance matrix with fixed effects, or similarity matrix with random effects\n')
+            sys.stderr.write('Unless performing a lineage analysis with random effects\n')
+            sys.exit(1)
+        if (options.lmm and not (options.distances or options.load_m) and options.lineage):
+            sys.stderr.write('Must also provide a distance matrix to report lineage effects\n')
+            sys.exit(1)
+    elif options.no_distances and options.lmm:
+        sys.stderr.write('Cannot use --no-distances with --lmm\n')
         sys.exit(1)
     if (options.block_size < 1):
         sys.stderr.write('Block size must be at least 1\n')
@@ -243,37 +252,41 @@ def main():
     # fixed effects or lineage effects require regressing p ~ m
     if (options.lineage and not options.lineage_clusters) or not options.lmm:
         # reading genome distances
-        if options.load_m and os.path.isfile(options.load_m):
-            m = pd.read_pickle(options.load_m)
-            sys.stderr.write("Loaded projection with dimension " + str(m.shape) + "\n")
+        if not options.no_distances:
+            if options.load_m and os.path.isfile(options.load_m):
+                m = pd.read_pickle(options.load_m)
+                sys.stderr.write("Loaded projection with dimension " + str(m.shape) + "\n")
+            else:
+                # see if we have setup a seed for non-classical mds
+                # a bit of a ugly hack for testing
+                seed = os.environ.get('PYSEERSEED', None)
+                if seed is not None:
+                    seed = int(seed)
+
+                m = load_structure(options.distances, p, options.max_dimensions,
+                                   options.mds, options.cpu, seed)
+                if options.save_m:
+                    m.to_pickle(options.save_m + ".pkl")
+
+            if options.max_dimensions > m.shape[1]:
+                sys.stderr.write('Population MDS scaling restricted to ' +
+                                 '%d dimensions instead of requested %d\n' %
+                                 (m.shape[1],
+                                  options.max_dimensions))
+                options.max_dimensions = m.shape[1]
+
+            intersecting_samples = p.index.intersection(m.index)
+            sys.stderr.write("Analysing " + str(len(intersecting_samples)) + " samples"
+                             " found in both phenotype and structure matrix\n")
+            p = p.loc[intersecting_samples]
+
+            m = m.loc[p.index]
+            m = m.values[:, :options.max_dimensions]
         else:
-            # see if we have setup a seed for non-classical mds
-            # a bit of a ugly hack for testing
-            seed = os.environ.get('PYSEERSEED', None)
-            if seed is not None:
-                seed = int(seed)
+            m = np.empty(shape=(0, 0))
 
-            m = load_structure(options.distances, p, options.max_dimensions,
-                               options.mds, options.cpu, seed)
-            if options.save_m:
-                m.to_pickle(options.save_m + ".pkl")
-
-        if options.max_dimensions > m.shape[1]:
-            sys.stderr.write('Population MDS scaling restricted to ' +
-                             '%d dimensions instead of requested %d\n' %
-                             (m.shape[1],
-                              options.max_dimensions))
-            options.max_dimensions = m.shape[1]
-
-        intersecting_samples = p.index.intersection(m.index)
-        sys.stderr.write("Analysing " + str(len(intersecting_samples)) + " samples"
-                         " found in both phenotype and structure matrix\n")
-        p = p.loc[intersecting_samples]
-        m = m.loc[p.index]
         if cov.shape[1] > 0:
             cov = cov.loc[p.index]
-
-        m = m.values[:, :options.max_dimensions]
 
         # calculate null regressions once
         null_fit = fit_null(p.values, m, cov, options.continuous)
