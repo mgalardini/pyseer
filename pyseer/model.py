@@ -85,7 +85,7 @@ def fit_null(p, m, cov, continuous, firth=False):
             Fitted model or log-likelihood (if firth) or
             None if could not fit
     """
-    v = np.ones(m.shape[0]).reshape(-1, 1)
+    v = np.ones(p.shape[0]).reshape(-1, 1)
     if m.shape[1] > 0:
         v = np.concatenate((v, m), axis=1)
     if cov.shape[1] > 0:
@@ -243,7 +243,7 @@ def fixed_effects_regression(variant, p, k, m, c, af, pattern,
     if m.shape[0] != k.shape[0]:
         # no distances
         if c.shape[0] == k.shape[0]:
-            v = np.concatenate((np.ones(m.shape[0]).reshape(-1, 1),
+            v = np.concatenate((np.ones(p.shape[0]).reshape(-1, 1),
                                 k.reshape(-1, 1),
                                 c),
                                axis=1)

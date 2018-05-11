@@ -46,6 +46,7 @@ python ../pyseer-runner.py --pres presence_absence.Rtab --phenotypes subset.phen
 python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --lmm --load-lmm lmm.cache.npz --covariates covariates.txt --use-covariates 2q 3 > 25.log 2> 25.err || die "LMM with covariates"
 python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --lmm --load-lmm lmm.cache.npz --cpu 2 > 26.log 2> 26.err || die "LMM with multiple CPUs"
 python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --lmm --load-lmm lmm.cache.npz --output-patterns patterns.txt > 27.log 2> 27.err || die "Output patterns"
+python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --no-distances --covariates lineage_clusters.txt --use-covariates 2 > /dev/null 2> /dev/null || die "No distances"
 
 # test other pyseer commands
 python ../scree_plot_pyseer-runner.py distances.tsv.gz --max-dimensions 20 > /dev/null 2> /dev/null || die "Scree plot"
@@ -69,6 +70,9 @@ python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --load-m k
 python ../pyseer-runner.py --kmers kmers.gz --phenotypes supersubset.pheno --load-m pop_struct.pkl > /dev/null 2> /dev/null && die "Null model failure"
 python ../pyseer-runner.py --kmers kmers.gz --phenotypes supersubset.pheno --load-m pop_struct.pkl --phenotype-column continuous > /dev/null 2> /dev/null || die "Weak results for continuous phenotype"
 python ../pyseer-runner.py --kmers kmers.gz --phenotypes monosubset.pheno --load-m pop_struct.pkl > /dev/null 2> /dev/null && die "Extremely skewed binary phenotypes"
+python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --no-distances > /dev/null 2> /dev/null && die "No distances but no covariates provided"
+python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --no-distances --lmm > /dev/null 2> /dev/null && die "No distances but LMM"
+python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --no-distances --load-m pop_struct.pkl > /dev/null 2> /dev/null && die "No distances but distances provided"
 
 # Now compare the outputs
 for t in $(seq 1 27);
