@@ -9,12 +9,12 @@ For a short introduction to bacterial GWAS, you may wish to read
 
 This tutorial shows how to use ``pyseer`` to perform a GWAS for penicillin
 resistance using 616 *S.*\ |nbsp| \ *pneumoniae* genomes collected from Massachusetts.
-These genomes were first reported `here <https://www.nature.com/articles/ng.2625>`_ and can be accessed
-`here <https://www.nature.com/articles/sdata201558>`_. One of the earliest GWAS
+These genomes were first reported `here <https://www.nature.com/articles/ng.2625>`__ and can be accessed
+`here <https://www.nature.com/articles/sdata201558>`__. One of the earliest GWAS
 studies in bacteria was performed using this data, and we will try to
-replicate `their results <http://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1004547>`_.
+replicate `their results <http://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1004547>`__.
 
-The data for this tutorial can be accessed `here <https://drive.google.com/open?id=1pOnTS-KW_iNZ5t8kRpMLoTB9Jca3_MJt>`_.
+The data for this tutorial can be accessed `here <https://drive.google.com/open?id=1pOnTS-KW_iNZ5t8kRpMLoTB9Jca3_MJt>`__.
 Extract the archive::
 
    tar xvf pyseer_tutorial.tar.bz2
