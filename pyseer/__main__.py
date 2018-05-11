@@ -171,6 +171,10 @@ def get_options():
                        action='store_true',
                        default=False,
                        help='Print sample lists [Default: hide samples]')
+    other.add_argument('--print-filtered',
+                       action='store_true',
+                       default=False,
+                       help='Print filtered variants (i.e. fitting errors) [Default: hide them]')
     other.add_argument('--output-patterns',
                        default=False,
                        help='File to print patterns to, useful for finding '
@@ -445,7 +449,7 @@ def main():
                     if options.output_patterns:
                         patterns.write(x.pattern)
 
-                    if x.filter:
+                    if x.filter and not options.print_filtered:
                         continue
                     printed += 1
                     print(format_output(x,
@@ -463,7 +467,7 @@ def main():
                 if options.output_patterns:
                     patterns.write(ret.pattern)
 
-                if ret.filter:
+                if ret.filter and not options.print_filtered:
                     continue
                 printed += 1
                 print(format_output(ret,
@@ -498,7 +502,7 @@ def main():
                         if options.output_patterns:
                             patterns.write(x.pattern)
 
-                        if x.filter:
+                        if x.filter and not options.print_filtered:
                             continue
                         printed += 1
                         print(format_output(x,
@@ -517,7 +521,7 @@ def main():
                     if options.output_patterns:
                         patterns.write(x.pattern)
 
-                    if x.filter:
+                    if x.filter and not options.print_filtered:
                         continue
                     printed += 1
                     print(format_output(x,

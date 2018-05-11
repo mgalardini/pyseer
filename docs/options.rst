@@ -90,6 +90,8 @@ Command line options
 
    Other:
      --print-samples       Print sample lists [Default: hide samples]
+     --print-filtered      Print filtered variants (i.e. fitting errors)
+                           [Default: hide them]
      --output-patterns OUTPUT_PATTERNS
                            File to print patterns to, useful for finding pvalue
                            threshold
