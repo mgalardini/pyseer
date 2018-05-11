@@ -220,15 +220,13 @@ def main():
         if (options.lmm and not (options.distances or options.load_m) and options.lineage):
             sys.stderr.write('Must also provide a distance matrix to report lineage effects\n')
             sys.exit(1)
-    elif options.no_distances and (options.distances or options.load_m):
-        sys.stderr.write('Cannot use --no-distances with --distances or --load-m\n')
-        sys.exit(1)
-    elif options.no_distances and options.lmm:
-        sys.stderr.write('Cannot use --no-distances with --lmm\n')
-        sys.exit(1)
-    elif options.no_distances and (options.covariates is None or options.use_covariates is None):
-        sys.stderr.write('Must provide covariates when using --no-distances\n')
-        sys.exit(1)
+    else:
+        if options.distances or options.load_m:
+            sys.stderr.write('Cannot use --no-distances with --distances or --load-m\n')
+            sys.exit(1)
+        if options.lmm:
+            sys.stderr.write('Cannot use --no-distances with --lmm\n')
+            sys.exit(1)
     if (options.block_size < 1):
         sys.stderr.write('Block size must be at least 1\n')
         sys.exit(1)
@@ -407,9 +405,11 @@ def main():
               'lrt-pvalue', 'beta', 'beta-std-err']
 
     if not options.lmm:
-        header = header + ['intercept'] + ['PC%d' % i
-                                           for i in range(1,
-                                                    options.max_dimensions+1)]
+        header = header + ['intercept']
+
+        if not options.no_distances:
+            header = header + ['PC%d' % i
+                                for i in range(1, options.max_dimensions+1)]
         if options.covariates is not None:
             header = header + [x for x in cov.columns]
     else:

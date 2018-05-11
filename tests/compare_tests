@@ -44,7 +44,7 @@ if __name__ == "__main__":
             sys.exit(1)
         m1 = m1.loc[idx]
         m2 = m2.loc[idx]
-        
+
         # differentiate the type of output
         ncolumns = ['af', 'beta', 'beta-std-err']
         if 'variant_h2' not in m1.columns:

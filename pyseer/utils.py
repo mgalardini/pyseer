@@ -73,10 +73,13 @@ def format_output(item, lineage_dict=None, lmm=False, print_samples=False):
             intercept = '%.2E' % Decimal(item.intercept)
         else:
             intercept = ''
-        out += '\t' + intercept + '\t' + '\t'.join(['%.2E' % Decimal(x)
-                                                    if np.isfinite(x)
-                                                    else ''
-                                                    for x in item.betas])
+        out += '\t' + intercept + '\t'
+        # No distances may not have further betas
+        if not np.all(np.equal(item.betas, None)):
+            out += '\t'.join(['%.2E' % Decimal(x)
+                             if np.isfinite(x)
+                             else ''
+                             for x in item.betas])
 
     if lineage_dict is not None:
         if item.max_lineage is not None and np.isfinite(item.max_lineage):

@@ -248,7 +248,7 @@ def fixed_effects_regression(variant, p, k, m, c, af, pattern,
                                 c),
                                axis=1)
         else:
-            v = np.concatenate((np.ones(m.shape[0]).reshape(-1, 1),
+            v = np.concatenate((np.ones(p.shape[0]).reshape(-1, 1),
                                 k.reshape(-1, 1)),
                                axis=1)
     elif c.shape[0] == m.shape[0]:
@@ -439,9 +439,18 @@ def fit_firth(logit_model, start_vec, X, y,
         # Calculate stats
         fitll = -firth_likelihood(beta_iterations[-1], logit_model)
         intercept = beta_iterations[-1][0]
-        kbeta = beta_iterations[-1][1]
-        beta = beta_iterations[-1][2:].tolist()
-        bse = math.sqrt(-logit_model.hessian(beta_iterations[-1])[1, 1])
+        if len(beta_iterations[-1]) > 1:
+            kbeta = beta_iterations[-1][1]
+            bse = math.sqrt(-logit_model.hessian(beta_iterations[-1])[1, 1])
+        else:
+            # Encountered when fitting null without any distances/covariates
+            kbeta = None
+            bse = None
+
+        if len(beta_iterations[-1]) > 2:
+            beta = beta_iterations[-1][2:].tolist()
+        else:
+            beta = None
 
         return_fit = intercept, kbeta, beta, bse, fitll
 
