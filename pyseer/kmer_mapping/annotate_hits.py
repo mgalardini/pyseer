@@ -108,13 +108,13 @@ def main():
         ref_id += 1
 
         # print number of kmers remaining. if zero, break
+        if kmers_remaining == 0:
+            break
+        sys.stderr.write(str(kmers_remaining) + " kmers remain\n")
         if ref_type == "ref":
             sys.stderr.write("Reference " + str(ref_id) + "\n")
         else:
             sys.stderr.write("Draft reference " + str(ref_id) + "\n")
-        sys.stderr.write(str(kmers_remaining) + " kmers remain\n")
-        if kmers_remaining == 0:
-            break
 
         # index reference sequence
         bwa_index(ref_fa)
