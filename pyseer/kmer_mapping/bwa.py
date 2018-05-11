@@ -75,16 +75,18 @@ def bwa_iter(reference, fasta, algorithm):
             mapped = False
             positions = []
 
-            (sq, idx, length) = bwa_p.stdout.readline().rstrip().split("\t")
+            first_line = bwa_p.stdout.readline().rstrip().split("\t")
+            (sq, idx, length) = first_line
             for fastmap_line in bwa_p.stdout:
                 fastmap_line = fastmap_line.rstrip()
                 if fastmap_line == "//":
                     next_line = bwa_p.stdout.readline().rstrip().split("\t")
+                    fastmap_hit = BWA(mapped, positions)
                     if len(next_line) < 3:  # EOF reached
+                        yield(fastmap_hit)
                         raise StopIteration
                     else:
                         (sq, idx, length) = next_line
-                        fastmap_hit = BWA(mapped, positions)
                         mapped = False
                         positions = []
                         yield(fastmap_hit)
@@ -95,10 +97,9 @@ def bwa_iter(reference, fasta, algorithm):
                     if len(fastmap_fields) < 5:
                         continue
                     #
-                    if fastmap_fields[1] == 0 and fastmap_fields[2] == length: #  full hits only
+                    if fastmap_fields[1] == '0' and fastmap_fields[2] == length: #  full hits only
                         mapped = True
                         for hit in fastmap_fields[4:]:
                             (contig, pos) = hit.split(":")
                             strand = pos[0]
-                            positions.append((contig, position[-1], int(position[-1]) + length - 1, strand))
-
+                            positions.append((contig, pos[-1], int(pos[-1]) + int(length) - 1, strand))
