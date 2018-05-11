@@ -4,20 +4,22 @@ Option reference
 Usage::
 
    usage: pyseer [-h] --phenotypes PHENOTYPES
-                 [--phenotype-column PHENOTYPE_COLUMN]
-                 (--kmers KMERS | --vcf VCF | --pres PRES) [--burden BURDEN]
-                 [--distances DISTANCES | --load-m LOAD_M]
-                 [--similarity SIMILARITY | --load-lmm LOAD_LMM]
-                 [--save-m SAVE_M] [--save-lmm SAVE_LMM]
-                 [--mds {classic,metric,non-metric}]
-                 [--max-dimensions MAX_DIMENSIONS] [--continuous] [--lmm]
-                 [--lineage] [--lineage-clusters LINEAGE_CLUSTERS]
-                 [--lineage-file LINEAGE_FILE] [--min-af MIN_AF]
-                 [--max-af MAX_AF] [--filter-pvalue FILTER_PVALUE]
-                 [--lrt-pvalue LRT_PVALUE] [--covariates COVARIATES]
-                 [--use-covariates [USE_COVARIATES [USE_COVARIATES ...]]]
-                 [--print-samples] [--output-patterns OUTPUT_PATTERNS]
-                 [--uncompressed] [--cpu CPU] [--version]
+              [--phenotype-column PHENOTYPE_COLUMN]
+              (--kmers KMERS | --vcf VCF | --pres PRES) [--burden BURDEN]
+              [--distances DISTANCES | --load-m LOAD_M]
+              [--similarity SIMILARITY | --load-lmm LOAD_LMM]
+              [--save-m SAVE_M] [--save-lmm SAVE_LMM]
+              [--mds {classic,metric,non-metric}]
+              [--max-dimensions MAX_DIMENSIONS] [--no-distances]
+              [--continuous] [--lmm] [--lineage]
+              [--lineage-clusters LINEAGE_CLUSTERS]
+              [--lineage-file LINEAGE_FILE] [--min-af MIN_AF]
+              [--max-af MAX_AF] [--filter-pvalue FILTER_PVALUE]
+              [--lrt-pvalue LRT_PVALUE] [--covariates COVARIATES]
+              [--use-covariates [USE_COVARIATES [USE_COVARIATES ...]]]
+              [--print-samples] [--print-filtered]
+              [--output-patterns OUTPUT_PATTERNS] [--uncompressed] [--cpu CPU]
+              [--block_size BLOCK_SIZE] [--version]
 
    SEER (doi: 10.1038/ncomms12797), reimplemented in python
 
@@ -56,6 +58,7 @@ Command line options
      --max-dimensions MAX_DIMENSIONS
                            Maximum number of dimensions to consider after MDS
                            [Default: 10]
+     --no-distances        Allow run without a distance matrix
 
    Association options:
      --continuous          Force continuous phenotype [Default: binary auto-
@@ -89,6 +92,8 @@ Command line options
 
    Other:
      --print-samples       Print sample lists [Default: hide samples]
+     --print-filtered      Print filtered variants (i.e. fitting errors)
+                           [Default: hide them]
      --output-patterns OUTPUT_PATTERNS
                            File to print patterns to, useful for finding pvalue
                            threshold

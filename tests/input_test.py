@@ -56,7 +56,7 @@ class TestLoadFunctions(unittest.TestCase):
                        -0.31324724, -1., -0.95997958, 0.01828477, -0.15606428,
                        0.4633444, 0.9253031, -0.30580183, 0.21006771,
                        0.30042054, -0.9428476, 0.00626202])
-        self.assertTrue(abs((t.values[0] - tr).max()) < 1E-7)
+        self.assertTrue(abs((t.values[0, 0:10] - tr[0:10]).max()) < 1E-7)
         self.assertTrue(abs((t.values[:,0] - tc).max()) < 1E-7)
         t = load_structure(M, p, 5, 'non-metric', 1, 42)
         tr = np.array([-0.06635193, -0.38792784, -0.74925127,

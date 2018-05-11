@@ -8,10 +8,8 @@ Will run the original ``seer`` model on given phenotypes and k-mers, using
 MDS scaling of the pairwise distances provided to correct for population
 structure. This will paralellize the analysis over 15 cores.
 
-.. toctree::
-   :caption: Contents:
-
-   usage
+.. contents::
+   :local:
 
 Input
 -----
@@ -178,7 +176,9 @@ then be provided with this decomposition directly using ``load-m`` rather than r
 
 An alternative to using a distance matrix in the fixed effects analysis is to provide clusters of samples with the same genetic
 background (e.g. from BAPS) as a categorical covariate with the
-``--use-covariates`` option.
+``--use-covariates`` option. In this case you should also add the ``--no-distances`` options
+to allow running without one of the matrices below, which would define these
+covariates twice.
 
 The mixed effects model (:ref:`mixed_model`) needs a matrix with
 covariances/similarities included with ``--similarities`` between all pairs of samples in the analysis::
@@ -244,6 +244,17 @@ each line.
    be inaccurate (e.g. the roary gene presence/absence list). Choosing too many
    will be prohibitive in terms of memory use and runtime (e.g. all k-mers).
    A VCF of SNPs from the core genome is a good tradeoff in many cases.
+
+No population structure correction
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+You can run the fixed effects model without a population structure correction.
+As this is generally not recommended you need to add the ``--no-distances``
+option to allow the analysis to run.
+
+Situations where this may be desirable are when you are using population
+structure(/lineage) as the phenotype i.e. looking for k-mers which define
+lineages, or if you are correcting for population structure manually using
+covariates such as cluster IDs.
 
 Association models
 ------------------
