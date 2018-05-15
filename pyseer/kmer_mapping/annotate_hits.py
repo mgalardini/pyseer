@@ -119,11 +119,11 @@ def main():
         # index reference sequence
         bwa_index(ref_fa)
         if ref_type == "ref":
-            bwa_algorithm = "mem"
+            bwa_algorithms = ["mem", "fastmap"]
         elif ref_type == "draft":
-            bwa_algorithm = "fastmap"
+            bwa_algorithms = ["fastmap"]
         else:
-            bwa_algorithm = "fastmap"
+            bwa_algorithms = ["fastmap"]
             sys.stderr.write("Unknown reference type " + ref_type + " for " + ref_fa + ". Assuming draft\n")
 
         # Fix ref annotation
@@ -133,70 +133,73 @@ def main():
         filtered_ref = ref_annotation.filter(lambda x: True if x[7] == "CDS" else False).saveas('tmp_bed')
         ref_annotation = pybedtools.BedTool('tmp_bed')
 
-        next_seer_remaining = open(remaining_next_tmp, 'w')
-        next_fasta_remaining = open(remaining_fa_next_tmp, 'w')
+        for bwa_algorithm in bwa_algorithms:
+            next_seer_remaining = open(remaining_next_tmp, 'w')
+            next_fasta_remaining = open(remaining_fa_next_tmp, 'w')
 
-        # run bwa mem -k 8 for ref, bwa fastmap for draft of remaining.fa
-        new_idx = 0
-        kmer_lines = []
-        map_pos = {}
+            # run bwa mem -k 8 for ref, bwa fastmap for draft of remaining.fa
+            new_idx = 0
+            kmer_lines = []
+            map_pos = {}
 
-        mapped_kmers = bwa_iter(ref_fa, remaining_fa_tmp, bwa_algorithm)
-        with tempfile.NamedTemporaryFile('w', prefix=options.tmp_prefix + "/") as query_bed:
-            kmer_idx = 0
-            for mapping, kmer_line in zip(mapped_kmers, seer_remaining):
-                if mapping.mapped:
-                    kmers_remaining -= 1
-                    kmer_lines.append(kmer_line.rstrip())
-                    map_pos[kmer_idx] = []
-                    for hit_idx, (contig, start, end, strand) in enumerate(mapping.positions):
-                        map_pos[kmer_idx].append(contig + ":" + str(start) + "-" + str(end))
-                        query_bed.write('\t'.join([contig, str(start), str(end), str(kmer_idx) + "_" + str(hit_idx), '0', strand]) + "\n")
-                    kmer_idx += 1
-                else:
-                    # if unmapped write to seer_remaining and remaining.fa
-                    next_seer_remaining.write(kmer_line)
+            mapped_kmers = bwa_iter(ref_fa, remaining_fa_tmp, bwa_algorithm)
+            with tempfile.NamedTemporaryFile('w', prefix=options.tmp_prefix + "/") as query_bed:
+                kmer_idx = 0
+                for mapping, kmer_line in zip(mapped_kmers, seer_remaining):
+                    if mapping.mapped:
+                        kmers_remaining -= 1
+                        kmer_lines.append(kmer_line.rstrip())
+                        map_pos[kmer_idx] = []
+                        for hit_idx, (contig, start, end, strand) in enumerate(mapping.positions):
+                            map_pos[kmer_idx].append(contig + ":" + str(start) + "-" + str(end))
+                            query_bed.write('\t'.join([contig, str(start), str(end), str(kmer_idx) + "_" + str(hit_idx), '0', strand]) + "\n")
+                        kmer_idx += 1
+                    else:
+                        # if unmapped write to seer_remaining and remaining.fa
+                        next_seer_remaining.write(kmer_line)
 
-                    new_idx += 1
-                    next_fasta_remaining.write(">" + str(new_idx) + "\n")
-                    next_fasta_remaining.write(kmer_line.split("\t")[0] + "\n")
+                        new_idx += 1
+                        next_fasta_remaining.write(">" + str(new_idx) + "\n")
+                        next_fasta_remaining.write(kmer_line.split("\t")[0] + "\n")
 
-            query_bed.flush()
-            query_interval = pybedtools.BedTool(query_bed.name)
-            sorted_query = query_interval.sort()
+                query_bed.flush()
+                query_interval = pybedtools.BedTool(query_bed.name)
+                sorted_query = query_interval.sort()
 
-            in_genes = extract_genes(query_interval.intersect(b=ref_annotation, s=False, stream=True, wb=True))
-            up_genes = extract_genes(sorted_query.closest(b=ref_annotation, s=False, D="ref", iu=True, stream=True))
-            down_genes = extract_genes(sorted_query.closest(b=ref_annotation, s=False, D="ref", id=True, stream=True))
-            pybedtools.cleanup() # delete the bed file
+                in_genes = extract_genes(query_interval.intersect(b=ref_annotation, s=False, stream=True, wb=True))
+                up_genes = extract_genes(sorted_query.closest(b=ref_annotation, s=False, D="ref", iu=True, stream=True))
+                down_genes = extract_genes(sorted_query.closest(b=ref_annotation, s=False, D="ref", id=True, stream=True))
+                pybedtools.cleanup() # delete the bed file
 
-            for kmer_idx, kmer_line  in enumerate(kmer_lines):
-                annotations = []
-                for hit_idx, hit in enumerate(map_pos[kmer_idx]):
-                    annotation = hit + ";"
-                    if kmer_idx in down_genes and hit_idx in down_genes[kmer_idx]:
-                        annotation += down_genes[kmer_idx][hit_idx]
-                    annotation += ";"
-                    if kmer_idx in in_genes and hit_idx in in_genes[kmer_idx]:
-                        annotation += in_genes[kmer_idx][hit_idx]
-                    annotation += ";"
-                    if kmer_idx in up_genes and hit_idx in up_genes[kmer_idx]:
-                        annotation += up_genes[kmer_idx][hit_idx]
-                    annotations.append(annotation)
+                for kmer_idx, kmer_line  in enumerate(kmer_lines):
+                    annotations = []
+                    for hit_idx, hit in enumerate(map_pos[kmer_idx]):
+                        annotation = hit + ";"
+                        if kmer_idx in down_genes and hit_idx in down_genes[kmer_idx]:
+                            annotation += down_genes[kmer_idx][hit_idx]
+                        annotation += ";"
+                        if kmer_idx in in_genes and hit_idx in in_genes[kmer_idx]:
+                            annotation += in_genes[kmer_idx][hit_idx]
+                        annotation += ";"
+                        if kmer_idx in up_genes and hit_idx in up_genes[kmer_idx]:
+                            annotation += up_genes[kmer_idx][hit_idx]
+                        annotations.append(annotation)
 
-                output_file.write("\t".join([kmer_line, ",".join(annotations)]) + "\n")
+                    output_file.write("\t".join([kmer_line, ",".join(annotations)]) + "\n")
+
+            # Clean up
+            seer_remaining.close()
+            next_seer_remaining.close()
+            next_fasta_remaining.close()
+            os.rename(remaining_next_tmp, remaining_tmp)
+            os.rename(remaining_fa_next_tmp, remaining_fa_tmp)
+
+            # Open next kmer file
+            seer_remaining = open(remaining_tmp, 'r')
 
         # Clean up
-        seer_remaining.close()
-        next_seer_remaining.close()
-        next_fasta_remaining.close()
         tmp_bed.close()
-        os.rename(remaining_next_tmp, remaining_tmp)
-        os.rename(remaining_fa_next_tmp, remaining_fa_tmp)
         os.remove('tmp_bed')
-
-        # Open next kmer file
-        seer_remaining = open(remaining_tmp, 'r')
 
     sys.stderr.write(str(kmers_remaining) + " kmers remain unannotated\n")
 
