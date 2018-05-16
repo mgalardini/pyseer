@@ -366,7 +366,7 @@ def main():
     if options.lmm:
         sys.stderr.write("Setting up LMM\n")
         p, lmm, h2 = initialise_lmm(p, cov, options.similarity, options.load_lmm,
-                                 options.save_lmm)
+                                 options.save_lmm, lineage_samples)
         sys.stderr.write("h^2 = " + '{0:.2f}'.format(h2) + "\n")
 
     # Open variant file
