@@ -309,7 +309,10 @@ def main():
 
     # lineage effects using null model - read BAPS clusters and fit pheno ~ lineage
     lineage_clusters = None
+    lineage_samples = None
     if options.lineage:
+        lineage_samples = p.index # this is ensured in load_lineage
+
         lineage_dict = []
         lineage_wald = {}
         if options.lineage_clusters:

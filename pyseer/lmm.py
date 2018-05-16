@@ -23,7 +23,7 @@ from .model import pre_filtering
 from .model import fit_lineage_effect
 
 
-def initialise_lmm(p, cov, K_in, lmm_cache_in=None, lmm_cache_out=None):
+def initialise_lmm(p, cov, K_in, lmm_cache_in=None, lmm_cache_out=None, lineage_samples=None):
     """Initialises LMM using the similarity matrix
     see _internal_single in fastlmm.association.single_snp
 
@@ -38,6 +38,8 @@ def initialise_lmm(p, cov, K_in, lmm_cache_in=None, lmm_cache_out=None):
             Filename for an input LMM cache, None if it has to be computed
         lmm_chache_out (str or None)
             Filename to save the LMM cache, None otherwise.
+        lineage_samples (list or None)
+            Sample names used for lineage (must match K_in)
 
     Returns:
         p (pandas.Series)
@@ -68,6 +70,12 @@ def initialise_lmm(p, cov, K_in, lmm_cache_in=None, lmm_cache_out=None):
         K = pd.read_table(K_in,
                           index_col=0)
         sys.stderr.write("Similarity matrix has dimension " + str(K.shape) + "\n")
+
+        # If using lineages, check compatible with LMM
+        if lineage_samples is not None and set(K.index) != set(lineage_samples):
+            sys.stderr.write("Lineage file and similarity matrix contain different sets"
+                             " of samples\n")
+            sys.exit(1)
 
         intersecting_samples = p.index.intersection(K.index)
         sys.stderr.write("Analysing " + str(len(intersecting_samples)) + " samples"
