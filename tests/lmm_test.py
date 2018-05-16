@@ -115,7 +115,20 @@ class TestInitialiseLmm(unittest.TestCase):
             initialise_lmm(b, cov, S,
                            lmm_cache_in=C,
                            lmm_cache_out=None)
-        self.assertEqual(cm.exception.code, 1)
+            self.assertEqual(cm.exception.code, 1)
+        # matching lineage samples
+        cov = pd.DataFrame([])
+        s = pd.read_table(S, index_col=0)
+        x, y, z = initialise_lmm(p, cov, S,
+                                 lmm_cache_in=None,
+                                 lmm_cache_out=None,
+                                 lineage_samples=s.index)
+        # non-matching lineage samples
+        with self.assertRaises(SystemExit) as cm:
+            x, y, z = initialise_lmm(p, cov, S,
+                                     lmm_cache_in=None,
+                                     lmm_cache_out=None,
+                                     lineage_samples=s.index[:-1])
 
 
 class TestFitLmm(unittest.TestCase):
