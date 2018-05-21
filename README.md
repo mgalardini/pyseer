@@ -9,6 +9,7 @@ pyseer
 [![Build Status](https://travis-ci.org/mgalardini/pyseer.svg?branch=master)](https://travis-ci.org/mgalardini/pyseer)
 [![Documentation Status](https://readthedocs.org/projects/pyseer/badge/?version=master)](http://pyseer.readthedocs.io/)
 [![PyPI version](https://badge.fury.io/py/pyseer.svg)](https://badge.fury.io/py/pyseer)
+[![Anaconda package](https://anaconda.org/bioconda/pyseer/badges/version.svg)](https://anaconda.org/bioconda/pyseer/badges/version.svg)
 
 Motivation
 ----------
@@ -54,13 +55,14 @@ Prerequisites
 
 Between parenthesis the versions the script was tested against:
 
-* python 3+ (3.5.3)
+* `python` 3+ (3.5.3)
 * `numpy` (1.13.3)
 * `scipy` (1.0.0)
 * `pandas` (0.21.0)
 * `scikit-learn` (0.19.1)
 * `statsmodels` (0.8.0)
 * `pysam` (0.13)
+* `dendropy` (4.3.0)
 
 If you would like to use the `scree_plot_pyseer` script you will also need to have
 `matplotlib` installed.
@@ -78,6 +80,10 @@ The easiest way to install `pyseer` is through `pip`:
 If you want multithreading make sure that you are using a version 3 python interpreter:
 
     python3 -m pip install pyseer
+
+You can also use the [conda](https://conda.io/docs/) package manager, using the [bioconda](https://bioconda.github.io/) channel:
+
+    conda install -c bioconda pyseer
 
 **For the impatient**, just clone/download this repository and run:
 
