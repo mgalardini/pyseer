@@ -128,7 +128,11 @@ def main():
 
         # Fix ref annotation
         tmp_bed = tempfile.NamedTemporaryFile(prefix=options.tmp_prefix + "/")
-        subprocess.run("gff2bed < " + ref_gff + " > " + tmp_bed.name, shell=True, check=True)
+        try:
+            subprocess.run("gff2bed < " + ref_gff + " > " + tmp_bed.name, shell=True, check=True)
+        except AttributeError:
+            # python prior to 3.5
+            subprocess.check_call("gff2bed < " + ref_gff + " > " + tmp_bed.name, shell=True)
         ref_annotation = pybedtools.BedTool(tmp_bed.name)
         filtered_ref = ref_annotation.filter(lambda x: True if x[7] == "CDS" else False).saveas('tmp_bed')
         ref_annotation = pybedtools.BedTool('tmp_bed')
