@@ -566,7 +566,7 @@ def load_var_block(var_type, p, burden, burden_regions, infile,
                                          np.nan, np.nan, np.nan, np.nan,
                                          np.nan, kstrains, nkstrains,
                                          set(), True, True),
-                             p, k))
+                             p.values, k))
         yield (variants, variant_mat, eof)
         if eof:
             break
