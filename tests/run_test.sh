@@ -55,6 +55,8 @@ python ../similarity-runner.py samples.txt --kmers kmers.gz > /dev/null 2> /dev/
 python ../similarity-runner.py samples.txt --vcf variants.vcf.gz > /dev/null 2> /dev/null || die "Similarity w/ vcf"
 python ../similarity-runner.py samples.txt --pres presence_absence.Rtab > /dev/null 2> /dev/null || die "Similarity w/ roary/piggy"
 cat mash.tsv | python ../square_mash-runner.py > /dev/null 2> /dev/null || die "Mash squarer"
+python ../annotate_hits_pyseer-runner.py significant_kmers.txt references.txt /dev/null > /dev/null 2> /dev/null || die 'Annotate hits'
+python ../phandango_mapper-runner.py significant_kmers.txt Spn23F.fa phandango.test.out > /dev/null 2> /dev/null || die 'Phandango mapper'
 
 # test the scripts folder
 python ../scripts/count_patterns.py patterns.txt > /dev/null 2> /dev/null || die "Count patterns"

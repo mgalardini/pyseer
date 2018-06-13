@@ -87,6 +87,8 @@ def bwa_iter(reference, fasta, algorithm):
         positions = []
 
         first_line = bwa_p.stdout.readline().rstrip().split("\t")
+        if first_line == ['']:
+            raise StopIteration
         (sq, idx, length) = first_line
         while True:
             fastmap_line = bwa_p.stdout.readline()

@@ -2,6 +2,12 @@ language: python
 python:
   - "3.5"
   - "3.6"
+before_install:
+  - sudo apt-get -qq update
+  - sudo apt-get install -y bwa bedtools
+  - wget https://github.com/bedops/bedops/releases/download/v2.4.35/bedops_linux_x86_64-v2.4.35.tar.bz2
+  - tar -xvf bedops_linux_x86_64-v2.4.35.tar.bz2
+  - export PATH="$PATH:$PWD/bin/"
 install:
   - pip install -r requirements.txt
 before_script: # to get matplotlib to work
