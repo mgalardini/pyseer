@@ -1,4 +1,10 @@
 # CHANGELOG
+v1.1.1 (June 2018)
+- Further bugfixes for the annotation of kmers
+- Platform specific pandas bugfix with LMM
+- Test kmers annotation
+- Improved README
+
 v1.1.0 (May 2018)
 - New option (--no-distances) to run fixed effects associations without a distance matrix
 - New option (--print-filtered) allowing to print variants not passing filters
