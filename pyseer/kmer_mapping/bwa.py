@@ -49,12 +49,13 @@ def bwa_iter(reference, fasta, algorithm):
     bwa_p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=devnull, shell=True, universal_newlines=True)
     # read sam file from bwa mem
     if algorithm == "mem":
-        # discard header
-        bwa_p.stdout.readline()
-        bwa_p.stdout.readline()
-
         for sam_line in bwa_p.stdout:
             sam_fields = sam_line.rstrip().split("\t")
+
+            # discard header
+            if sam_fields[0][0] == "@":
+                continue
+
             positions = []
             if int(sam_fields[1]) & 4 == 4:
                 mapped = False
@@ -86,6 +87,8 @@ def bwa_iter(reference, fasta, algorithm):
         positions = []
 
         first_line = bwa_p.stdout.readline().rstrip().split("\t")
+        if first_line == ['']:
+            raise StopIteration
         (sq, idx, length) = first_line
         while True:
             fastmap_line = bwa_p.stdout.readline()

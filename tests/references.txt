@@ -1,0 +1,2 @@
+Spn23F.fa	Spn23F.gff	ref
+6952_7#3.fa	6952_7#3.fa	draft
