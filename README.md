@@ -8,8 +8,8 @@ pyseer
 
 [![Build Status](https://travis-ci.org/mgalardini/pyseer.svg?branch=master)](https://travis-ci.org/mgalardini/pyseer)
 [![Documentation Status](https://readthedocs.org/projects/pyseer/badge/?version=master)](http://pyseer.readthedocs.io/)
-[![PyPI version](https://badge.fury.io/py/pyseer.svg)](https://badge.fury.io/py/pyseer)
-[![Anaconda package](https://anaconda.org/bioconda/pyseer/badges/version.svg)](https://anaconda.org/bioconda/pyseer/badges/version.svg)
+[![PyPI version](https://badge.fury.io/py/pyseer.svg)](https://pypi.org/project/pyseer/)
+[![Anaconda package](https://anaconda.org/bioconda/pyseer/badges/version.svg)](https://anaconda.org/bioconda/pyseer)
 
 Motivation
 ----------
