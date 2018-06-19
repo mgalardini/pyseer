@@ -82,7 +82,7 @@ def initialise_lmm(p, cov, K_in, lmm_cache_in=None, lmm_cache_out=None, lineage_
                          " found in both phenotype and similarity matrix\n")
         p = p.loc[intersecting_samples]
         y = np.reshape(p.values, (-1, 1))
-        K = K.loc[p.index, p.index]
+        K = K.loc[p.index, p.index.astype(str)]
         if cov.shape[0] == p.shape[0]:
             cov = cov.loc[intersecting_samples]
             covar = np.c_[cov.values, np.ones((p.shape[0], 1))]
