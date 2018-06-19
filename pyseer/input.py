@@ -33,6 +33,7 @@ def load_phenotypes(infile, column):
             Phenotype vector (n, 1)
     """
     p = pd.read_table(infile, index_col=0)
+    p.index = p.index.astype(str)
     if column is None:
         p = p[p.columns[-1]]
     else:
@@ -69,6 +70,7 @@ def load_structure(infile, p, max_dimensions, mds_type="classic", n_cpus=1,
     """
     m = pd.read_table(infile,
                       index_col=0)
+    m.index = m.index.astype(str)
     sys.stderr.write("Structure matrix has dimension " + str(m.shape) + "\n")
 
     # Also take intersection here, so that MDS isn't done using samples not present
@@ -164,6 +166,7 @@ def load_covariates(infile, covariates, p):
     c = pd.read_table(infile,
                       header=None,
                       index_col=0)
+    c.index = c.index.astype(str)
     c.columns = ['covariate%d' % (x+2) for x in range(c.shape[1])]
 
     if (len(p.index.difference(c.index)) > 0):
