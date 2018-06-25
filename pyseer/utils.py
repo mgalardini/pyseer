@@ -36,7 +36,7 @@ with set_env(MKL_NUM_THREADS='1',
     import numpy as np
 
 
-def format_output(item, lineage_dict=None, lmm=False, print_samples=False):
+def format_output(item, lineage_dict=None, model='seer', print_samples=False):
     """Format results for a variant for stdout printing
 
     Args:
@@ -44,8 +44,8 @@ def format_output(item, lineage_dict=None, lmm=False, print_samples=False):
             Variant results container
         lineage_dict (list)
             Lineage labels
-        lmm (bool)
-            Whether the variant was fitted through LMM
+        model (str)
+            The model used
         print_samples (bool)
             Whether to add the samples list to the putput
 
@@ -62,7 +62,7 @@ def format_output(item, lineage_dict=None, lmm=False, print_samples=False):
                                        item.pvalue,
                                        item.kbeta,
                                        item.bse)])
-    if lmm:
+    if model == 'lmm':
         if np.isfinite(item.frac_h2):
             frac_h2 = '%.2E' % Decimal(item.frac_h2)
         else:

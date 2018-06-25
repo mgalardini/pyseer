@@ -222,9 +222,27 @@ def load_burden(infile, burden_regions):
             (name, region) = region.rstrip().split()
             burden_regions.append((name, region))
 
+def open_variant_file(var_type, var_file, burden_file, burden_regions, uncompressed):
+
+    if var_type == "kmers":
+        if uncompressed:
+            infile = open(var_file)
+        else:
+            infile = gzip.open(var_file, 'r')
+    elif var_type == "vcf":
+        infile = VariantFile(var_file)
+        if burden:
+            load_burden(options.burden, burden_regions)
+    else:
+        # Rtab files have a header, rather than sample names accessible by row
+        infile = open(var_file)
+        header = infile.readline().rstrip()
+        sample_order = header.split()[1:]
+
 
 def read_variant(infile, p, var_type, burden, burden_regions,
-                 uncompressed, all_strains, sample_order):
+                 uncompressed, all_strains, sample_order,
+                 noparse = False):
     """Read input line and parse depending on input file type
 
     Return a variant name and pres/abs vector
@@ -245,8 +263,12 @@ def read_variant(infile, p, var_type, burden, burden_regions,
         all_strains (set-like)
             All sample labels that should be present
         sample_order
-            Sampes order to interpret each Rtab line
+            Samples order to interpret each Rtab line
+        noparse (bool)
+            Set True to skip line without parsing and
+            return None
 
+            (default = False)
     Returns:
         eof (bool)
             Whether we are at the end of the file
@@ -280,7 +302,7 @@ def read_variant(infile, p, var_type, burden, burden_regions,
         # kmers and Rtab plain text files
         line_in = infile.readline()
 
-    if not line_in:
+    if not line_in or no_parse:
         eof = True
         return(eof, None, None, None, None, None)
     else:

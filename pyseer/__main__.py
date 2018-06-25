@@ -29,6 +29,7 @@ from .input import load_structure
 from .input import load_lineage
 from .input import load_covariates
 from .input import load_burden
+from .input import open_variant_file
 from .input import iter_variants
 from .input import load_var_block
 from .input import iter_variants_lmm
@@ -121,6 +122,12 @@ def get_options():
                              help='Use random instead of fixed effects '
                                   'to correct for population structure. '
                                   'Requires a similarity matrix')
+    association.add_argument('--enet',
+                             action='store_true',
+                             default=False,
+                             help='Use an elastic net for association. '
+                                  'Population structure correction is '
+                                  'implicit.'
     association.add_argument('--lineage',
                              action='store_true',
                              help='Report lineage effects')
@@ -151,6 +158,11 @@ def get_options():
                            default=1,
                            help='Likelihood ratio test pvalue threshold '
                                 '[Default: 1]')
+    filtering.add_argument('--cor-filter',
+                           type=float,
+                           default=0.25,
+                           help='Correlation filter for elastic net '
+                           '[Default: 0.25]')
 
     covariates = parser.add_argument_group('Covariates')
     covariates.add_argument('--covariates',
@@ -258,7 +270,7 @@ def main():
         cov = pd.DataFrame([])
 
     # fixed effects or lineage effects require regressing p ~ m
-    if (options.lineage and not options.lineage_clusters) or not options.lmm:
+    if (options.lineage and not options.lineage_clusters) or not (options.lmm or options.enet):
         # reading genome distances
         if not options.no_distances:
             if options.load_m and os.path.isfile(options.load_m):
@@ -359,7 +371,7 @@ def main():
         lineage_dict = None
 
     # binary regression takes LLF as null, not full model fit
-    if not options.continuous and not options.lmm:
+    if not options.continuous and not (options.lmm or options.enet):
         null_fit = null_fit.llf
 
     # LMM setup - see _internal_single in fastlmm.association.single_snp
@@ -377,22 +389,17 @@ def main():
 
     if options.kmers:
         var_type = "kmers"
-        if options.uncompressed:
-            infile = open(options.kmers)
-        else:
-            infile = gzip.open(options.kmers, 'r')
+        var_file = options.kmers
     elif options.vcf:
         var_type = "vcf"
-        infile = VariantFile(options.vcf)
+        var_file = options.vcf
         if options.burden:
             burden = True
-            load_burden(options.burden, burden_regions)
     else:
-        # Rtab files have a header, rather than sample names accessible by row
         var_type = "Rtab"
-        infile = open(options.pres)
-        header = infile.readline().rstrip()
-        sample_order = header.split()[1:]
+        var_file = options.pres
+
+    open_variant_file(var_type, var_file, options.burden, burden_regions, options.uncompressed)
 
     # keep track of the number of the total number of kmers and tests
     prefilter = 0
@@ -404,6 +411,7 @@ def main():
         patterns = open(options.output_patterns, 'wb')
 
     # header fields
+    # TODO change for enet
     header = ['variant', 'af', 'filter-pvalue',
               'lrt-pvalue', 'beta', 'beta-std-err']
 
@@ -426,64 +434,14 @@ def main():
     print('\t'.join(header))
 
     # multiprocessing setup
-    if options.cpu > 1:
+    if not options.enet and options.cpu > 1:
         pool = Pool(options.cpu)
 
-    # actual association test
-    if not options.lmm:
-        # iterator over each variant
-        # implements maf filtering
-        v_iter = iter_variants(p, m, cov, var_type, burden, burden_regions,
-                               infile, all_strains, sample_order,
-                               options.lineage, lineage_clusters,
-                               options.min_af, options.max_af,
-                               options.filter_pvalue,
-                               options.lrt_pvalue, null_fit, firth_null,
-                               options.uncompressed, options.continuous)
+    # actual association tests
 
-        if options.cpu > 1:
-            # multiprocessing proceeds X variants per core at a time
-            while True:
-                ret = pool.starmap(fixed_effects_regression,
-                                   itertools.islice(
-                                                v_iter,
-                                                options.cpu*options.block_size))
-                if not ret:
-                    break
-                for x in ret:
-                    if x.prefilter:
-                        prefilter += 1
-                        continue
-                    tested += 1
-                    if options.output_patterns:
-                        patterns.write(x.pattern)
-
-                    if x.filter and not options.print_filtered:
-                        continue
-                    printed += 1
-                    print(format_output(x,
-                                        lineage_dict,
-                                        options.lmm,
-                                        options.print_samples))
-        else:
-            for data in v_iter:
-                ret = fixed_effects_regression(*data)
-
-                if ret.prefilter:
-                    prefilter += 1
-                    continue
-                tested += 1
-                if options.output_patterns:
-                    patterns.write(ret.pattern)
-
-                if ret.filter and not options.print_filtered:
-                    continue
-                printed += 1
-                print(format_output(ret,
-                                    lineage_dict,
-                                    options.lmm,
-                                    options.print_samples))
-    else:
+    # Mixed model
+    if options.lmm:
+        model = 'lmm'
         v_iter = load_var_block(var_type, p, burden, burden_regions,
                                 infile, all_strains, sample_order,
                                 options.min_af, options.max_af,
@@ -516,7 +474,7 @@ def main():
                         printed += 1
                         print(format_output(x,
                                             lineage_dict,
-                                            options.lmm,
+                                            model,
                                             options.print_samples))
         else:
             for data in lmm_iter:
@@ -535,8 +493,90 @@ def main():
                     printed += 1
                     print(format_output(x,
                                         lineage_dict,
-                                        options.lmm,
+                                        model,
                                         options.print_samples))
+
+    # Elastic net model
+    elif options.enet:
+        model = 'enet'
+        # read all variants
+        all_vars, var_indices, loaded, tested = load_all_vars(var_type, p, burden, burden_regions,
+                                    infile, all_strains, sample_order,
+                                    options.min_af, options.max_af,
+                                    options.uncompressed, options.cor_filter)
+        prefilter = loaded - tested
+
+        # fit enet with cross validation
+        enet_betas = fit_enet(p, all_vars, options.cpu)
+        # print those with passing indices, along with coefficient
+        infile.close()
+        open_variant_file(var_type, var_file, options.burden, burden_regions, options.uncompressed)
+        selected_vars = find_enet_selected(lin, c, enet_betas, var_indices, infile, p, var_type, burden,
+                                           burden_regions, uncompressed, all_strains, sample_order)
+
+        for x in selected_vars:
+            printed += 1
+            print(format_output(x,
+                                lineage_dict,
+                                model,
+                                options.print_samples))
+
+    # original SEER model (fixed effects)
+    else:
+        # iterator over each variant
+        # implements maf filtering
+        model = 'seer'
+        v_iter = iter_variants(p, m, cov, var_type, burden, burden_regions,
+                               infile, all_strains, sample_order,
+                               options.lineage, lineage_clusters,
+                               options.min_af, options.max_af,
+                               options.filter_pvalue,
+                               options.lrt_pvalue, null_fit, firth_null,
+                               options.uncompressed, options.continuous)
+
+        if options.cpu > 1:
+            # multiprocessing proceeds X variants per core at a time
+            while True:
+                ret = pool.starmap(fixed_effects_regression,
+                                   itertools.islice(
+                                                v_iter,
+                                                options.cpu*options.block_size))
+                if not ret:
+                    break
+                for x in ret:
+                    if x.prefilter:
+                        prefilter += 1
+                        continue
+                    tested += 1
+                    if options.output_patterns:
+                        patterns.write(x.pattern)
+
+                    if x.filter and not options.print_filtered:
+                        continue
+                    printed += 1
+                    print(format_output(x,
+                                        lineage_dict,
+                                        model,
+                                        options.print_samples))
+        else:
+            for data in v_iter:
+                ret = fixed_effects_regression(*data)
+
+                if ret.prefilter:
+                    prefilter += 1
+                    continue
+                tested += 1
+                if options.output_patterns:
+                    patterns.write(ret.pattern)
+
+                if ret.filter and not options.print_filtered:
+                    continue
+                printed += 1
+                print(format_output(ret,
+                                    lineage_dict,
+                                    model,
+                                    options.print_samples))
+
 
     sys.stderr.write('%d loaded variants\n' % (prefilter + tested))
     sys.stderr.write('%d filtered variants\n' % prefilter)
