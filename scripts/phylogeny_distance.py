@@ -49,7 +49,7 @@ if __name__ == "__main__":
         d[taxon1.label] = d.get(taxon1.label, {})
         for taxon2 in tree.taxon_namespace:
             if taxon2.label not in d[taxon1.label].keys():
-                if options.calc_C:
+                if options.lmm:
                     mrca = pdm.mrca(taxon1, taxon2)
                     d[taxon1.label][taxon2.label] = mrca.distance_from_root()
                 elif options.topology:
