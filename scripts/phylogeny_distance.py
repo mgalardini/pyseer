@@ -17,7 +17,7 @@ def get_options():
                         default="newick",
                         help="Format of tree file [Default: newick]")
     method_group = parser.add_mutually_exclusive_group()
-    method_group.add_argument('--calc-C',
+    method_group.add_argument('--lmm', '--calc-C',
                               action='store_true',
                               help='Produce var-covar matrix C (as from PDDIST). '
                                    'Always uses branch lengths.')
