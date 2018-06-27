@@ -13,6 +13,7 @@ with set_env(MKL_NUM_THREADS='1',
 from scipy.sparse import csr_matrix
 import math
 import pandas as pd
+from decimal import Decimal
 from sklearn.linear_model import ElasticNetCV
 from sklearn.linear_model import SGDClassifier
 from sklearn.model_selection import GridSearchCV
@@ -121,6 +122,7 @@ def fit_enet(p, variants, continuous, l1_ratio, n_folds = 10, n_cpus = 1):
         # Linear model
         regr = ElasticNetCV(l1_ratio = l1_ratio, cv = n_folds, copy_X = False, n_jobs = n_cpus, verbose = 1)
         regr.fit(variants, p.values)
+        chosen_alpha = regr.alpha_
         betas = regr.coef_
     else:
         # Logistic model
@@ -129,15 +131,17 @@ def fit_enet(p, variants, continuous, l1_ratio, n_folds = 10, n_cpus = 1):
                                        warm_start = True, n_jobs = 1, verbose = 0)
 
         # Cross validation for alpha
-        alphas = np.logspace(-4, -0.1, 30)
+        alphas = np.logspace(-7, 2, 40)
         tuned_parameters = [{'alpha': alphas}]
         cv_regr = GridSearchCV(logistic_model, tuned_parameters, cv = n_folds, refit = True, n_jobs = n_cpus, verbose = 1)
 
         cv_regr.fit(variants, p.values)
         regr = cv_regr.best_estimator_
+        chosen_alpha = cv_regr.best_params_['alpha']
         regr.fit(variants, p.values)
         betas = regr.coef_[0]
 
+    sys.stderr.write("Best penalty from cross-validation: " + '%.2E' % Decimal(chosen_alpha) + "\n")
     return(betas)
 
 def find_enet_selected(enet_betas, var_indices, p, c, var_type, burden,
