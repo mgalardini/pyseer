@@ -418,7 +418,7 @@ def main():
 
     # header fields
     if options.enet:
-        header = ['variant', 'af', 'beta']
+        header = ['variant', 'af', 'minor-allele-beta']
     else:
         header = ['variant', 'af', 'filter-pvalue',
                   'lrt-pvalue', 'beta', 'beta-std-err']
@@ -518,7 +518,7 @@ def main():
 
         # fit enet with cross validation
         sys.stderr.write("Fitting elastic net to " + str(tested) + " variants\n")
-        enet_betas = fit_enet(p, all_vars, options.cpu)
+        enet_betas = fit_enet(p, all_vars, options.continuous, options.cpu)
 
         # print those with passing indices, along with coefficient
         sys.stderr.write("Finding and printing selected variants\n")
