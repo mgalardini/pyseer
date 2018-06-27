@@ -116,22 +116,22 @@ def load_all_vars(var_type, p, burden, burden_regions, infile,
     return(variants, selected_vars, var_idx, mat_idx)
 
 
-def fit_enet(p, variants, continuous, n_cpus = 1):
+def fit_enet(p, variants, continuous, l1_ratio, n_folds = 10, n_cpus = 1):
     if continuous:
         # Linear model
-        regr = ElasticNetCV(l1_ratio = 0.0069, cv = 10, copy_X = False, n_jobs = n_cpus, verbose = 1)
+        regr = ElasticNetCV(l1_ratio = l1_ratio, cv = n_folds, copy_X = False, n_jobs = n_cpus, verbose = 1)
         regr.fit(variants, p.values)
         betas = regr.coef_
     else:
         # Logistic model
         # It may be better (memory-wise) to use multiple CPUs for the SGDClassifier rather than the CV
-        logistic_model = SGDClassifier(loss = "log", penalty = "elasticnet", l1_ratio = 0.0069, average = True,
+        logistic_model = SGDClassifier(loss = "log", penalty = "elasticnet", l1_ratio = l1_ratio, average = True,
                                        warm_start = True, n_jobs = 1, verbose = 0)
 
         # Cross validation for alpha
         alphas = np.logspace(-4, -0.1, 30)
         tuned_parameters = [{'alpha': alphas}]
-        cv_regr = GridSearchCV(logistic_model, tuned_parameters, cv = 10, refit = True, n_jobs = n_cpus, verbose = 1)
+        cv_regr = GridSearchCV(logistic_model, tuned_parameters, cv = n_folds, refit = True, n_jobs = n_cpus, verbose = 1)
 
         cv_regr.fit(variants, p.values)
         regr = cv_regr.best_estimator_

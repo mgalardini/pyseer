@@ -142,6 +142,18 @@ def get_options():
                              help='File to write lineage association to '
                                   '[Default: lineage_effects.txt]')
 
+    enet = parser.add_argument_group('Elastic net options')
+    enet.add_argument('--alpha',
+                      type=float,
+                      default=0.0069,
+                      help='Set the mixing between l1 and l2 penalties '
+                           '[Default: 0.0069]')
+    enet.add_argument('--n-folds',
+                      type=int,
+                      default=10,
+                      help='Number of folds cross-validation to perform '
+                           '[Default: 10]')
+
     filtering = parser.add_argument_group('Filtering options')
     filtering.add_argument('--min-af',
                            type=float,
@@ -518,7 +530,7 @@ def main():
 
         # fit enet with cross validation
         sys.stderr.write("Fitting elastic net to " + str(tested) + " variants\n")
-        enet_betas = fit_enet(p, all_vars, options.continuous, options.cpu)
+        enet_betas = fit_enet(p, all_vars, options.continuous, options.alpha, options.n_folds, options.cpu)
 
         # print those with passing indices, along with coefficient
         sys.stderr.write("Finding and printing selected variants\n")
