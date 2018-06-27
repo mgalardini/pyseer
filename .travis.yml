@@ -17,3 +17,8 @@ before_script: # to get matplotlib to work
 script:
   - pytest -v tests
   - cd tests && bash run_test.sh
+
+# blocklist
+branches:
+  except:
+  - enet
