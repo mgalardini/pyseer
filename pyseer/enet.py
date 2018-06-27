@@ -62,6 +62,7 @@ def load_all_vars(var_type, p, burden, burden_regions, infile,
     # For building sparse matrix
     rows = []
     cols = []
+    data = []
     selected_vars = []
     var_idx = 0
     mat_idx = 0
@@ -105,21 +106,22 @@ def load_all_vars(var_type, p, burden, burden_regions, infile,
         var_idx += 1
 
     # construct sparse matrix, then filter out correlations
-    variants = csr_matrix((data, rows, cols), dtype=int)
-    cor_filter = np.nonzero(correlations < np.quantile(correlations, quantile_filter))
-    variants = variants[cor_filter, :]
-    selected_vars = selected_vars[cor_filter]
+    variants = csr_matrix((data, (rows, cols)), dtype=int)
+    cor_filter = np.nonzero(correlations < np.percentile(correlations, quantile_filter*100))[0]
+    variants = variants[cor_filter, :].transpose()
+    selected_vars = np.array(selected_vars)[cor_filter]
 
-    return(variants, selected_variants, var_idx, mat_idx)
+    return(variants, selected_vars, var_idx, mat_idx)
 
 
 def fit_enet(p, variants, n_cpus = 1):
-    regr = ElasticNetCV(l1_ratio = 0.0069, cv = 10, copy_X = False, n_jobs = n_cpus, verbose = 3)
+    regr = ElasticNetCV(l1_ratio = 0.0069, cv = 10, copy_X = False, n_jobs = n_cpus, verbose = 1)
     regr.fit(variants, p.values)
     return(regr.coef_)
 
-def find_enet_selected(lin, c, enet_betas, var_indices, infile, p, var_type, burden,
-                       burden_regions, uncompressed, all_strains, sample_order):
+def find_enet_selected(enet_betas, var_indices, p, c, var_type, burden,
+                       burden_regions, infile, all_strains, sample_order,
+                       find_lineage, lin, uncompressed):
 
     current_var = 0
     for beta, var_idx in zip(enet_betas, var_indices):
@@ -141,6 +143,10 @@ def find_enet_selected(lin, c, enet_betas, var_indices, infile, p, var_type, bur
                                         sample_order)
 
 
-        max_lineage = fit_lineage_effect(lin, c, k)
+        notes = []
+        if find_lineage:
+            max_lineage = fit_lineage_effect(lin, c, k)
+        else:
+            max_lineage = None
 
-        yield var_obj.Enet(var_name, af, kbeta, lineage, kstrains, nkstrains)
+        yield var_obj.Enet(var_name, af, beta, max_lineage, kstrains, nkstrains, notes)

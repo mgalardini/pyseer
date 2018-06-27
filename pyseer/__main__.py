@@ -20,7 +20,6 @@ from scipy.stats import norm
 import pandas as pd
 from sklearn import manifold
 from multiprocessing import Pool
-from pysam import VariantFile
 
 from .__init__ import __version__
 
@@ -39,6 +38,10 @@ from .model import fit_null
 
 from .lmm import initialise_lmm
 from .lmm import fit_lmm
+
+from .enet import load_all_vars
+from .enet import fit_enet
+from .enet import find_enet_selected
 
 from .utils import format_output
 
@@ -127,7 +130,7 @@ def get_options():
                              default=False,
                              help='Use an elastic net for association. '
                                   'Population structure correction is '
-                                  'implicit.'
+                                  'implicit.')
     association.add_argument('--lineage',
                              action='store_true',
                              help='Report lineage effects')
@@ -214,6 +217,9 @@ def main():
     options = get_options()
 
     # check some arguments here
+    if options.lmm and options.enet:
+        sys.stderr.write('Choose only one model. Either --lmm, --enet or neither\n')
+        sys.exit(1)
     if options.max_dimensions < 1:
         sys.stderr.write('Minimum number of dimensions after MDS is 1\n')
         sys.exit(1)
@@ -399,7 +405,7 @@ def main():
         var_type = "Rtab"
         var_file = options.pres
 
-    open_variant_file(var_type, var_file, options.burden, burden_regions, options.uncompressed)
+    infile = open_variant_file(var_type, var_file, options.burden, burden_regions, options.uncompressed)
 
     # keep track of the number of the total number of kmers and tests
     prefilter = 0
@@ -411,27 +417,30 @@ def main():
         patterns = open(options.output_patterns, 'wb')
 
     # header fields
-    # TODO change for enet
-    header = ['variant', 'af', 'filter-pvalue',
-              'lrt-pvalue', 'beta', 'beta-std-err']
-
-    if not options.lmm:
-        header = header + ['intercept']
-
-        if not options.no_distances:
-            header = header + ['PC%d' % i
-                                for i in range(1, options.max_dimensions+1)]
-        if options.covariates is not None:
-            header = header + [x for x in cov.columns]
+    if options.enet:
+        header = ['variant', 'af', 'beta']
     else:
-        header = header + ['variant_h2']
+        header = ['variant', 'af', 'filter-pvalue',
+                  'lrt-pvalue', 'beta', 'beta-std-err']
+
+        if not options.lmm:
+            header = header + ['intercept']
+
+            if not options.no_distances:
+                header = header + ['PC%d' % i
+                                    for i in range(1, options.max_dimensions+1)]
+            if options.covariates is not None:
+                header = header + [x for x in cov.columns]
+        else:
+            header = header + ['variant_h2']
 
     if options.lineage:
         header = header + ['lineage']
     if options.print_samples:
         header = header + ['k-samples', 'nk-samples']
     header += ['notes']
-    print('\t'.join(header))
+    if not options.enet:
+        print('\t'.join(header))
 
     # multiprocessing setup
     if not options.enet and options.cpu > 1:
@@ -500,6 +509,7 @@ def main():
     elif options.enet:
         model = 'enet'
         # read all variants
+        sys.stderr.write("Reading all variants\n")
         all_vars, var_indices, loaded, tested = load_all_vars(var_type, p, burden, burden_regions,
                                     infile, all_strains, sample_order,
                                     options.min_af, options.max_af,
@@ -507,13 +517,17 @@ def main():
         prefilter = loaded - tested
 
         # fit enet with cross validation
+        sys.stderr.write("Fitting elastic net to " + str(tested) + " variants\n")
         enet_betas = fit_enet(p, all_vars, options.cpu)
-        # print those with passing indices, along with coefficient
-        infile.close()
-        open_variant_file(var_type, var_file, options.burden, burden_regions, options.uncompressed)
-        selected_vars = find_enet_selected(lin, c, enet_betas, var_indices, infile, p, var_type, burden,
-                                           burden_regions, uncompressed, all_strains, sample_order)
 
+        # print those with passing indices, along with coefficient
+        sys.stderr.write("Finding and printing selected variants\n")
+        infile = open_variant_file(var_type, var_file, options.burden, burden_regions, options.uncompressed)
+        selected_vars = find_enet_selected(enet_betas, var_indices, p, cov, var_type, burden,
+                                           burden_regions, infile, all_strains, sample_order,
+                                           options.lineage, lineage_clusters, options.uncompressed)
+
+        print('\t'.join(header))
         for x in selected_vars:
             printed += 1
             print(format_output(x,

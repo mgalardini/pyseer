@@ -54,32 +54,40 @@ def format_output(item, lineage_dict=None, model='seer', print_samples=False):
             Tab-delimited string to be printed
     """
     out = '%s' % item.kmer
-    out += '\t' + '\t'.join(['%.2E' % Decimal(x)
-                             if np.isfinite(x)
-                             else ''
-                             for x in (item.af,
-                                       item.prep,
-                                       item.pvalue,
-                                       item.kbeta,
-                                       item.bse)])
-    if model == 'lmm':
-        if np.isfinite(item.frac_h2):
-            frac_h2 = '%.2E' % Decimal(item.frac_h2)
-        else:
-            frac_h2 = ''
-        out += '\t' + frac_h2
+
+    if model == "enet":
+        out += '\t' + '\t'.join(['%.2E' % Decimal(x)
+                                 if np.isfinite(x)
+                                 else ''
+                                 for x in (item.af,
+                                           item.kbeta)])
     else:
-        if np.isfinite(item.intercept):
-            intercept = '%.2E' % Decimal(item.intercept)
+        out += '\t' + '\t'.join(['%.2E' % Decimal(x)
+                                 if np.isfinite(x)
+                                 else ''
+                                 for x in (item.af,
+                                           item.prep,
+                                           item.pvalue,
+                                           item.kbeta,
+                                           item.bse)])
+        if model == 'lmm':
+            if np.isfinite(item.frac_h2):
+                frac_h2 = '%.2E' % Decimal(item.frac_h2)
+            else:
+                frac_h2 = ''
+            out += '\t' + frac_h2
         else:
-            intercept = ''
-        out += '\t' + intercept + '\t'
-        # No distances may not have further betas
-        if not np.all(np.equal(item.betas, None)):
-            out += '\t'.join(['%.2E' % Decimal(x)
-                             if np.isfinite(x)
-                             else ''
-                             for x in item.betas])
+            if np.isfinite(item.intercept):
+                intercept = '%.2E' % Decimal(item.intercept)
+            else:
+                intercept = ''
+            out += '\t' + intercept + '\t'
+            # No distances may not have further betas
+            if not np.all(np.equal(item.betas, None)):
+                out += '\t'.join(['%.2E' % Decimal(x)
+                                 if np.isfinite(x)
+                                 else ''
+                                 for x in item.betas])
 
     if lineage_dict is not None:
         if item.max_lineage is not None and np.isfinite(item.max_lineage):

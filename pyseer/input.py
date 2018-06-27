@@ -12,6 +12,7 @@ with set_env(MKL_NUM_THREADS='1',
     import numpy as np
 import pandas as pd
 from sklearn import manifold
+from pysam import VariantFile
 import hashlib
 import binascii
 
@@ -231,14 +232,15 @@ def open_variant_file(var_type, var_file, burden_file, burden_regions, uncompres
             infile = gzip.open(var_file, 'r')
     elif var_type == "vcf":
         infile = VariantFile(var_file)
-        if burden:
-            load_burden(options.burden, burden_regions)
+        if burden_file:
+            load_burden(burden_file, burden_regions)
     else:
         # Rtab files have a header, rather than sample names accessible by row
         infile = open(var_file)
         header = infile.readline().rstrip()
         sample_order = header.split()[1:]
 
+    return infile
 
 def read_variant(infile, p, var_type, burden, burden_regions,
                  uncompressed, all_strains, sample_order,
@@ -302,7 +304,7 @@ def read_variant(infile, p, var_type, burden, burden_regions,
         # kmers and Rtab plain text files
         line_in = infile.readline()
 
-    if not line_in or no_parse:
+    if not line_in or noparse:
         eof = True
         return(eof, None, None, None, None, None)
     else:
