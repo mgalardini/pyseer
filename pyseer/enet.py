@@ -110,11 +110,11 @@ def load_all_vars(var_type, p, burden, burden_regions, infile,
 
     # construct sparse matrix, then filter out correlations
     variants = csr_matrix((data, (rows, cols)), dtype=int)
-    cor_filter = np.nonzero(correlations < np.percentile(correlations, quantile_filter*100))[0]
+    cor_filter = np.nonzero(correlations > np.percentile(correlations, quantile_filter*100))[0]
     variants = variants[cor_filter, :].transpose()
     selected_vars = np.array(selected_vars)[cor_filter]
 
-    return(variants, selected_vars, var_idx, mat_idx)
+    return(variants, selected_vars, var_idx, len(selected_vars))
 
 
 def fit_enet(p, variants, continuous, l1_ratio, n_folds = 10, n_cpus = 1):
