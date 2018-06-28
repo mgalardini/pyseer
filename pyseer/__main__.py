@@ -9,6 +9,7 @@ import warnings
 import itertools
 import operator
 import re
+import pickle
 from collections import deque
 from .utils import set_env
 # avoid numpy taking up more than one thread
@@ -17,6 +18,7 @@ with set_env(MKL_NUM_THREADS='1',
              OMP_NUM_THREADS='1'):
     import numpy as np
 from scipy.stats import norm
+import scipy.sparse
 import pandas as pd
 from sklearn import manifold
 from multiprocessing import Pool
@@ -143,6 +145,10 @@ def get_options():
                                   '[Default: lineage_effects.txt]')
 
     enet = parser.add_argument_group('Elastic net options')
+    enet.add_argument('--save-enet',
+                      help='Prefix for saving enet variants')
+    enet.add_argument('--load-enet',
+                      help='Prefix for loading enet variants')
     enet.add_argument('--alpha',
                       type=float,
                       default=0.0069,
@@ -522,11 +528,20 @@ def main():
         model = 'enet'
         # read all variants
         sys.stderr.write("Reading all variants\n")
-        all_vars, var_indices, loaded, tested = load_all_vars(var_type, p, burden, burden_regions,
+        if options.load_enet:
+            all_vars = scipy.sparse.load_npz(options.load_enet + ".npz")
+            var_indices, loaded, tested = pickle.load(options.load_enet + ".pkl")
+        else:
+            all_vars, var_indices, loaded, tested = load_all_vars(var_type, p, burden, burden_regions,
                                     infile, all_strains, sample_order,
                                     options.min_af, options.max_af,
                                     options.uncompressed, options.cor_filter)
-        prefilter = loaded - tested
+            prefilter = loaded - tested
+
+            if options.save_enet:
+                scipy.sparse.save_npz(options.save_enet + ".npz", all_vars)
+                with open(options.save_enet + ".pkl", 'wb') as pickle_file:
+                    pickle.dump([var_indices, loaded, tested], pickle_file)
 
         # fit enet with cross validation
         sys.stderr.write("Fitting elastic net to " + str(tested) + " variants\n")
