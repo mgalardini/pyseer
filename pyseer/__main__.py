@@ -4,7 +4,6 @@
 
 import os
 import sys
-import gzip
 import warnings
 import itertools
 import operator

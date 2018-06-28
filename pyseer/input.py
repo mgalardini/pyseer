@@ -5,6 +5,7 @@
 import sys
 from .utils import set_env
 import re
+import gzip
 # avoid numpy taking up more than one thread
 with set_env(MKL_NUM_THREADS='1',
              NUMEXPR_NUM_THREADS='1',
