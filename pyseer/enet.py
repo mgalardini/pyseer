@@ -63,12 +63,11 @@ def load_all_vars(var_type, p, burden, burden_regions, infile,
     #TODO add covariates
 
     # For building sparse matrix
-    rows = []
-    cols = []
     data = []
+    indices = []
+    indptr = [0]
     selected_vars = []
     var_idx = 0
-    mat_idx = 0
 
     # For correlation calculation
     correlations = []
@@ -99,17 +98,16 @@ def load_all_vars(var_type, p, burden, burden_regions, infile,
 
             for idx, obs in enumerate(k):
                 if obs == pres:
-                    cols.append(idx)
-                    rows.append(mat_idx)
+                    indices.append(idx)
                     data.append(1)
+            indptr.append(len(indices))
 
-            mat_idx += 1
             selected_vars.append(var_idx)
 
         var_idx += 1
 
     # construct sparse matrix, then filter out correlations
-    variants = csr_matrix((data, (rows, cols)), dtype=int)
+    variants = csr_matrix((data, indices, indptr), dtype=int)
     cor_filter = np.nonzero(correlations > np.percentile(correlations, quantile_filter*100))[0]
     variants = variants[cor_filter, :].transpose()
     selected_vars = np.array(selected_vars)[cor_filter]
