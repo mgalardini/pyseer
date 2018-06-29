@@ -20,6 +20,7 @@ from sklearn.model_selection import GridSearchCV
 
 import pyseer.classes as var_obj
 from .input import read_variant
+from .model import fit_lineage_effect
 
 # Loads all variants into memory for use with elastic net
 def load_all_vars(var_type, p, burden, burden_regions, infile,
@@ -114,11 +115,13 @@ def load_all_vars(var_type, p, burden, burden_regions, infile,
 
     return(variants, selected_vars, var_idx, len(selected_vars))
 
-
+#@profile
 def fit_enet(p, variants, continuous, l1_ratio, n_folds = 10, n_cpus = 1):
+    alphas = np.logspace(-7, 2, 40)
     if continuous:
         # Linear model
-        regr = ElasticNetCV(l1_ratio = l1_ratio, cv = n_folds, copy_X = False, n_jobs = n_cpus, verbose = 1)
+        #TODO perhaps SGDClassifer/Regressor is faster
+        regr = ElasticNetCV(l1_ratio = l1_ratio, cv = n_folds, alphas = alphas, copy_X = False, n_jobs = n_cpus, verbose = 2)
         regr.fit(variants, p.values)
         chosen_alpha = regr.alpha_
         betas = regr.coef_
@@ -129,7 +132,6 @@ def fit_enet(p, variants, continuous, l1_ratio, n_folds = 10, n_cpus = 1):
                                        warm_start = True, n_jobs = 1, verbose = 0)
 
         # Cross validation for alpha
-        alphas = np.logspace(-7, 2, 40)
         tuned_parameters = [{'alpha': alphas}]
         cv_regr = GridSearchCV(logistic_model, tuned_parameters, cv = n_folds, refit = True, n_jobs = n_cpus, verbose = 1)
 

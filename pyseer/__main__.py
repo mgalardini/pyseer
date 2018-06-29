@@ -529,7 +529,8 @@ def main():
         sys.stderr.write("Reading all variants\n")
         if options.load_enet:
             all_vars = scipy.sparse.load_npz(options.load_enet + ".npz")
-            var_indices, loaded, tested = pickle.load(options.load_enet + ".pkl")
+            with open(options.load_enet + ".pkl", 'rb') as pickle_obj:
+                var_indices, loaded, tested = pickle.load(pickle_obj)
         else:
             all_vars, var_indices, loaded, tested = load_all_vars(var_type, p, burden, burden_regions,
                                     infile, all_strains, sample_order,
