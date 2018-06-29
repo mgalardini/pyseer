@@ -435,7 +435,7 @@ def main():
 
     # header fields
     if options.enet:
-        header = ['variant', 'af', 'minor-allele-beta']
+        header = ['variant', 'af', 'beta']
     else:
         header = ['variant', 'af', 'filter-pvalue',
                   'lrt-pvalue', 'beta', 'beta-std-err']

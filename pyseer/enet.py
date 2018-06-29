@@ -14,9 +14,8 @@ from scipy.sparse import csr_matrix
 import math
 import pandas as pd
 from decimal import Decimal
-from sklearn.linear_model import ElasticNetCV
-from sklearn.linear_model import SGDClassifier
-from sklearn.model_selection import GridSearchCV
+from glmnet import LogitNet
+from glmnet import ElasticNet
 
 import pyseer.classes as var_obj
 from .input import read_variant
@@ -108,40 +107,26 @@ def load_all_vars(var_type, p, burden, burden_regions, infile,
         var_idx += 1
 
     # construct sparse matrix, then filter out correlations
-    variants = csr_matrix((data, indices, indptr), dtype=int)
+    variants = csr_matrix((data, indices, indptr), dtype=float)
     cor_filter = np.nonzero(correlations > np.percentile(correlations, quantile_filter*100))[0]
     variants = variants[cor_filter, :].transpose()
     selected_vars = np.array(selected_vars)[cor_filter]
 
     return(variants, selected_vars, var_idx, len(selected_vars))
 
-#@profile
-def fit_enet(p, variants, continuous, l1_ratio, n_folds = 10, n_cpus = 1):
-    alphas = np.logspace(-7, 2, 40)
+def fit_enet(p, variants, continuous, alpha, n_folds = 10, n_cpus = 1):
     if continuous:
-        # Linear model
-        #TODO perhaps SGDClassifer/Regressor is faster
-        regr = ElasticNetCV(l1_ratio = l1_ratio, cv = n_folds, alphas = alphas, copy_X = False, n_jobs = n_cpus, verbose = 2)
-        regr.fit(variants, p.values)
-        chosen_alpha = regr.alpha_
+        regr = ElasticNet(alpha = alpha, n_splits = n_folds, n_jobs = n_cpus)
+    else:
+        regr = LogitNet(alpha = alpha, n_splits = n_folds, n_jobs = n_cpus)
+
+    fitted = regr.fit(variants, p.values)
+
+    sys.stderr.write("Best penalty from cross-validation: " + '%.2E' % Decimal(fitted.lambda_max_) + "\n")
+    if continuous:
         betas = regr.coef_
     else:
-        # Logistic model
-        # It may be better (memory-wise) to use multiple CPUs for the SGDClassifier rather than the CV
-        logistic_model = SGDClassifier(loss = "log", penalty = "elasticnet", l1_ratio = l1_ratio, average = True,
-                                       warm_start = True, n_jobs = 1, verbose = 0)
-
-        # Cross validation for alpha
-        tuned_parameters = [{'alpha': alphas}]
-        cv_regr = GridSearchCV(logistic_model, tuned_parameters, cv = n_folds, refit = True, n_jobs = n_cpus, verbose = 1)
-
-        cv_regr.fit(variants, p.values)
-        regr = cv_regr.best_estimator_
-        chosen_alpha = cv_regr.best_params_['alpha']
-        regr.fit(variants, p.values)
-        betas = regr.coef_[0]
-
-    sys.stderr.write("Best penalty from cross-validation: " + '%.2E' % Decimal(chosen_alpha) + "\n")
+        betas = regr.coef_.reshape(-1, )
     return(betas)
 
 def find_enet_selected(enet_betas, var_indices, p, c, var_type, burden,
@@ -167,6 +152,8 @@ def find_enet_selected(enet_betas, var_indices, p, c, var_type, burden,
                                         uncompressed, all_strains,
                                         sample_order)
         current_var += 1
+        if af > 0.5:
+            beta *= -1
 
         notes = []
         if find_lineage:
