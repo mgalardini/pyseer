@@ -375,7 +375,7 @@ def read_vcf_var(variant, d):
             # Could change to additive, summing instances, or reccessive only counting
             # when all instances are 1.
             # Shouldn't matter for bacteria, but some people call hets
-            for haplotype in call['GT']:
+            for haplotype in call.get('GT', [None]):
                 if str(haplotype) is not "." and haplotype is not None and haplotype != 0:
                     d[sample] = 1
                     break
