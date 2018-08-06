@@ -336,11 +336,12 @@ def read_variant(infile, p, var_type, burden, burden_regions,
         nkstrains = sorted(all_strains.difference(set(kstrains)))
 
         # default for missing samples is absent kmer
-        # currently up to user to be careful about matching pheno and var files
         for x in nkstrains:
             d[x] = 0
 
         af = float(len(kstrains)) / len(all_strains)
+        if len(kstrains) == 0:
+            sys.stderr.write("No observations of " + var_name + " in selected samples\n")
 
         k = np.array([d[x] for x in p.index
                       if x in d])
