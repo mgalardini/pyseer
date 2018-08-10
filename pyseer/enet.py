@@ -14,8 +14,10 @@ from scipy.sparse import csr_matrix
 import math
 import pandas as pd
 from decimal import Decimal
-from glmnet import LogitNet
-from glmnet import ElasticNet
+
+import glmnet_python
+from cvglmnet import cvglmnet 
+from cvglmnetCoef import cvglmnetCoef
 
 import pyseer.classes as var_obj
 from .input import read_variant
@@ -116,18 +118,16 @@ def load_all_vars(var_type, p, burden, burden_regions, infile,
 
 def fit_enet(p, variants, continuous, alpha, n_folds = 10, n_cpus = 1):
     if continuous:
-        regr = ElasticNet(alpha = alpha, n_splits = n_folds, n_jobs = n_cpus)
+        regression_type = 'gaussian' 
     else:
-        regr = LogitNet(alpha = alpha, n_splits = n_folds, n_jobs = n_cpus)
+        regression_type = 'binomial' 
 
-    fitted = regr.fit(variants, p.values)
+    enet_fit = cvglmnet(x = variants, y = p.values.astype('float64'), family = regression_type, 
+                        nfolds = n_folds, alpha = alpha, parallel = True)
+    betas = cvglmnetCoef(enet_fit, s = 'lambda_min')
 
-    sys.stderr.write("Best penalty from cross-validation: " + '%.2E' % Decimal(fitted.lambda_max_) + "\n")
-    if continuous:
-        betas = regr.coef_
-    else:
-        betas = regr.coef_.reshape(-1, )
-    return(betas)
+    sys.stderr.write("Best penalty from cross-validation: " + '%.2E' % Decimal(enet_fit['lambda_min'][0]) + "\n")
+    return(betas.reshape(-1,))
 
 def find_enet_selected(enet_betas, var_indices, p, c, var_type, burden,
                        burden_regions, infile, all_strains, sample_order,
