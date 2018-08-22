@@ -16,7 +16,7 @@ import pandas as pd
 from decimal import Decimal
 
 import glmnet_python
-from cvglmnet import cvglmnet 
+from cvglmnet import cvglmnet
 from cvglmnetCoef import cvglmnetCoef
 
 import pyseer.classes as var_obj
@@ -63,6 +63,8 @@ def load_all_vars(var_type, p, burden, burden_regions, infile,
             Whether we are at the end of the file
     """
     #TODO add covariates
+
+    #TODO try using h5py/pytables to save memory/disk space
 
     # For building sparse matrix
     data = []
@@ -118,15 +120,16 @@ def load_all_vars(var_type, p, burden, burden_regions, infile,
 
 def fit_enet(p, variants, continuous, alpha, n_folds = 10, n_cpus = 1):
     if continuous:
-        regression_type = 'gaussian' 
+        regression_type = 'gaussian'
     else:
-        regression_type = 'binomial' 
+        regression_type = 'binomial'
 
-    enet_fit = cvglmnet(x = variants, y = p.values.astype('float64'), family = regression_type, 
+    enet_fit = cvglmnet(x = variants, y = p.values.astype('float64'), family = regression_type,
                         nfolds = n_folds, alpha = alpha, parallel = True)
     betas = cvglmnetCoef(enet_fit, s = 'lambda_min')
 
     sys.stderr.write("Best penalty from cross-validation: " + '%.2E' % Decimal(enet_fit['lambda_min'][0]) + "\n")
+    #TODO: print R^2 from predictive model, save predictive model
     return(betas.reshape(-1,))
 
 def find_enet_selected(enet_betas, var_indices, p, c, var_type, burden,
