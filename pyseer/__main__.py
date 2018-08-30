@@ -42,6 +42,7 @@ from .lmm import fit_lmm
 
 from .enet import load_all_vars
 from .enet import fit_enet
+from .enet import correlation_filter
 from .enet import find_enet_selected
 
 from .utils import format_output
@@ -530,18 +531,25 @@ def main():
         if options.load_enet:
             all_vars = scipy.sparse.load_npz(options.load_enet + ".npz")
             with open(options.load_enet + ".pkl", 'rb') as pickle_obj:
-                var_indices, loaded, tested = pickle.load(pickle_obj)
+                var_indices, loaded, cor_a = pickle.load(pickle_obj)
         else:
-            all_vars, var_indices, loaded, tested = load_all_vars(var_type, p, burden, burden_regions,
+            all_vars, var_indices, loaded, cor_a = load_all_vars(var_type, p, burden, burden_regions,
                                     infile, all_strains, sample_order,
                                     options.min_af, options.max_af,
-                                    options.uncompressed, options.cor_filter)
-            prefilter = loaded - tested
-
+                                    options.uncompressed)
+ 
             if options.save_enet:
                 scipy.sparse.save_npz(options.save_enet + ".npz", all_vars)
                 with open(options.save_enet + ".pkl", 'wb') as pickle_file:
-                    pickle.dump([var_indices, loaded, tested], pickle_file)
+                    pickle.dump([var_indices, loaded, cor_a], pickle_file)
+            
+        # Apply the correlation filtering
+        cor_filter = correlation_filter(p, cor_a, options.cor_filter)
+        all_vars = all_vars[cor_filter, :].transpose()
+        var_indices = np.array(var_indices)[cor_filter]
+            
+        tested = len(var_indices) 
+        prefilter = loaded - tested
 
         # fit enet with cross validation
         sys.stderr.write("Fitting elastic net to " + str(tested) + " variants\n")

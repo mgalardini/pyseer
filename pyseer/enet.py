@@ -26,7 +26,7 @@ from .model import fit_lineage_effect
 # Loads all variants into memory for use with elastic net
 def load_all_vars(var_type, p, burden, burden_regions, infile,
                    all_strains, sample_order, min_af, max_af,
-                   uncompressed, quantile_filter = 0.25):
+                   uncompressed):
     """Make in iterable to load blocks of variants for LMM
 
     Args:
@@ -75,8 +75,6 @@ def load_all_vars(var_type, p, burden, burden_regions, infile,
 
     # For correlation calculation
     correlations = []
-    b = p.values - np.mean(p.values)
-    sum_b_squared = np.sum(np.power(b, 2))
     while True:
         eof, k, var_name, kstrains, nkstrains, af = read_variant(
                                         infile, p, var_type,
@@ -90,9 +88,8 @@ def load_all_vars(var_type, p, burden, burden_regions, infile,
 
         if k is not None and af > min_af and af < max_af:
             # Calculate correlation
-            a = k - np.mean(k)
-            cor = np.abs(np.dot(a, b) / np.sqrt(np.sum(np.power(a, 2)) * sum_b_squared))
-            correlations.append(cor)
+            cor_a = k - np.mean(k)
+            correlations.append(cor_a)
 
             # Minor allele encoding - most efficient use of sparse structure
             if af > 0.5:
@@ -112,11 +109,8 @@ def load_all_vars(var_type, p, burden, burden_regions, infile,
 
     # construct sparse matrix, then filter out correlations
     variants = csr_matrix((data, indices, indptr), dtype=float)
-    cor_filter = np.nonzero(correlations > np.percentile(correlations, quantile_filter*100))[0]
-    variants = variants[cor_filter, :].transpose()
-    selected_vars = np.array(selected_vars)[cor_filter]
 
-    return(variants, selected_vars, var_idx, len(selected_vars))
+    return(variants, selected_vars, var_idx, correlations)
 
 def fit_enet(p, variants, continuous, alpha, n_folds = 10, n_cpus = 1):
     if continuous:
@@ -125,12 +119,28 @@ def fit_enet(p, variants, continuous, alpha, n_folds = 10, n_cpus = 1):
         regression_type = 'binomial'
 
     enet_fit = cvglmnet(x = variants, y = p.values.astype('float64'), family = regression_type,
-                        nfolds = n_folds, alpha = alpha, parallel = True)
+                        nfolds = n_folds, alpha = alpha, parallel = n_cpus)
     betas = cvglmnetCoef(enet_fit, s = 'lambda_min')
 
     sys.stderr.write("Best penalty from cross-validation: " + '%.2E' % Decimal(enet_fit['lambda_min'][0]) + "\n")
     #TODO: print R^2 from predictive model, save predictive model
+    # see cvglmnetPredict and enet_fit['cvm']
+    # R^2 = 1 - sum((yi_obs - yi_predicted)^2) /sum((yi_obs - yi_mean)^2)
     return(betas.reshape(-1,))
+
+def correlation_filter(p, cor_a, quantile_filter = 0.25):
+
+    b = p.values - np.mean(p.values)
+    sum_b_squared = np.sum(np.power(b, 2))
+    
+    correlations = []
+    for a in cor_a:
+        cor = np.abs(np.dot(a, b) / np.sqrt(np.sum(np.power(a, 2)) * sum_b_squared))
+        correlations.append(cor)
+    
+    cor_filter = np.nonzero(correlations > np.percentile(correlations, quantile_filter*100))[0]
+    return(cor_filter)
+
 
 def find_enet_selected(enet_betas, var_indices, p, c, var_type, burden,
                        burden_regions, infile, all_strains, sample_order,
