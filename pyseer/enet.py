@@ -15,7 +15,7 @@ import math
 import pandas as pd
 from decimal import Decimal
 
-import glmnet_python
+import glmnet_python_pyseer
 from cvglmnet import cvglmnet
 from cvglmnetCoef import cvglmnetCoef
 

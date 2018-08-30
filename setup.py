@@ -69,6 +69,7 @@ setup(
                       'pysam',
                       'DendroPy',
                       'matplotlib',
-                      'pybedtools'],
+                      'pybedtools',
+                      'glmnet_python_pyseer'],
     test_suite="tests",
 )
