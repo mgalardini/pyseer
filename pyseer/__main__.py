@@ -332,8 +332,11 @@ def main():
                 lineage_wald[lineage] = np.absolute(lineage_fit.params[1])/lineage_fit.bse[1]
 
             min_lineage = min(lineage_wald.items(), key=operator.itemgetter(1))[0]
+
+            # Remove from objects
             min_index = lineage_dict.index(min_lineage)
             lineage_clusters = np.delete(lineage_clusters, min_index, 1)
+            del lineage_dict[min_index]
         else:
             lineage_dict = ["MDS" + str(i+1)
                             for i in range(options.max_dimensions)]
