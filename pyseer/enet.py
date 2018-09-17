@@ -15,7 +15,7 @@ import math
 import pandas as pd
 from decimal import Decimal
 
-import glmnet_python_pyseer
+import glmnet_python
 from cvglmnet import cvglmnet
 from cvglmnetCoef import cvglmnetCoef
 
@@ -132,12 +132,12 @@ def correlation_filter(p, cor_a, quantile_filter = 0.25):
 
     b = p.values - np.mean(p.values)
     sum_b_squared = np.sum(np.power(b, 2))
-    
+
     correlations = []
     for a in cor_a:
         cor = np.abs(np.dot(a, b) / np.sqrt(np.sum(np.power(a, 2)) * sum_b_squared))
         correlations.append(cor)
-    
+
     cor_filter = np.nonzero(correlations > np.percentile(correlations, quantile_filter*100))[0]
     return(cor_filter)
 
