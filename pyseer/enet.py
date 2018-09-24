@@ -21,6 +21,7 @@ from cvglmnetCoef import cvglmnetCoef
 
 import pyseer.classes as var_obj
 from .input import read_variant
+from .model import pre_filtering
 from .model import fit_lineage_effect
 
 # Loads all variants into memory for use with elastic net
@@ -121,11 +122,15 @@ def fit_enet(p, variants, continuous, alpha, n_folds = 10, n_cpus = 1):
     enet_fit = cvglmnet(x = variants, y = p.values.astype('float64'), family = regression_type,
                         nfolds = n_folds, alpha = alpha, parallel = n_cpus)
     betas = cvglmnetCoef(enet_fit, s = 'lambda_min')
+    best_lambda_idx = np.argmin(enet_fit['cvm'])
 
-    sys.stderr.write("Best penalty from cross-validation: " + '%.2E' % Decimal(enet_fit['lambda_min'][0]) + "\n")
-    #TODO: print R^2 from predictive model, save predictive model
-    # see cvglmnetPredict and enet_fit['cvm']
     # R^2 = 1 - sum((yi_obs - yi_predicted)^2) /sum((yi_obs - yi_mean)^2)
+    RSS = np.sum(np.square(p.values - np.mean(p.values)))
+    R2 = 1 - (enet_fit['cvm'][best_lambda_idx]/RSS)
+    R2_err = enet_fit['cvsd'][best_lambda_idx]/RSS
+    sys.stderr.write("Best penalty from cross-validation: " + '%.2E' % Decimal(enet_fit['lambda_min'][0]) + "\n")
+    sys.stderr.write("Best R^2 from cross-validation: " + '%.2E' % Decimal(R2) + " ± " + '%.2E' % Decimal(R2_err) + "\n")
+
     return(betas.reshape(-1,))
 
 def correlation_filter(p, cor_a, quantile_filter = 0.25):
