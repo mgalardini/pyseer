@@ -555,7 +555,7 @@ def main():
 
         # fit enet with cross validation
         sys.stderr.write("Fitting elastic net to " + str(tested) + " variants\n")
-        enet_betas = fit_enet(p, all_vars, options.continuous, options.alpha, options.n_folds, options.cpu)
+        enet_betas = fit_enet(p, all_vars, cov, options.continuous, options.alpha, options.n_folds, options.cpu)
 
         # print those with passing indices, along with coefficient
         sys.stderr.write("Finding and printing selected variants\n")
@@ -564,6 +564,7 @@ def main():
                                            burden_regions, infile, all_strains, sample_order, options.continuous,
                                            options.lineage, lineage_clusters, options.uncompressed)
 
+        pred_model = {}
         print('\t'.join(header))
         for x in selected_vars:
             printed += 1
@@ -573,13 +574,16 @@ def main():
                                 options.print_samples))
 
             # Save coefficients in a dict by variant name
-            if args.save_model:
-                pred_model[x.kmer] = x.kbeta
+            pred_model[x.kmer] = x.kbeta
 
         # Save the elements needed to perform prediction
-        if args.save_model:
-            with open(args.save_model + '_model.pkl', 'wb') as pickle_file:
-                pickle.dump([pred_model, continuous, np.mean(p.values)], pickle_file)
+        if options.save_model:
+            for cov_idx, covariate in enumerate(cov):
+                if enet_betas[cov_idx] > 0:
+                    pred_model[covariate] = enet_betas[cov_idx]
+
+            with open(options.save_model + '_model.pkl', 'wb') as pickle_file:
+                pickle.dump([pred_model, options.continuous, np.mean(p.values)], pickle_file)
 
     # original SEER model (fixed effects)
     else:

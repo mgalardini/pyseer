@@ -10,7 +10,7 @@ with set_env(MKL_NUM_THREADS='1',
              NUMEXPR_NUM_THREADS='1',
              OMP_NUM_THREADS='1'):
     import numpy as np
-from scipy.sparse import csr_matrix
+from scipy.sparse import csr_matrix, csc_matrix, vstack
 import math
 import pandas as pd
 from decimal import Decimal
@@ -63,10 +63,6 @@ def load_all_vars(var_type, p, burden, burden_regions, infile,
         eof (bool)
             Whether we are at the end of the file
     """
-    #TODO add covariates
-
-    #TODO try using h5py/pytables to save memory/disk space
-
     # For building sparse matrix
     data = []
     indices = []
@@ -113,11 +109,14 @@ def load_all_vars(var_type, p, burden, burden_regions, infile,
 
     return(variants, selected_vars, var_idx, correlations)
 
-def fit_enet(p, variants, continuous, alpha, n_folds = 10, n_cpus = 1):
+def fit_enet(p, variants, covariates, continuous, alpha, n_folds = 10, n_cpus = 1):
     if continuous:
         regression_type = 'gaussian'
     else:
         regression_type = 'binomial'
+
+    if covariates.shape[0] > 0:
+        variants = vstack(csc_matrix(covariates), variants)
 
     enet_fit = cvglmnet(x = variants, y = p.values.astype('float64'), family = regression_type,
                         nfolds = n_folds, alpha = alpha, parallel = n_cpus)
@@ -129,7 +128,7 @@ def fit_enet(p, variants, continuous, alpha, n_folds = 10, n_cpus = 1):
     R2 = 1 - (enet_fit['cvm'][best_lambda_idx]/RSS)
     R2_err = enet_fit['cvsd'][best_lambda_idx]/RSS
     sys.stderr.write("Best penalty from cross-validation: " + '%.2E' % Decimal(enet_fit['lambda_min'][0]) + "\n")
-    sys.stderr.write("Best R^2 from cross-validation: " + '%.2E' % Decimal(R2) + " ± " + '%.2E' % Decimal(R2_err) + "\n")
+    sys.stderr.write("Best R^2 from cross-validation: " + '%.3f' % Decimal(R2) + " ± " + '%.2E' % Decimal(R2_err) + "\n")
 
     return(betas.reshape(-1,))
 
@@ -150,6 +149,13 @@ def correlation_filter(p, cor_a, quantile_filter = 0.25):
 def find_enet_selected(enet_betas, var_indices, p, c, var_type, burden,
                        burden_regions, infile, all_strains, sample_order,
                        continuous, find_lineage, lin, uncompressed):
+
+    # skip covariates
+    if c.shape[1] > 0:
+        enet_betas = enet_betas[c.shape[1]:,:]
+        covar_betas = enet_betas[0:c.shape[1],:]
+        for beta, covariate in zip(covar_betas, c):
+            sys.stderr.write("Kept covariate '" + covariate + "', slope: " + '%.2E' % Decimal(beta) + "\n")
 
     current_var = 0
     for beta, var_idx in zip(enet_betas, var_indices):
