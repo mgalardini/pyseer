@@ -149,6 +149,8 @@ def get_options():
                       help='Prefix for saving enet variants')
     enet.add_argument('--load-enet',
                       help='Prefix for loading enet variants')
+    enet.add_argument('--save-model',
+                      help='Prefix for saving enet model')
     enet.add_argument('--alpha',
                       type=float,
                       default=0.0069,
@@ -569,6 +571,15 @@ def main():
                                 lineage_dict,
                                 model,
                                 options.print_samples))
+
+            # Save coefficients in a dict by variant name
+            if args.save_model:
+                pred_model[x.kmer] = x.kbeta
+
+        # Save the elements needed to perform prediction
+        if args.save_model:
+            with open(args.save_model + '_model.pkl', 'wb') as pickle_file:
+                pickle.dump([pred_model, continuous, np.mean(p.values)], pickle_file)
 
     # original SEER model (fixed effects)
     else:
