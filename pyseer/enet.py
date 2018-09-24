@@ -144,7 +144,7 @@ def correlation_filter(p, cor_a, quantile_filter = 0.25):
 
 def find_enet_selected(enet_betas, var_indices, p, c, var_type, burden,
                        burden_regions, infile, all_strains, sample_order,
-                       find_lineage, lin, uncompressed):
+                       continuous, find_lineage, lin, uncompressed):
 
     current_var = 0
     for beta, var_idx in zip(enet_betas, var_indices):
@@ -169,9 +169,14 @@ def find_enet_selected(enet_betas, var_indices, p, c, var_type, burden,
             beta *= -1
 
         notes = []
+
+        # find unadjusted p-value and lineage
+        (pval, bad) = pre_filtering(p, k, continuous)
+        if bad:
+            notes.append("bad-chisq")
         if find_lineage:
             max_lineage = fit_lineage_effect(lin, c, k)
         else:
             max_lineage = None
 
-        yield var_obj.Enet(var_name, af, beta, max_lineage, kstrains, nkstrains, notes)
+        yield var_obj.Enet(var_name, af, pval, beta, max_lineage, kstrains, nkstrains, notes)

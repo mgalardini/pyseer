@@ -60,6 +60,7 @@ def format_output(item, lineage_dict=None, model='seer', print_samples=False):
                                  if np.isfinite(x)
                                  else ''
                                  for x in (item.af,
+                                           item.prep,
                                            item.kbeta)])
     else:
         out += '\t' + '\t'.join(['%.2E' % Decimal(x)

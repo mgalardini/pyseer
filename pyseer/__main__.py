@@ -436,7 +436,7 @@ def main():
 
     # header fields
     if options.enet:
-        header = ['variant', 'af', 'beta']
+        header = ['variant', 'af', 'filter-pvalue', 'beta']
     else:
         header = ['variant', 'af', 'filter-pvalue',
                   'lrt-pvalue', 'beta', 'beta-std-err']
@@ -537,18 +537,18 @@ def main():
                                     infile, all_strains, sample_order,
                                     options.min_af, options.max_af,
                                     options.uncompressed)
- 
+
             if options.save_enet:
                 scipy.sparse.save_npz(options.save_enet + ".npz", all_vars)
                 with open(options.save_enet + ".pkl", 'wb') as pickle_file:
                     pickle.dump([var_indices, loaded, cor_a], pickle_file)
-            
+
         # Apply the correlation filtering
         cor_filter = correlation_filter(p, cor_a, options.cor_filter)
         all_vars = all_vars[cor_filter, :].transpose()
         var_indices = np.array(var_indices)[cor_filter]
-            
-        tested = len(var_indices) 
+
+        tested = len(var_indices)
         prefilter = loaded - tested
 
         # fit enet with cross validation
@@ -559,7 +559,7 @@ def main():
         sys.stderr.write("Finding and printing selected variants\n")
         infile = open_variant_file(var_type, var_file, options.burden, burden_regions, options.uncompressed)
         selected_vars = find_enet_selected(enet_betas, var_indices, p, cov, var_type, burden,
-                                           burden_regions, infile, all_strains, sample_order,
+                                           burden_regions, infile, all_strains, sample_order, options.continuous,
                                            options.lineage, lineage_clusters, options.uncompressed)
 
         print('\t'.join(header))

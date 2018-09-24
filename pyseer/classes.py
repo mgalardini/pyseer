@@ -8,7 +8,7 @@ LMM = namedtuple('LMM', ['kmer', 'pattern',
                          'notes',
                          'prefilter', 'filter'])
 
-Enet = namedtuple('Enet', ['kmer', 'af', 'kbeta',
+Enet = namedtuple('Enet', ['kmer', 'af', 'prep', 'kbeta',
                             'max_lineage', 'kstrains',
                             'nkstrains', 'notes'])
 
