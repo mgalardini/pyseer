@@ -16,6 +16,11 @@ from pyseer.input import iter_variants
 from pyseer.input import load_var_block
 from pyseer.input import hash_pattern
 
+# python2 fix
+try:
+    FileNotFoundError
+except NameError:
+    FileNotFoundError = IOError
 
 DATA_DIR = 'tests'
 P = os.path.join(DATA_DIR, 'subset.pheno')
