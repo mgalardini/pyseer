@@ -55,14 +55,14 @@ Prerequisites
 
 Between parenthesis the versions the script was tested against:
 
-* `python` 3+ (3.5.3)
-* `numpy` (1.13.3)
-* `scipy` (1.0.0)
-* `pandas` (0.21.0)
-* `scikit-learn` (0.19.1)
-* `statsmodels` (0.8.0)
-* `pysam` (0.13)
-* `dendropy` (4.3.0)
+* `python` 3+ (3.6.6)
+* `numpy` (1.15.2)
+* `scipy` (1.1.0)
+* `pandas` (0.23.4)
+* `scikit-learn` (0.20.0)
+* `statsmodels` (0.9.0)
+* `pysam` (0.15.1)
+* `DendroPy` (4.4.0)
 
 If you would like to use the `scree_plot_pyseer` script you will also need to have
 `matplotlib` installed.
