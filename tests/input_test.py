@@ -25,6 +25,7 @@ COV = os.path.join(DATA_DIR, 'covariates.txt')
 B = os.path.join(DATA_DIR, 'burden_regions.txt')
 KMER = os.path.join(DATA_DIR, 'kmers.gz')
 PRES = os.path.join(DATA_DIR, 'presence_absence_smaller.Rtab')
+PRESSPACE = os.path.join(DATA_DIR, 'presence_absence_smaller_space.Rtab')
 VCF = os.path.join(DATA_DIR, 'variants_smaller.vcf.gz')
 VCFNOGT = os.path.join(DATA_DIR, 'variants_no_gt.vcf.gz')
 
@@ -354,6 +355,24 @@ class TestVariantLoading(unittest.TestCase):
             t = read_variant(infile, p.head(5), 'Rtab',
                              False, [], False,
                              p.head(5).index, sample_order)
+        # space in OG's names
+        infile = open(PRESSPACE)
+        header = infile.readline().rstrip()
+        sample_order = header.split()[1:]
+        t = read_variant(infile, p, 'Rtab',
+                         False, [], False,
+                         p.index, sample_order)
+        eof, k, var_name, kstrains, nkstrains, af = t
+        self.assertEqual(eof, False)
+        self.assertEqual(abs((k - np.ones(50)).max()), 0.0)
+        self.assertEqual(var_name,
+                         'COG 1')
+        self.assertEqual(kstrains,
+                         sorted(['sample_%d' % x
+                                 for x in range(1, 51)]))
+        self.assertEqual(nkstrains,
+                         [])
+        self.assertEqual(af, 1.0)
 
     def test_read_variant_vcf(self):
         p = pd.read_table(P,

@@ -319,8 +319,15 @@ def read_variant(infile, p, var_type, burden, burden_regions,
                     return (eof, None, None, None, None, None)
 
         elif var_type == "Rtab":
-            split_line = line_in.rstrip().split()
+            try:
+                split_line = line_in.rstrip().split('\t')
+            except TypeError:
+                # python3 unicode corner case
+                split_line = line_in.decode().rstrip().split('\t')
             var_name, strains = split_line[0], split_line[1:]
+            # sanity check
+            if len(strains) == 0:
+                raise ValueError('No sample data found; is this a Rtab file?')
             # sanity check
             if len(strains) != len(sample_order):
                 raise ValueError('Unexpected mismatch between header and data row')
