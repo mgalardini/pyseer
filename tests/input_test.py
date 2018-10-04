@@ -1,4 +1,5 @@
 import os
+import sys
 import gzip
 import unittest
 import numpy as np
@@ -242,11 +243,12 @@ class TestVariantLoading(unittest.TestCase):
         self.assertEqual(nkstrains,
                          ['sample_3', 'sample_5'])
         self.assertEqual(af, 0.6)
-        # uncompressed option
-        with self.assertRaises(TypeError):
-            t = read_variant(infile, p, 'kmers',
-                             False, [], True,
-                             p.index, [])
+        # uncompressed option - only with python3+
+        if sys.version_info[0] >= 3:
+            with self.assertRaises(TypeError):
+                t = read_variant(infile, p, 'kmers',
+                                 False, [], True,
+                                 p.index, [])
         # different type
         with self.assertRaises(ValueError):
             t = read_variant(infile, p.head(5), 'Rtab',
@@ -351,6 +353,8 @@ class TestVariantLoading(unittest.TestCase):
                              False, [], False,
                              p.head(5).index, [])
         # read until exhaustion
+        infile = open(PRES)
+        header = infile.readline().rstrip()
         while not t[0]:
             t = read_variant(infile, p, 'Rtab',
                              False, [], False,
