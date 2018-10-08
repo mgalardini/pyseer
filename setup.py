@@ -59,6 +59,7 @@ setup(
             'scree_plot_pyseer = pyseer.scree_plot:main',
             'phandango_mapper = pyseer.kmer_mapping.phandango_plot:main',
             'annotate_hits_pyseer = pyseer.kmer_mapping.annotate_hits:main'
+            'enet_predict_pyseer = pyseer.enet_predict:main'
             ]
     },
     install_requires=['numpy',
@@ -70,6 +71,6 @@ setup(
                       'DendroPy',
                       'matplotlib',
                       'pybedtools',
-                      'glmnet_python_pyseer'],
+                      'glmnet_py'],
     test_suite="tests",
 )

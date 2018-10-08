@@ -65,6 +65,9 @@ or `dsm-framework <https://github.com/HIITMetagenomics/dsm-framework>`_ are inpu
 k-mers you will need to use ``combineKmers`` from the original ``seer``
 installation to convert them to the correct input format.
 
+If needed, both fsm-lite and seer can be installed through conda. See :docs:`installation` for
+details.
+
 .. note:: For common variation k-mers should probably be your variant of choice.
    ``seer`` was mainly designed to work with k-mers, due to their ability to
    test variation across the pan-genome without the need to call variants

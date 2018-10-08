@@ -166,10 +166,8 @@ def load_covariates(infile, covariates, p):
             Covariance matrix (n, m)
     """
     c = pd.read_table(infile,
-                      header=None,
                       index_col=0)
     c.index = c.index.astype(str)
-    c.columns = ['covariate%d' % (x+2) for x in range(c.shape[1])]
 
     if (len(p.index.difference(c.index)) > 0):
         sys.stderr.write("All samples with a phenotype must be present in covariate file\n")
@@ -191,18 +189,18 @@ def load_covariates(infile, covariates, p):
                 return None
             if col[-1] == 'q':
                 # quantitative
-                cov.append(c['covariate%d' % cnum])
+                cov.append(c.iloc[:,cnum-1])
             else:
                 # categorical, dummy-encode it
-                categories = set(c['covariate%d' % cnum])
+                categories = set(c.iloc[:,cnum-1])
                 categories.pop()
                 for i, categ in enumerate(categories):
                     cov.append(pd.Series([1 if x == categ
                                           else 0
                                           for x in
-                                          c['covariate%d' % cnum].values],
+                                          c.iloc[:,cnum-1.values],
                                          index=c.index,
-                                         name='covariate%d_%d' % (cnum, i)))
+                                         name=c.column[cnum-1] + "_" + str(i)))
         if len(cov) > 0:
             cov = pd.concat(cov, axis=1)
         else:
@@ -226,6 +224,7 @@ def load_burden(infile, burden_regions):
 
 def open_variant_file(var_type, var_file, burden_file, burden_regions, uncompressed):
 
+    sample_order = []
     if var_type == "kmers":
         if uncompressed:
             infile = open(var_file)
@@ -241,7 +240,7 @@ def open_variant_file(var_type, var_file, burden_file, burden_regions, uncompres
         header = infile.readline().rstrip()
         sample_order = header.split()[1:]
 
-    return infile
+    return infile, sample_order
 
 def read_variant(infile, p, var_type, burden, burden_regions,
                  uncompressed, all_strains, sample_order,
@@ -616,3 +615,21 @@ def hash_pattern(k):
     pattern = k.view(np.uint8)
     hashed = hashlib.md5(pattern)
     return (binascii.b2a_base64(hashed.digest()))
+
+
+def file_hash(filename):
+    """Calculates the hash of a file on disk
+
+    Args:
+        filename (str)
+            Location of file on disk
+
+    Returns:
+        hash (str)
+            SHA256 checksum
+    """
+    hash_sha256 = hashlib.sha256()
+    with open(fname, "rb") as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            hash_sha256.update(chunk)
+    return hash_sha256.hexdigest()

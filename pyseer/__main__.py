@@ -33,6 +33,7 @@ from .input import open_variant_file
 from .input import iter_variants
 from .input import load_var_block
 from .input import iter_variants_lmm
+from .input import file_hash
 
 from .model import fixed_effects_regression
 from .model import fit_null
@@ -408,7 +409,6 @@ def main():
         sys.stderr.write("h^2 = " + '{0:.2f}'.format(h2) + "\n")
 
     # Open variant file
-    sample_order = []
     all_strains = set(p.index)
     burden_regions = deque([])
     burden = False
@@ -425,7 +425,7 @@ def main():
         var_type = "Rtab"
         var_file = options.pres
 
-    infile = open_variant_file(var_type, var_file, options.burden, burden_regions, options.uncompressed)
+    infile, sample_order = open_variant_file(var_type, var_file, options.burden, burden_regions, options.uncompressed)
 
     # keep track of the number of the total number of kmers and tests
     prefilter = 0
@@ -533,7 +533,10 @@ def main():
         if options.load_enet:
             all_vars = scipy.sparse.load_npz(options.load_enet + ".npz")
             with open(options.load_enet + ".pkl", 'rb') as pickle_obj:
-                var_indices, loaded, cor_a = pickle.load(pickle_obj)
+                var_file_original, var_indices, loaded, cor_a = pickle.load(pickle_obj)
+                if var_file_original != file_hash(var_file):
+                    sys.stderr.write("WARNING: Variant file used to load variants " + var_file_original +
+                                     " may be different from current input " + var_file + "\n")
         else:
             all_vars, var_indices, loaded, cor_a = load_all_vars(var_type, p, burden, burden_regions,
                                     infile, all_strains, sample_order,
@@ -543,7 +546,7 @@ def main():
             if options.save_enet:
                 scipy.sparse.save_npz(options.save_enet + ".npz", all_vars)
                 with open(options.save_enet + ".pkl", 'wb') as pickle_file:
-                    pickle.dump([var_indices, loaded, cor_a], pickle_file)
+                    pickle.dump([file_hash(var_file), var_indices, loaded, cor_a], pickle_file)
 
         # Apply the correlation filtering
         cor_filter = correlation_filter(p, cor_a, options.cor_filter)
@@ -560,6 +563,13 @@ def main():
         # print those with passing indices, along with coefficient
         sys.stderr.write("Finding and printing selected variants\n")
         infile = open_variant_file(var_type, var_file, options.burden, burden_regions, options.uncompressed)
+
+        if c.shape[1] > 0:
+            covar_betas = enet_betas[0:c.shape[1],:]
+            for beta, covariate in zip(covar_betas, c.columns):
+                sys.stderr.write("Kept covariate '" + covariate + "', slope: " + '%.2E' % Decimal(beta) + "\n")
+                pred_model[covariate] = (np.mean((c[covariate]), beta)
+
         selected_vars = find_enet_selected(enet_betas, var_indices, p, cov, var_type, burden,
                                            burden_regions, infile, all_strains, sample_order, options.continuous,
                                            options.lineage, lineage_clusters, options.uncompressed)
@@ -574,13 +584,13 @@ def main():
                                 options.print_samples))
 
             # Save coefficients in a dict by variant name
-            pred_model[x.kmer] = x.kbeta
+            pred_model[x.kmer] = (x.af, x.kbeta)
 
         # Save the elements needed to perform prediction
         if options.save_model:
             for cov_idx, covariate in enumerate(cov):
                 if enet_betas[cov_idx] > 0:
-                    pred_model[covariate] = enet_betas[cov_idx]
+                    pred_model[covariate] = (np.mean(covariate), enet_betas[cov_idx])
 
             with open(options.save_model + '_model.pkl', 'wb') as pickle_file:
                 pickle.dump([pred_model, options.continuous, np.mean(p.values)], pickle_file)

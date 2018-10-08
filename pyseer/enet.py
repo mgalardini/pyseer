@@ -51,8 +51,6 @@ def load_all_vars(var_type, p, burden, burden_regions, infile,
             maximum allele frequency (inclusive)
         uncompressed (bool)
             Whether the kmers file is uncompressed
-        block_size (int)
-            How many variants to be loaded at once
 
     Returns:
         variants (iterable)
@@ -153,9 +151,6 @@ def find_enet_selected(enet_betas, var_indices, p, c, var_type, burden,
     # skip covariates
     if c.shape[1] > 0:
         enet_betas = enet_betas[c.shape[1]:,:]
-        covar_betas = enet_betas[0:c.shape[1],:]
-        for beta, covariate in zip(covar_betas, c):
-            sys.stderr.write("Kept covariate '" + covariate + "', slope: " + '%.2E' % Decimal(beta) + "\n")
 
     current_var = 0
     for beta, var_idx in zip(enet_betas, var_indices):
