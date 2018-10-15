@@ -559,12 +559,12 @@ def main():
         prefilter = loaded - tested
 
         # fit enet with cross validation
-        sys.stderr.write("Fitting elastic net to " + str(tested) + " variants\n")
+        sys.stderr.write("Fitting elastic net to top " + str(tested) + " variants\n")
         enet_betas = fit_enet(p, all_vars, cov, options.continuous, options.alpha, options.n_folds, options.cpu)
 
         # print those with passing indices, along with coefficient
         sys.stderr.write("Finding and printing selected variants\n")
-        infile = open_variant_file(var_type, var_file, options.burden, burden_regions, options.uncompressed)
+        infile, sample_order = open_variant_file(var_type, var_file, options.burden, burden_regions, options.uncompressed)
 
         pred_model = {}
         if cov.shape[1] > 0:

@@ -71,6 +71,7 @@ setup(
                       'DendroPy',
                       'matplotlib',
                       'pybedtools',
+                      'tqdm',
                       'glmnet_py'],
     test_suite="tests",
 )

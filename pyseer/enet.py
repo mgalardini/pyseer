@@ -15,6 +15,7 @@ import math
 import pandas as pd
 from decimal import Decimal
 
+from tqdm import tqdm
 import glmnet_python
 from cvglmnet import cvglmnet
 from cvglmnetCoef import cvglmnetCoef
@@ -68,6 +69,7 @@ def load_all_vars(var_type, p, burden, burden_regions, infile,
     selected_vars = []
     var_idx = 0
 
+    pbar = tqdm(unit="variants")
     while True:
         eof, k, var_name, kstrains, nkstrains, af = read_variant(
                                         infile, p, var_type,
@@ -77,7 +79,10 @@ def load_all_vars(var_type, p, burden, burden_regions, infile,
 
         # check for EOF
         if eof:
+            pbar.close()
             break
+        else:
+            pbar.update(1)
 
         if k is not None and af > min_af and af < max_af:
             # Minor allele encoding - most efficient use of sparse structure
@@ -133,7 +138,7 @@ def correlation_filter(p, all_vars, quantile_filter = 0.25):
     sum_b_squared = np.sum(np.power(b, 2))
 
     correlations = []
-    for row_idx in range(all_vars.shape[0]):
+    for row_idx in tqdm(range(all_vars.shape[0]), unit="variants"):
         k = all_vars.getrow(row_idx)
         k_mean = csr_matrix.mean(k)
 
