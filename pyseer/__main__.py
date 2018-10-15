@@ -10,6 +10,7 @@ import operator
 import re
 import pickle
 from collections import deque
+from decimal import Decimal
 from .utils import set_env
 # avoid numpy taking up more than one thread
 with set_env(MKL_NUM_THREADS='1',
@@ -533,12 +534,12 @@ def main():
         if options.load_enet:
             all_vars = scipy.sparse.load_npz(options.load_enet + ".npz")
             with open(options.load_enet + ".pkl", 'rb') as pickle_obj:
-                var_file_original, var_indices, loaded, cor_a = pickle.load(pickle_obj)
+                var_file_original, var_indices, loaded = pickle.load(pickle_obj)
                 if var_file_original != file_hash(var_file):
                     sys.stderr.write("WARNING: Variant file used to load variants " + var_file_original +
                                      " may be different from current input " + var_file + "\n")
         else:
-            all_vars, var_indices, loaded, cor_a = load_all_vars(var_type, p, burden, burden_regions,
+            all_vars, var_indices, loaded = load_all_vars(var_type, p, burden, burden_regions,
                                     infile, all_strains, sample_order,
                                     options.min_af, options.max_af,
                                     options.uncompressed)
@@ -546,10 +547,11 @@ def main():
             if options.save_enet:
                 scipy.sparse.save_npz(options.save_enet + ".npz", all_vars)
                 with open(options.save_enet + ".pkl", 'wb') as pickle_file:
-                    pickle.dump([file_hash(var_file), var_indices, loaded, cor_a], pickle_file)
+                    pickle.dump([file_hash(var_file), var_indices, loaded], pickle_file)
 
         # Apply the correlation filtering
-        cor_filter = correlation_filter(p, cor_a, options.cor_filter)
+        sys.stderr.write("Applying correlation filtering\n")
+        cor_filter = correlation_filter(p, all_vars, options.cor_filter)
         all_vars = all_vars[cor_filter, :].transpose()
         var_indices = np.array(var_indices)[cor_filter]
 
@@ -564,17 +566,17 @@ def main():
         sys.stderr.write("Finding and printing selected variants\n")
         infile = open_variant_file(var_type, var_file, options.burden, burden_regions, options.uncompressed)
 
-        if c.shape[1] > 0:
-            covar_betas = enet_betas[0:c.shape[1],:]
-            for beta, covariate in zip(covar_betas, c.columns):
+        pred_model = {}
+        if cov.shape[1] > 0:
+            covar_betas = enet_betas[0:cov.shape[1],:]
+            for beta, covariate in zip(covar_betas, cov.columns):
                 sys.stderr.write("Kept covariate '" + covariate + "', slope: " + '%.2E' % Decimal(beta) + "\n")
-                pred_model[covariate] = (np.mean((c[covariate]), beta)
+                pred_model[covariate] = (np.mean(cov[covariate]), beta)
 
         selected_vars = find_enet_selected(enet_betas, var_indices, p, cov, var_type, burden,
                                            burden_regions, infile, all_strains, sample_order, options.continuous,
                                            options.lineage, lineage_clusters, options.uncompressed)
 
-        pred_model = {}
         print('\t'.join(header))
         for x in selected_vars:
             printed += 1

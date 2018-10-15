@@ -198,7 +198,7 @@ def load_covariates(infile, covariates, p):
                     cov.append(pd.Series([1 if x == categ
                                           else 0
                                           for x in
-                                          c.iloc[:,cnum-1.values],
+                                          c.iloc[:,cnum-1].values],
                                          index=c.index,
                                          name=c.column[cnum-1] + "_" + str(i)))
         if len(cov) > 0:
@@ -629,7 +629,7 @@ def file_hash(filename):
             SHA256 checksum
     """
     hash_sha256 = hashlib.sha256()
-    with open(fname, "rb") as f:
+    with open(filename, "rb") as f:
         for chunk in iter(lambda: f.read(4096), b""):
             hash_sha256.update(chunk)
     return hash_sha256.hexdigest()

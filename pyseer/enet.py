@@ -68,8 +68,6 @@ def load_all_vars(var_type, p, burden, burden_regions, infile,
     selected_vars = []
     var_idx = 0
 
-    # For correlation calculation
-    correlations = []
     while True:
         eof, k, var_name, kstrains, nkstrains, af = read_variant(
                                         infile, p, var_type,
@@ -82,10 +80,6 @@ def load_all_vars(var_type, p, burden, burden_regions, infile,
             break
 
         if k is not None and af > min_af and af < max_af:
-            # Calculate correlation
-            cor_a = k - np.mean(k)
-            correlations.append(cor_a)
-
             # Minor allele encoding - most efficient use of sparse structure
             if af > 0.5:
                 pres = 0
@@ -102,10 +96,10 @@ def load_all_vars(var_type, p, burden, burden_regions, infile,
 
         var_idx += 1
 
-    # construct sparse matrix, then filter out correlations
+    # construct sparse matrix
     variants = csr_matrix((data, indices, indptr), dtype=float)
 
-    return(variants, selected_vars, var_idx, correlations)
+    return(variants, selected_vars, var_idx)
 
 def fit_enet(p, variants, covariates, continuous, alpha, n_folds = 10, n_cpus = 1):
     if continuous:
@@ -130,14 +124,22 @@ def fit_enet(p, variants, covariates, continuous, alpha, n_folds = 10, n_cpus = 
 
     return(betas.reshape(-1,))
 
-def correlation_filter(p, cor_a, quantile_filter = 0.25):
+def correlation_filter(p, all_vars, quantile_filter = 0.25):
 
+    # a = snp - mean(snp)
+    # b = y - mean(y)
+    # cor = abs(a%*%b / sqrt(sum(a^2)*sum(b^2)) )
     b = p.values - np.mean(p.values)
     sum_b_squared = np.sum(np.power(b, 2))
 
     correlations = []
-    for a in cor_a:
-        cor = np.abs(np.dot(a, b) / np.sqrt(np.sum(np.power(a, 2)) * sum_b_squared))
+    for row_idx in range(all_vars.shape[0]):
+        k = all_vars.getrow(row_idx)
+        k_mean = csr_matrix.mean(k)
+
+        ab = k.dot(b) - np.sum(k_mean * b)
+        sum_a_squared = (k.dot(k.transpose()).data[0] + pow(k_mean, 2)) * all_vars.shape[1] - 2*k_mean*csr_matrix.sum(k)
+        cor = np.abs(ab / np.sqrt(sum_a_squared * sum_b_squared))
         correlations.append(cor)
 
     cor_filter = np.nonzero(correlations > np.percentile(correlations, quantile_filter*100))[0]
