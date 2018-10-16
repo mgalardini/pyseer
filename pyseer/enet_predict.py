@@ -14,6 +14,7 @@ with set_env(MKL_NUM_THREADS='1',
 import pickle
 import pandas as pd
 from scipy.special import expit
+from tqdm import tqdm
 
 from .input import open_variant_file
 from .input import load_covariates
@@ -89,6 +90,7 @@ def main():
     p = pd.DataFrame(data=np.full(len(samples), intercept),
                      index=samples,
                      columns=['prediction'])
+    predictions = p.values
 
     # Read in covariates
     if options.covariates is not None:
@@ -99,9 +101,9 @@ def main():
             sys.exit(1)
         else:
             for covariate in cov:
-                pred_beta = model_dict.pop(var_name, (0, 0))
+                pred_beta = model_dict.pop(covariate, (0, 0))
                 if pred_beta[1] != 0:
-                    p.values += cov[covariate] * pred_beta[1]
+                    predictions += (cov[covariate] * pred_beta[1]).reshape(-1, 1)
 
     # Open variant file
     sample_order = []
@@ -124,6 +126,8 @@ def main():
     infile, sample_order = open_variant_file(var_type, var_file, options.burden, burden_regions, options.uncompressed)
 
     # Read in all variants - only keep if matching name
+    sys.stderr.write("Reading variants from input\n")
+    pbar = tqdm(unit="variants")
     while True:
         eof, k, var_name, kstrains, nkstrains, af = read_variant(
                                         infile, p, var_type,
@@ -133,21 +137,24 @@ def main():
 
         # check for EOF
         if eof:
+            pbar.close()
             break
+        else:
+            pbar.update(1)
 
         # return 0 if not found. remove from dict if found
         pred_beta = model_dict.pop(var_name, (0, 0))
         if pred_beta[1] != 0:
-            p.values += k * pred_beta[1]
+            predictions += (k * pred_beta[1]).reshape(-1, 1)
 
     # Note those variants which did not appear - impute
     for missing in model_dict.keys():
         sys.stderr.write("Could not find covariate/variant " + missing + " in input file\n")
-        p.values += model_dict[missing][0] * model_dict[missing][1]
+        predictions += (model_dict[missing][0] * model_dict[missing][1]).reshape(-1, 1)
 
     # apply link function
     if not continuous:
-        p.values = expit(p.values)
+        predictions = expit(predictions)
 
     # output
     if continuous:
@@ -155,12 +162,15 @@ def main():
     else:
         print("Sample\tPrediction\tProbability")
 
-    for row in p.itertuples:
+    p = pd.DataFrame(data=predictions,
+                     index=samples,
+                     columns=['prediction'])
+    for row in p.itertuples():
         if not continuous:
             binary_prediction = 0
             if row[1] >= options.threshold:
                 binary_prediction = 1
-            print("\t".join([row[0], binary_prediction, row[1]]))
+            print("\t".join([row[0], str(binary_prediction), str(row[1])]))
         else:
             print("\t".join([row[0], row[1]]))
 
