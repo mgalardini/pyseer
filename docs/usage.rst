@@ -40,9 +40,10 @@ Missing phenotypes can be supplied as 'NA'. If all values are 0 or 1 a binary
 phenotype is assumed (only relevant for the fixed effect model), otherwise a continuous phenotype is used.
 Use ``--continuous`` to force this behaviour.
 
-Covariate files (``--covariates``) must be tab-delimited without a header row, and the first column
+Covariate files (``--covariates``) must be tab-delimited with a header row, and the first column
 must contain the sample names::
 
+   samples      time       cluster
    sample_1        1       cluster1
    sample_2        2       cluster2
    sample_3        3       cluster0

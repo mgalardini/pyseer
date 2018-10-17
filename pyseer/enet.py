@@ -10,7 +10,7 @@ with set_env(MKL_NUM_THREADS='1',
              NUMEXPR_NUM_THREADS='1',
              OMP_NUM_THREADS='1'):
     import numpy as np
-from scipy.sparse import csr_matrix, csc_matrix, vstack
+from scipy.sparse import csr_matrix, csc_matrix, hstack
 import math
 import pandas as pd
 from decimal import Decimal
@@ -19,6 +19,7 @@ from tqdm import tqdm
 import glmnet_python
 from cvglmnet import cvglmnet
 from cvglmnetCoef import cvglmnetCoef
+from cvglmnetPredict import cvglmnetPredict
 
 import pyseer.classes as var_obj
 from .input import read_variant
@@ -113,19 +114,30 @@ def fit_enet(p, variants, covariates, continuous, alpha, n_folds = 10, n_cpus = 
         regression_type = 'binomial'
 
     if covariates.shape[0] > 0:
-        variants = vstack(csc_matrix(covariates), variants)
+        variants = hstack([csc_matrix(covariates.values), variants])
 
+    # Run model fit
     enet_fit = cvglmnet(x = variants, y = p.values.astype('float64'), family = regression_type,
                         nfolds = n_folds, alpha = alpha, parallel = n_cpus)
     betas = cvglmnetCoef(enet_fit, s = 'lambda_min')
-    best_lambda_idx = np.argmin(enet_fit['cvm'])
 
+    # Extract best lambda and predict class labels/values
+    best_lambda_idx = np.argmin(enet_fit['cvm'])
+    if continuous:
+        preds = cvglmnetPredict(enet_fit, newx=variants, s='lambda_min', ptype='link')
+    else:
+        preds = cvglmnetPredict(enet_fit, newx=variants, s='lambda_min', ptype='class')
+
+    # Write some summary stats
     # R^2 = 1 - sum((yi_obs - yi_predicted)^2) /sum((yi_obs - yi_mean)^2)
-    RSS = np.sum(np.square(p.values - np.mean(p.values)))
-    R2 = 1 - (enet_fit['cvm'][best_lambda_idx]/RSS)
-    R2_err = enet_fit['cvsd'][best_lambda_idx]/RSS
-    sys.stderr.write("Best penalty from cross-validation: " + '%.2E' % Decimal(enet_fit['lambda_min'][0]) + "\n")
-    sys.stderr.write("Best R^2 from cross-validation: " + '%.3f' % Decimal(R2) + " ± " + '%.2E' % Decimal(R2_err) + "\n")
+    SStot = np.sum(np.square(p.values - np.mean(p.values)))
+    SSerr = np.sum(np.square(p.values.reshape(-1, 1) - preds))
+    R2 = 1 - (SSerr/SStot)
+    sys.stderr.write("Best penalty (lambda) from cross-validation: " + '%.2E' % Decimal(enet_fit['lambda_min'][0]) + "\n")
+    if not continuous:
+        sys.stderr.write("Best model deviance from cross-validation: " + '%.3f' % Decimal(enet_fit['cvm'][best_lambda_idx]) +
+                         " ± " + '%.2E' % Decimal(enet_fit['cvsd'][best_lambda_idx]) + "\n")
+    sys.stderr.write("Best R^2 from cross-validation: " + '%.3f' % Decimal(R2) + "\n")
 
     return(betas.reshape(-1,))
 
@@ -157,10 +169,7 @@ def find_enet_selected(enet_betas, var_indices, p, c, var_type, burden,
                        continuous, find_lineage, lin, uncompressed):
 
     # skip intercept and covariates
-    if c.shape[1] > 0:
-        enet_betas = enet_betas[c.shape[1]+1:]
-    else:
-        enet_betas = enet_betas[1:]
+    enet_betas = enet_betas[c.shape[1]+1:]
 
     current_var = 0
     for beta, var_idx in zip(enet_betas, var_indices):

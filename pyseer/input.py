@@ -166,7 +166,8 @@ def load_covariates(infile, covariates, p):
             Covariance matrix (n, m)
     """
     c = pd.read_table(infile,
-                      index_col=0)
+                      index_col=0,
+                      header=0)
     c.index = c.index.astype(str)
 
     if (len(p.index.difference(c.index)) > 0):
@@ -189,18 +190,18 @@ def load_covariates(infile, covariates, p):
                 return None
             if col[-1] == 'q':
                 # quantitative
-                cov.append(c.iloc[:,cnum-1])
+                cov.append(c.iloc[:,cnum-2])
             else:
                 # categorical, dummy-encode it
-                categories = set(c.iloc[:,cnum-1])
+                categories = set(c.iloc[:,cnum-2])
                 categories.pop()
                 for i, categ in enumerate(categories):
                     cov.append(pd.Series([1 if x == categ
                                           else 0
                                           for x in
-                                          c.iloc[:,cnum-1].values],
+                                          c.iloc[:,cnum-2].values],
                                          index=c.index,
-                                         name=c.column[cnum-1] + "_" + str(i)))
+                                         name=c.columns[cnum-2] + "_" + str(i)))
         if len(cov) > 0:
             cov = pd.concat(cov, axis=1)
         else:

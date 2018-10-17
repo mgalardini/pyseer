@@ -568,10 +568,11 @@ def main():
 
         pred_model = {'intercept': (1, enet_betas[0])}
         if cov.shape[1] > 0:
-            covar_betas = enet_betas[1:cov.shape[1],:]
+            covar_betas = enet_betas[1:cov.shape[1]]
             for beta, covariate in zip(covar_betas, cov.columns):
-                sys.stderr.write("Kept covariate '" + covariate + "', slope: " + '%.2E' % Decimal(beta) + "\n")
-                pred_model[covariate] = (np.mean(cov[covariate]), beta)
+                if beta != 0:
+                    sys.stderr.write("Kept covariate '" + covariate + "', slope: " + '%.2E' % Decimal(beta) + "\n")
+                    pred_model[covariate] = (np.mean(cov[covariate]), beta)
 
         selected_vars = find_enet_selected(enet_betas, var_indices, p, cov, var_type, burden,
                                            burden_regions, infile, all_strains, sample_order, options.continuous,
