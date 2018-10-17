@@ -244,7 +244,7 @@ def open_variant_file(var_type, var_file, burden_file, burden_regions, uncompres
 
 def read_variant(infile, p, var_type, burden, burden_regions,
                  uncompressed, all_strains, sample_order,
-                 noparse = False):
+                 skip_list = None, noparse = False):
     """Read input line and parse depending on input file type
 
     Return a variant name and pres/abs vector
@@ -266,9 +266,15 @@ def read_variant(infile, p, var_type, burden, burden_regions,
             All sample labels that should be present
         sample_order
             Samples order to interpret each Rtab line
+        skip_list (dict)
+            Variant names to skip without parsing and
+            return None
+
+            (default = None)
         noparse (bool)
             Set True to skip line without parsing and
-            return None
+            return None, irrespective of presence in
+            skip_list
 
             (default = False)
     Returns:
@@ -317,12 +323,15 @@ def read_variant(infile, p, var_type, burden, burden_regions,
                                  line_in.rstrip().split(
                                  '|')[1].lstrip().split())
 
-            d = {x.split(':')[0]: 1
-                 for x in strains}
+            if skip_list != None and var_name in skip_list:
+                return(eof, None, None, None, None, None)
+            else:
+                d = {x.split(':')[0]: 1
+                    for x in strains}
 
         elif var_type == "vcf":
             if not burden:
-                var_name = read_vcf_var(line_in, d)
+                var_name = read_vcf_var(line_in, d, skip_list)
                 if var_name is None:
                     return (eof, None, None, None, None, None)
             else:
@@ -345,6 +354,9 @@ def read_variant(infile, p, var_type, burden, burden_regions,
         elif var_type == "Rtab":
             split_line = line_in.rstrip().split()
             var_name, strains = split_line[0], split_line[1:]
+            if skip_list != None and var_name in skip_list:
+                return (eof, None, None, None, None, None)
+
             # sanity check
             if len(strains) != len(sample_order):
                 raise ValueError('Unexpected mismatch between header and data row')
@@ -372,7 +384,7 @@ def read_variant(infile, p, var_type, burden, burden_regions,
     return (eof, k, var_name, kstrains, nkstrains, af)
 
 
-def read_vcf_var(variant, d):
+def read_vcf_var(variant, d, skip_list):
     """Parses vcf variants from pysam
 
     Returns None if filtered variant. Mutates passed dictionary d
@@ -386,23 +398,26 @@ def read_vcf_var(variant, d):
     var_name = "_".join([variant.contig, str(variant.pos)] +
                         [str(allele) for allele in variant.alleles])
 
-    # Do not support multiple alleles. Use 'bcftools norm' to split these
-    if variant.alts != None and len(variant.alts) > 1:
-        sys.stderr.write("Multiple alleles at %s_%s. Skipping\n" %
-                         (variant.contig, str(variant.pos)))
-        var_name = None
-    elif len(variant.filter.keys()) > 0 and "PASS" not in variant.filter.keys():
-        var_name = None
+    if skip_list == None or var_name in skip_list:
+        # Do not support multiple alleles. Use 'bcftools norm' to split these
+        if variant.alts != None and len(variant.alts) > 1:
+            sys.stderr.write("Multiple alleles at %s_%s. Skipping\n" %
+                            (variant.contig, str(variant.pos)))
+            var_name = None
+        elif len(variant.filter.keys()) > 0 and "PASS" not in variant.filter.keys():
+            var_name = None
+        else:
+            for sample, call in variant.samples.items():
+                # This is dominant encoding. Any instance of '1' will count as present
+                # Could change to additive, summing instances, or reccessive only counting
+                # when all instances are 1.
+                # Shouldn't matter for bacteria, but some people call hets
+                for haplotype in call['GT']:
+                    if str(haplotype) is not "." and haplotype is not None and haplotype != 0:
+                        d[sample] = 1
+                        break
     else:
-        for sample, call in variant.samples.items():
-            # This is dominant encoding. Any instance of '1' will count as present
-            # Could change to additive, summing instances, or reccessive only counting
-            # when all instances are 1.
-            # Shouldn't matter for bacteria, but some people call hets
-            for haplotype in call['GT']:
-                if str(haplotype) is not "." and haplotype is not None and haplotype != 0:
-                    d[sample] = 1
-                    break
+        var_name = None
 
     return(var_name)
 

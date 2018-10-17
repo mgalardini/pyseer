@@ -79,7 +79,8 @@ def main():
 
     # Read in model pickle
     with open(options.model, 'rb') as pickle_obj:
-        model_dict, continuous, intercept = pickle.load(pickle_obj)
+        model_dict, continuous = pickle.load(pickle_obj)
+    intercept = model_dict.pop('intercept')[1]
 
     # Read in samples, start building predictions
     samples = []
@@ -133,7 +134,7 @@ def main():
                                         infile, p, var_type,
                                         burden, burden_regions,
                                         options.uncompressed, all_strains,
-                                        sample_order)
+                                        sample_order, skip_list = model_dict.keys())
 
         # check for EOF
         if eof:

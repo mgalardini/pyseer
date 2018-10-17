@@ -137,13 +137,14 @@ def correlation_filter(p, all_vars, quantile_filter = 0.25):
     b = p.values - np.mean(p.values)
     sum_b_squared = np.sum(np.power(b, 2))
 
+    #TODO multithread
     correlations = []
     for row_idx in tqdm(range(all_vars.shape[0]), unit="variants"):
         k = all_vars.getrow(row_idx)
         k_mean = csr_matrix.mean(k)
 
         ab = k.dot(b) - np.sum(k_mean * b)
-        sum_a_squared = (k.dot(k.transpose()).data[0] + pow(k_mean, 2)) * all_vars.shape[1] - 2*k_mean*csr_matrix.sum(k)
+        sum_a_squared = k.dot(k.transpose()).data[0] - 2*k_mean*csr_matrix.sum(k) + pow(k_mean, 2) * all_vars.shape[1]
         cor = np.abs(ab / np.sqrt(sum_a_squared * sum_b_squared))
         correlations.append(cor)
 
@@ -155,9 +156,11 @@ def find_enet_selected(enet_betas, var_indices, p, c, var_type, burden,
                        burden_regions, infile, all_strains, sample_order,
                        continuous, find_lineage, lin, uncompressed):
 
-    # skip covariates
+    # skip intercept and covariates
     if c.shape[1] > 0:
-        enet_betas = enet_betas[c.shape[1]:,:]
+        enet_betas = enet_betas[c.shape[1]+1:]
+    else:
+        enet_betas = enet_betas[1:]
 
     current_var = 0
     for beta, var_idx in zip(enet_betas, var_indices):

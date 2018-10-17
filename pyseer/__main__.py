@@ -566,9 +566,9 @@ def main():
         sys.stderr.write("Finding and printing selected variants\n")
         infile, sample_order = open_variant_file(var_type, var_file, options.burden, burden_regions, options.uncompressed)
 
-        pred_model = {}
+        pred_model = {'intercept': (1, enet_betas[0])}
         if cov.shape[1] > 0:
-            covar_betas = enet_betas[0:cov.shape[1],:]
+            covar_betas = enet_betas[1:cov.shape[1],:]
             for beta, covariate in zip(covar_betas, cov.columns):
                 sys.stderr.write("Kept covariate '" + covariate + "', slope: " + '%.2E' % Decimal(beta) + "\n")
                 pred_model[covariate] = (np.mean(cov[covariate]), beta)
@@ -595,7 +595,7 @@ def main():
                     pred_model[covariate] = (np.mean(covariate), enet_betas[cov_idx])
 
             with open(options.save_model + '_model.pkl', 'wb') as pickle_file:
-                pickle.dump([pred_model, options.continuous, np.mean(p.values)], pickle_file)
+                pickle.dump([pred_model, options.continuous], pickle_file)
 
     # original SEER model (fixed effects)
     else:
