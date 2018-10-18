@@ -21,7 +21,7 @@ samples will be considered. Information on this is printed to STDERR.
 Phenotype and covariates
 ^^^^^^^^^^^^^^^^^^^^^^^^
 The phenotype file is required to be supplied using the ``--phenotypes``
-option. The format is whitespace separated, with the sample name in the first
+option. The format is tab-delimited, with the sample name in the first
 column, and the phenotype in the last column. A header is required as the first
 row::
 

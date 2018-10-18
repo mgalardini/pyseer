@@ -1,4 +1,9 @@
 # CHANGELOG
+v1.1.2 (October 2018)
+- Bugfix for sample names interpreted as integers
+- Bugfix for user-defined lineages
+- Small fixes in docs and README
+
 v1.1.1 (June 2018)
 - Further bugfixes for the annotation of kmers
 - Platform specific pandas bugfix with LMM

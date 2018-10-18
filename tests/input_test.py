@@ -1,4 +1,5 @@
 import os
+import sys
 import gzip
 import unittest
 import numpy as np
@@ -16,6 +17,11 @@ from pyseer.input import iter_variants
 from pyseer.input import load_var_block
 from pyseer.input import hash_pattern
 
+# python2 fix
+try:
+    FileNotFoundError
+except NameError:
+    FileNotFoundError = IOError
 
 DATA_DIR = 'tests'
 P = os.path.join(DATA_DIR, 'subset.pheno')
@@ -25,6 +31,7 @@ COV = os.path.join(DATA_DIR, 'covariates.txt')
 B = os.path.join(DATA_DIR, 'burden_regions.txt')
 KMER = os.path.join(DATA_DIR, 'kmers.gz')
 PRES = os.path.join(DATA_DIR, 'presence_absence_smaller.Rtab')
+PRESSPACE = os.path.join(DATA_DIR, 'presence_absence_smaller_space.Rtab')
 VCF = os.path.join(DATA_DIR, 'variants_smaller.vcf.gz')
 VCFNOGT = os.path.join(DATA_DIR, 'variants_no_gt.vcf.gz')
 
@@ -67,8 +74,22 @@ class TestLoadFunctions(unittest.TestCase):
                        0.1260554, -0.42917097, -0.50911587, 0.15936359,
                        0.28853126, 0.41050079, 0.06470051, 0.47632535,
                        -0.87963914, -0.75617326, 0.13955464])
-        self.assertTrue(abs((t.values[0] - tr).max()) < 1E-7)
-        self.assertTrue(abs((t.values[:,0] - tc).max()) < 1E-7)
+        # scikit-learn >= 0.20.0 gives different results
+        tr1 = np.array([-0.07345474, -0.44217489, -0.63614899,
+                        0.85941883,  0.52184352])
+        tc1 = np.array([-0.07345474, -0.40461376,  0.09375259, -0.33777965,
+                        -0.01747193, -0.56842548,  1., 0.25273978,
+                        0.84741431, 0.21251269, -0.39189005, -0.45390496,
+                        0.14715874,  0.26079721, 0.40212166,
+                        0.01363621,  0.4692565 , -0.91867928, -0.80314748,
+                        0.12924261])
+        try:
+            self.assertTrue(abs((t.values[0] - tr).max()) < 1E-7)
+            self.assertTrue(abs((t.values[:,0] - tc).max()) < 1E-7)
+        except AssertionError:
+            # scikit-learn >= 0.20.0 gives different results
+            self.assertTrue(abs((t.values[0] - tr1).max()) < 1E-7)
+            self.assertTrue(abs((t.values[:,0] - tc1).max()) < 1E-7)
         t = load_structure(M, p, 5, 'metric', 1, 42)
         tr = np.array([-0.97249805, -0.24747933, 0.49918088,
                        -0.04765291, 0.34207924])
@@ -223,11 +244,12 @@ class TestVariantLoading(unittest.TestCase):
         self.assertEqual(nkstrains,
                          ['sample_3', 'sample_5'])
         self.assertEqual(af, 0.6)
-        # uncompressed option
-        with self.assertRaises(TypeError):
-            t = read_variant(infile, p, 'kmers',
-                             False, [], True,
-                             p.index, [])
+        # uncompressed option - only with python3+
+        if sys.version_info[0] >= 3:
+            with self.assertRaises(TypeError):
+                t = read_variant(infile, p, 'kmers',
+                                 False, [], True,
+                                 p.index, [])
         # different type
         with self.assertRaises(ValueError):
             t = read_variant(infile, p.head(5), 'Rtab',
@@ -332,6 +354,8 @@ class TestVariantLoading(unittest.TestCase):
                              False, [], False,
                              p.head(5).index, [])
         # read until exhaustion
+        infile = open(PRES)
+        header = infile.readline().rstrip()
         while not t[0]:
             t = read_variant(infile, p, 'Rtab',
                              False, [], False,
@@ -354,6 +378,24 @@ class TestVariantLoading(unittest.TestCase):
             t = read_variant(infile, p.head(5), 'Rtab',
                              False, [], False,
                              p.head(5).index, sample_order)
+        # space in OG's names
+        infile = open(PRESSPACE)
+        header = infile.readline().rstrip()
+        sample_order = header.split()[1:]
+        t = read_variant(infile, p, 'Rtab',
+                         False, [], False,
+                         p.index, sample_order)
+        eof, k, var_name, kstrains, nkstrains, af = t
+        self.assertEqual(eof, False)
+        self.assertEqual(abs((k - np.ones(50)).max()), 0.0)
+        self.assertEqual(var_name,
+                         'COG 1')
+        self.assertEqual(kstrains,
+                         sorted(['sample_%d' % x
+                                 for x in range(1, 51)]))
+        self.assertEqual(nkstrains,
+                         [])
+        self.assertEqual(af, 1.0)
 
     def test_read_variant_vcf(self):
         p = pd.read_table(P,
