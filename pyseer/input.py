@@ -62,7 +62,7 @@ def load_structure(infile, p, max_dimensions, mds_type="classic", n_cpus=1,
             `metric` or `non-metric`. Any other input will trigger
             the `metric` MDS
         n_cpus (int)
-            Number of CPUs to be used for the `metric` or `non-metric`MDS
+            Number of CPUs to be used for the `metric` or `non-metric` MDS
         seed (int or None)
             Random seed for `metric` or `non-metric` MDS, None if not required
 
@@ -224,7 +224,20 @@ def load_burden(infile, burden_regions):
             burden_regions.append((name, region))
 
 def open_variant_file(var_type, var_file, burden_file, burden_regions, uncompressed):
+    """Open a variant file for use as an iterable
 
+    Args:
+        var_type (str)
+            Type of variants file (kmers, vcf, Rtab)
+        var_file (str)
+            Location of file
+        burden_file (str)
+            File containing regions to group burden tests
+        burden_regions (list)
+            List of burden regions to be filled in-place
+        uncompressed (bool)
+            True if kmer file is not gzipped
+    """
     sample_order = []
     if var_type == "kmers":
         if uncompressed:
@@ -642,7 +655,7 @@ def hash_pattern(k):
 
 
 def file_hash(filename):
-    """Calculates the hash of a file on disk
+    """Calculates the hash of an entire file on disk
 
     Args:
         filename (str)

@@ -11,11 +11,14 @@ Usage::
               [--save-m SAVE_M] [--save-lmm SAVE_LMM]
               [--mds {classic,metric,non-metric}]
               [--max-dimensions MAX_DIMENSIONS] [--no-distances]
-              [--continuous] [--lmm] [--lineage]
+              [--continuous] [--lmm] [--enet] [--lineage]
               [--lineage-clusters LINEAGE_CLUSTERS]
-              [--lineage-file LINEAGE_FILE] [--min-af MIN_AF]
+              [--lineage-file LINEAGE_FILE] [--save-enet SAVE_ENET]
+              [--load-enet LOAD_ENET] [--save-model SAVE_MODEL]
+              [--alpha ALPHA] [--n-folds N_FOLDS] [--min-af MIN_AF]
               [--max-af MAX_AF] [--filter-pvalue FILTER_PVALUE]
-              [--lrt-pvalue LRT_PVALUE] [--covariates COVARIATES]
+              [--lrt-pvalue LRT_PVALUE] [--cor-filter COR_FILTER]
+              [--covariates COVARIATES]
               [--use-covariates [USE_COVARIATES [USE_COVARIATES ...]]]
               [--print-samples] [--print-filtered]
               [--output-patterns OUTPUT_PATTERNS] [--uncompressed] [--cpu CPU]
@@ -26,7 +29,7 @@ Usage::
 Command line options
 
    optional arguments:
-     -h, --help            show this help message and exit
+    -h, --help            show this help message and exit
 
    Phenotype:
      --phenotypes PHENOTYPES
@@ -65,6 +68,8 @@ Command line options
                            detect]
      --lmm                 Use random instead of fixed effects to correct for
                            population structure. Requires a similarity matrix
+     --enet                Use an elastic net for association. Population
+                           structure correction is implicit.
      --lineage             Report lineage effects
      --lineage-clusters LINEAGE_CLUSTERS
                            Custom clusters to use as lineages [Default: MDS
@@ -73,6 +78,18 @@ Command line options
                            File to write lineage association to [Default:
                            lineage_effects.txt]
 
+   Elastic net options:
+     --save-enet SAVE_ENET
+                           Prefix for saving enet variants
+     --load-enet LOAD_ENET
+                           Prefix for loading enet variants
+     --save-model SAVE_MODEL
+                           Prefix for saving enet model
+     --alpha ALPHA         Set the mixing between l1 and l2 penalties [Default:
+                           0.0069]
+     --n-folds N_FOLDS     Number of folds cross-validation to perform [Default:
+                           10]
+
    Filtering options:
      --min-af MIN_AF       Minimum AF [Default: 0.01]
      --max-af MAX_AF       Maximum AF [Default: 0.99]
@@ -80,6 +97,8 @@ Command line options
                            Prefiltering t-test pvalue threshold [Default: 1]
      --lrt-pvalue LRT_PVALUE
                            Likelihood ratio test pvalue threshold [Default: 1]
+     --cor-filter COR_FILTER
+                           Correlation filter for elastic net [Default: 0.25]
 
    Covariates:
      --covariates COVARIATES

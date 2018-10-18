@@ -66,7 +66,7 @@ or `dsm-framework <https://github.com/HIITMetagenomics/dsm-framework>`_ are inpu
 k-mers you will need to use ``combineKmers`` from the original ``seer``
 installation to convert them to the correct input format.
 
-If needed, both fsm-lite and seer can be installed through conda. See :docs:`installation` for
+If needed, both fsm-lite and seer can be installed through conda. See :doc:`installation` for
 details.
 
 .. note:: For common variation k-mers should probably be your variant of choice.
@@ -345,6 +345,68 @@ the heritability of pathogen traits.
    only be valid under the assumptions of the model used. You may wish to
    compare estimates from other software, and particular care should be taken
    with binary phenotypes.
+
+Elastic net (enet)
+^^^^^^^^^^^^^^^^^^
+An elastic net can be fitted to all the variants at once by providing the ``--enet``
+option, using the `glmnet <https://web.stanford.edu/~hastie/glmnet/glmnet_alpha.html>`__
+package to solve the following problem:
+
+.. math::
+     \min_{b_0, b}\frac{1}{N} \sum_{i=1}^N w_i l(y_i, b_0+ b^T x_i)^2+\lambda \left[ (1-\alpha)||b||_2^2/2 + \alpha||b||_1\right]
+
+with the link function :math:`w_i l()` set by the phenotype error distribution.
+
+In this mode, all the variants are read into an object in memory, a correlation-based
+filter is applied, the model is fitted, then those variants with non-zero :math:`b`
+are printed in the output. The model is fit by ten-fold cross-validation to pick the
+:math:`\lambda` which gives the lowest deviance when compared to the true phenotypes. Higher
+:math:`\lambda` leads to smaller fitted :math:`b` values.
+These values, along with the corresponding best :math:`R^2` will be written to ``STDERR``.
+Setting :math:`\alpha` closer to one will remove more variants from the model by giving
+them zero beta.
+
+.. tip:: Population structure is not directly included in this model, but can be incorporated
+    when calcualting the p-values of selected predictors.
+
+Cross-validation uses ``--cpu`` threads, which is recommended for better performance.
+
+.. warning:: As all variants are stored in memory, and potentially copied, very large
+    variant files will cause this method to run out of RAM. We therefore do not recommend
+    running on k-mers, but SNPs or genes work fine.
+
+By default, the top 75% of variants correlated with the phenotype are included in the fit.
+Variants will include the unadjusted single-variate p-values, if distances have been provided
+with either ``--distances`` or ``--load-m`` the adjusted p-values will also be present.
+
+=====================  =======
+Option                 Use
+=====================  =======
+``--save-enet``        Save the object representing all objects to disk. Useful for reruns, or using multiple phenotypes.
+``--load-enet``        Load the variants saved to disk, the most time-consuming step.
+``--save-model``       Save the fitted model so that one can perform :ref:`enet-predict` on samples with unobserved phenotypes.
+``--alpha``            Sets the mixing between ridge regression (0) and lasso regression (1) in the above formula. Default is 0.0069 (closer to ridge regression)
+``--n-folds``          Number of folds in cross validation (samples removed to test prediction accuracy). Default is 10.
+=====================  =======
+
+.. note:: When using ``--load-enet`` you still need to provide the original variant file with
+    ``--vcf`` or ``--Rtab`` as this is read again to output the selected variants. pyseer will
+    test that the checksums of this files is identical to that used with ``--save-enet``, and will
+    warn if any difference is detected.
+
+.. _enet-predict:
+
+Prediction with the elastic net
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+If ``--enet`` was used with ``--save-model`` this fit can be used to attempt to predict the
+phenotype of new samples without a phenotype label::
+
+    enet_predict --vcf new_snps.vcf.gz old_snps.lasso_model.pkl samples.list > lasso.predictions.txt
+
+Provide the samples you wish to predict the phenotype of in ``samples.list`` along with
+comparable variants and covariates to that which were used in the original model. If any
+variant or covariate is not found in the new input this will be noted on ``STDERR`` and the
+mean values (the originally observed allele frequency) will be used instead.
 
 Lineage effects (bugwas)
 ^^^^^^^^^^^^^^^^^^^^^^^^

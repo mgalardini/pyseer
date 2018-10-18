@@ -31,7 +31,8 @@ from .model import fixed_effects_regression
 def load_all_vars(var_type, p, burden, burden_regions, infile,
                    all_strains, sample_order, min_af, max_af,
                    uncompressed):
-    """Make in iterable to load blocks of variants for LMM
+    """Load all variants in the input file into a sparse
+    matrix representation
 
     Args:
         var_type (str)
@@ -56,13 +57,15 @@ def load_all_vars(var_type, p, burden, burden_regions, infile,
             Whether the kmers file is uncompressed
 
     Returns:
-        variants (iterable)
-            A collection of pyseer.classes.LMM objects describing the
-            loaded variants (n,)
-        variant_mat (numpy.array)
-            Variant bloack presence/absence matrix (n, block_size)
-        eof (bool)
-            Whether we are at the end of the file
+        variants (scipy.sparse.csr_matrix)
+            A sparse matrix representation of all variants in
+            the input
+        selected_vars (list)
+            0-Indices of variants in the input file in variants
+            (which passed AF filtering)
+        var_idx (int)
+            The number of variants passing AF filtering (number
+            of rows of variants)
     """
     # For building sparse matrix
     data = []
@@ -109,6 +112,37 @@ def load_all_vars(var_type, p, burden, burden_regions, infile,
     return(variants, selected_vars, var_idx)
 
 def fit_enet(p, variants, covariates, continuous, alpha, n_folds = 10, n_cpus = 1):
+    """Fit an elastic net model to a set of variants. Prints
+    information about model fit and prediction quality to STDERR
+
+    Args:
+
+        p (pandas.DataFrame)
+            Phenotype vector (n, 1)
+        variants (scipy.sparse.csc_matrix)
+            Wide sparse matrix representation of all variants to fit to
+            (rows = samples, columns = variants)
+        covariates (pandas.DataFrame)
+            Covariate matrix (n, j)
+        continuous (bool)
+            If True fit a Gaussian error model, otherwise Bionomial error
+        alpha (float)
+            Between 0-1, sets the mix between ridge regression and lasso
+            regression
+        n_folds (int)
+            Number of folds in cross-validation
+
+            [default = 10]
+        n_cpus (int)
+            Number of processes to use in cross-validation
+            Set to -1 to use all available
+
+            [default = 1]
+
+    Returns:
+        betas (numpy.array)
+            The fitted betas (slopes) for each variant
+    """
     if continuous:
         regression_type = 'gaussian'
     else:
@@ -143,7 +177,24 @@ def fit_enet(p, variants, covariates, continuous, alpha, n_folds = 10, n_cpus = 
     return(betas.reshape(-1,))
 
 def correlation_filter(p, all_vars, quantile_filter = 0.25):
+    """Calculates correlations between phenotype and variants,
+    giving those that are above the specified quantile
 
+    Args:
+        p (pandas.DataFrame)
+            Phenotype vector (n, 1)
+        all_vars (scipy.sparse.csr_matrix)
+            Narrow sparse matrix representation of all variants to fit to
+            (rows = variants, columns = samples)
+        quantile_filter (float)
+            The quantile to discard at e.g. 0.25, retain top 75%
+
+            [default = 0.25]
+
+    Returns:
+        cor_filter (numpy.array)
+            The indices of variants passing the filter
+    """
     # a = snp - mean(snp)
     # b = y - mean(y)
     # cor = abs(a%*%b / sqrt(sum(a^2)*sum(b^2)) )
@@ -151,7 +202,7 @@ def correlation_filter(p, all_vars, quantile_filter = 0.25):
     sum_b_squared = np.sum(np.power(b, 2))
 
     # NOTE: I couldn't get this to multithread efficiently using sparse matrices...
-    # might work if the matrix was divided into chunks of rows first, but probably not
+    # might work if the matrix was divided into chunks of rows first, but maybe not
     # worth it as it's pretty quick anyway
     correlations = []
     for row_idx in tqdm(range(all_vars.shape[0]), unit="variants"):
@@ -170,7 +221,48 @@ def correlation_filter(p, all_vars, quantile_filter = 0.25):
 def find_enet_selected(enet_betas, var_indices, p, c, var_type, fit_seer, burden,
                        burden_regions, infile, all_strains, sample_order,
                        continuous, find_lineage, lin, uncompressed):
+    """Read through the variant input file again, yielding just those variants
+    which had a non-zero slope for printing
 
+    Args:
+        enet_betas (numpy.array)
+            Fitted slopes of intercept, covariants and variants
+            from elastic net
+        var_indices (list)
+            The 0-indexed locations (in the original file) of
+            variants represented in enet_betas
+        p (pandas.DataFrame)
+            Phenotype vector (n, 1)
+        c (numpy.array)
+            Covariate matrix (n, j)
+        var_type (str)
+            Variants type (one of: kmers, vcf or Rtab)
+        fit_seer (tuple: m, null_model, null_firth)
+            Distance projection and null models required to
+            fit fixed effect regression
+        burden (bool)
+            Whether to slice a vcf file by burden regions
+        burden_regions (collections.deque)
+            Burden regions to slice the vcf with
+        infile (opened file)
+            Handle to opened variant file
+        all_strains (set-like)
+            All sample labels that should be present
+        sample_order
+            Sample order to interpret each Rtab line
+        continuous (bool)
+            Is phenotype/fit continuous?
+        lineage_effects (bool)
+            Whether to fit lineages or not
+        lin (numpy.array)
+            Lineages matrix (n, k)
+        uncompressed (bool)
+            Whether the kmers file is uncompressed
+
+    Returns:
+        variant (var_obj.Enet)
+            Iterable of processed variants for printing
+    """
     # skip intercept and covariates
     enet_betas = enet_betas[c.shape[1]+1:]
 
