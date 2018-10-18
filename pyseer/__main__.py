@@ -297,8 +297,12 @@ def main():
     else:
         cov = pd.DataFrame([])
 
+    enet_seer = False
+    if options.enet and options.distances or options.load_m:
+        enet_seer = True
+
     # fixed effects or lineage effects require regressing p ~ m
-    if (options.lineage and not options.lineage_clusters) or not (options.lmm or options.enet):
+    if (options.lineage and not options.lineage_clusters) or enet_seer or not (options.lmm or options.enet):
         # reading genome distances
         if not options.no_distances:
             if options.load_m and os.path.isfile(options.load_m):
@@ -399,7 +403,7 @@ def main():
         lineage_dict = None
 
     # binary regression takes LLF as null, not full model fit
-    if not options.continuous and not (options.lmm or options.enet):
+    if not options.continuous and (not (options.lmm or options.enet) or enet_seer):
         null_fit = null_fit.llf
 
     # LMM setup - see _internal_single in fastlmm.association.single_snp
@@ -438,28 +442,27 @@ def main():
         patterns = open(options.output_patterns, 'wb')
 
     # header fields
-    if options.enet:
-        header = ['variant', 'af', 'filter-pvalue', 'beta']
-    else:
-        header = ['variant', 'af', 'filter-pvalue',
-                  'lrt-pvalue', 'beta', 'beta-std-err']
+    header = ['variant', 'af', 'filter-pvalue',
+              'lrt-pvalue', 'beta']
+    if not options.enet:
+        header.append('beta-std-err')
 
         if not options.lmm:
-            header = header + ['intercept']
+            header.append('intercept')
 
             if not options.no_distances:
-                header = header + ['PC%d' % i
+                header += ['PC%d' % i
                                     for i in range(1, options.max_dimensions+1)]
             if options.covariates is not None:
-                header = header + [x for x in cov.columns]
+                header += [x for x in cov.columns]
         else:
-            header = header + ['variant_h2']
+            header.append('variant_h2')
 
     if options.lineage:
-        header = header + ['lineage']
+        header.append('lineage')
     if options.print_samples:
-        header = header + ['k-samples', 'nk-samples']
-    header += ['notes']
+        header += ['k-samples', 'nk-samples']
+    header.append('notes')
     if not options.enet:
         print('\t'.join(header))
 
@@ -469,7 +472,9 @@ def main():
 
     # actual association tests
 
-    # Mixed model
+    ###########################
+    #* Mixed model           *#
+    ###########################
     if options.lmm:
         model = 'lmm'
         v_iter = load_var_block(var_type, p, burden, burden_regions,
@@ -526,7 +531,9 @@ def main():
                                         model,
                                         options.print_samples))
 
-    # Elastic net model
+    ###########################
+    #* Elastic net model     *#
+    ###########################
     elif options.enet:
         model = 'enet'
         # read all variants
@@ -550,10 +557,14 @@ def main():
                     pickle.dump([file_hash(var_file), var_indices, loaded], pickle_file)
 
         # Apply the correlation filtering
-        sys.stderr.write("Applying correlation filtering\n")
-        cor_filter = correlation_filter(p, all_vars, options.cor_filter)
-        all_vars = all_vars[cor_filter, :].transpose()
-        var_indices = np.array(var_indices)[cor_filter]
+        if options.cor_filter > 0:
+            sys.stderr.write("Applying correlation filtering\n")
+            cor_filter = correlation_filter(p, all_vars, options.cor_filter)
+            all_vars = all_vars[cor_filter, :].transpose()
+            var_indices = np.array(var_indices)[cor_filter]
+        else:
+            all_vars = all_vars.transpose()
+            var_indices = np.array(var_indices)
 
         tested = len(var_indices)
         prefilter = loaded - tested
@@ -574,7 +585,11 @@ def main():
                     sys.stderr.write("Kept covariate '" + covariate + "', slope: " + '%.2E' % Decimal(beta) + "\n")
                     pred_model[covariate] = (np.mean(cov[covariate]), beta)
 
-        selected_vars = find_enet_selected(enet_betas, var_indices, p, cov, var_type, burden,
+        if enet_seer:
+            fit_seer = (m, null_fit, firth_null)
+        else:
+            fit_seer = None
+        selected_vars = find_enet_selected(enet_betas, var_indices, p, cov, var_type, fit_seer, burden,
                                            burden_regions, infile, all_strains, sample_order, options.continuous,
                                            options.lineage, lineage_clusters, options.uncompressed)
 
@@ -598,7 +613,9 @@ def main():
             with open(options.save_model + '_model.pkl', 'wb') as pickle_file:
                 pickle.dump([pred_model, options.continuous], pickle_file)
 
-    # original SEER model (fixed effects)
+    ################################
+    #* SEER model (fixed effects) *#
+    ################################
     else:
         # iterator over each variant
         # implements maf filtering
@@ -655,6 +672,7 @@ def main():
                                     options.print_samples))
 
 
+    # End
     sys.stderr.write('%d loaded variants\n' % (prefilter + tested))
     sys.stderr.write('%d filtered variants\n' % prefilter)
     sys.stderr.write('%d tested variants\n' % tested)

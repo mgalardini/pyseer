@@ -61,6 +61,7 @@ def format_output(item, lineage_dict=None, model='seer', print_samples=False):
                                  else ''
                                  for x in (item.af,
                                            item.prep,
+                                           item.pvalue,
                                            item.kbeta)])
     else:
         out += '\t' + '\t'.join(['%.2E' % Decimal(x)

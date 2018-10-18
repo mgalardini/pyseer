@@ -25,6 +25,7 @@ import pyseer.classes as var_obj
 from .input import read_variant
 from .model import pre_filtering
 from .model import fit_lineage_effect
+from .model import fixed_effects_regression
 
 # Loads all variants into memory for use with elastic net
 def load_all_vars(var_type, p, burden, burden_regions, infile,
@@ -149,7 +150,9 @@ def correlation_filter(p, all_vars, quantile_filter = 0.25):
     b = p.values - np.mean(p.values)
     sum_b_squared = np.sum(np.power(b, 2))
 
-    #TODO multithread
+    # NOTE: I couldn't get this to multithread efficiently using sparse matrices...
+    # might work if the matrix was divided into chunks of rows first, but probably not
+    # worth it as it's pretty quick anyway
     correlations = []
     for row_idx in tqdm(range(all_vars.shape[0]), unit="variants"):
         k = all_vars.getrow(row_idx)
@@ -164,7 +167,7 @@ def correlation_filter(p, all_vars, quantile_filter = 0.25):
     return(cor_filter)
 
 
-def find_enet_selected(enet_betas, var_indices, p, c, var_type, burden,
+def find_enet_selected(enet_betas, var_indices, p, c, var_type, fit_seer, burden,
                        burden_regions, infile, all_strains, sample_order,
                        continuous, find_lineage, lin, uncompressed):
 
@@ -195,13 +198,26 @@ def find_enet_selected(enet_betas, var_indices, p, c, var_type, burden,
 
         notes = []
 
-        # find unadjusted p-value and lineage
-        (pval, bad) = pre_filtering(p, k, continuous)
-        if bad:
-            notes.append("bad-chisq")
-        if find_lineage:
-            max_lineage = fit_lineage_effect(lin, c, k)
+        # find pvalues and lineages
+        if fit_seer != None:
+            m, null_res, null_firth = fit_seer
+            seer_fit = fixed_effects_regression(var_name, p, k, m, c, af, None,
+                             find_lineage, lin,
+                             1, 1, null_res, null_firth,
+                             kstrains, nkstrains, continuous)
+            pval = seer_fit.prep
+            adj_pval = seer_fit.pvalue
+            max_lineage = seer_fit.max_lineage
+            notes = seer_fit.notes
+        # find just unadjusted p-value and lineage
         else:
-            max_lineage = None
+            (pval, bad) = pre_filtering(p, k, continuous)
+            adj_pval = math.nan
+            if bad:
+                notes.append("bad-chisq")
+            if find_lineage:
+                max_lineage = fit_lineage_effect(lin, c, k)
+            else:
+                max_lineage = None
 
-        yield var_obj.Enet(var_name, af, pval, beta, max_lineage, kstrains, nkstrains, notes)
+        yield var_obj.Enet(var_name, af, pval, adj_pval, beta, max_lineage, kstrains, nkstrains, notes)
