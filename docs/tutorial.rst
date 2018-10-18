@@ -249,7 +249,7 @@ a previous analysis where ``--save-lmm`` was used).
 We will use the distances from the core genome phylogeny, which
 has been midpointed rooted::
 
-   python scripts/phylogeny_distance.py --calc-C core_genome_aln.tree > phylogeny_K.tsv
+   python scripts/phylogeny_distance.py --lmm core_genome_aln.tree > phylogeny_K.tsv
 
 .. note:: Alternatively, we could extract a kinship matrix from the mapped SNPs by calculating :math:`K = GG^T`
    ``similarity --vcf snps.vcf.gz samples.txt > gg.snps.txt``

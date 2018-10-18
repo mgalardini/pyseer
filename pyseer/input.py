@@ -373,11 +373,12 @@ def read_variant(infile, p, var_type, burden, burden_regions,
         nkstrains = sorted(all_strains.difference(set(kstrains)))
 
         # default for missing samples is absent kmer
-        # currently up to user to be careful about matching pheno and var files
         for x in nkstrains:
             d[x] = 0
 
         af = float(len(kstrains)) / len(all_strains)
+        if len(kstrains) == 0:
+            sys.stderr.write("No observations of " + var_name + " in selected samples\n")
 
         k = np.array([d[x] for x in p.index
                       if x in d])
@@ -413,7 +414,7 @@ def read_vcf_var(variant, d, skip_list):
                 # Could change to additive, summing instances, or reccessive only counting
                 # when all instances are 1.
                 # Shouldn't matter for bacteria, but some people call hets
-                for haplotype in call['GT']:
+                for haplotype in call.get('GT', [None]):
                     if str(haplotype) is not "." and haplotype is not None and haplotype != 0:
                         d[sample] = 1
                         break

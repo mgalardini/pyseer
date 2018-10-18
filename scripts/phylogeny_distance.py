@@ -17,7 +17,7 @@ def get_options():
                         default="newick",
                         help="Format of tree file [Default: newick]")
     method_group = parser.add_mutually_exclusive_group()
-    method_group.add_argument('--calc-C',
+    method_group.add_argument('--lmm', '--calc-C',
                               action='store_true',
                               help='Produce var-covar matrix C (as from PDDIST). '
                                    'Always uses branch lengths.')
@@ -49,7 +49,7 @@ if __name__ == "__main__":
         d[taxon1.label] = d.get(taxon1.label, {})
         for taxon2 in tree.taxon_namespace:
             if taxon2.label not in d[taxon1.label].keys():
-                if options.calc_C:
+                if options.lmm:
                     mrca = pdm.mrca(taxon1, taxon2)
                     d[taxon1.label][taxon2.label] = mrca.distance_from_root()
                 elif options.topology:

@@ -223,9 +223,11 @@ patristic distances between all samples. Using a newick file::
 
    python scripts/phylogeny_distance.py core_genome.tree > phylogeny_distances.tsv
 
-For use with :ref:`mixed_model` add the ``--calc-C`` option. This calculates
-the similarities based on the shared branch length between each pair's MRCA and
-the root (as PDDIST).
+For use with :ref:`mixed_model` add the ``--calc-C`` or ``--lmm`` option (which are equivalent).
+This calculates the similarities based on the shared branch length between each pair's MRCA and
+the root (as PDDIST)::
+
+   python scripts/phylogeny_distance.py --lmm core_genome.tree > phylogeny_similarity.tsv
 
 If you want to ignore branch lengths (not usually recommended) use the
 ``--topology`` option. Other tree formats supported by `dendropy <https://pypi.python.org/pypi/DendroPy>`_

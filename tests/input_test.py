@@ -26,6 +26,7 @@ B = os.path.join(DATA_DIR, 'burden_regions.txt')
 KMER = os.path.join(DATA_DIR, 'kmers.gz')
 PRES = os.path.join(DATA_DIR, 'presence_absence_smaller.Rtab')
 VCF = os.path.join(DATA_DIR, 'variants_smaller.vcf.gz')
+VCFNOGT = os.path.join(DATA_DIR, 'variants_no_gt.vcf.gz')
 
 
 class TestLoadFunctions(unittest.TestCase):
@@ -483,6 +484,14 @@ class TestVariantLoading(unittest.TestCase):
                 self.assertEqual(var_name, None)
                 self.assertEqual(d, {})
                 break
+        # vcf file with not GT calls (issue #48)
+        infile = VariantFile(VCFNOGT)
+        variant = next(infile)
+        d = {}
+        var_name = read_vcf_var(variant, d)
+        self.assertEqual(var_name, 'FM211187_31_G_T')
+        self.assertEqual(d,
+                         {})
 
 
 class TestIterVariants(unittest.TestCase):
