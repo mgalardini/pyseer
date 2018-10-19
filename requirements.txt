@@ -1,5 +1,6 @@
 DendroPy==4.4.0
 glmnet-py==0.1.0b2
+limix==1.0.18
 matplotlib==3.0.0
 numpy==1.15.2
 pandas==0.23.4

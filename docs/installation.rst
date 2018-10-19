@@ -33,6 +33,7 @@ We used the following versions, though higher should also work:
 * ``pandas`` (0.21.0)
 * ``scikit-learn`` (0.19.1)
 * ``statsmodels`` (0.8.0)
+* ``limix`` (1.0.18)
 * ``pysam`` (0.13)
 * ``glmnet_py`` (0.1.0b2)
 * ``matplotlib`` (2.1.0) -- for scree plots

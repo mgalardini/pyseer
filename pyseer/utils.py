@@ -72,13 +72,7 @@ def format_output(item, lineage_dict=None, model='seer', print_samples=False):
                                            item.pvalue,
                                            item.kbeta,
                                            item.bse)])
-        if model == 'lmm':
-            if np.isfinite(item.frac_h2):
-                frac_h2 = '%.2E' % Decimal(item.frac_h2)
-            else:
-                frac_h2 = ''
-            out += '\t' + frac_h2
-        else:
+        if model != 'lmm':
             if np.isfinite(item.intercept):
                 intercept = '%.2E' % Decimal(item.intercept)
             else:

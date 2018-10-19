@@ -64,6 +64,7 @@ setup(
     },
     install_requires=['numpy',
                       'scipy',
+                      'limix',
                       'pandas',
                       'statsmodels',
                       'scikit-learn',

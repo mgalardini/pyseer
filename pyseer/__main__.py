@@ -91,16 +91,11 @@ def get_options():
                                      '(fixed or lineage effects)')
     distance_group.add_argument('--load-m',
                                 help='Load an existing matrix decomposition')
-    similarity_group = distances.add_mutually_exclusive_group()
-    similarity_group.add_argument('--similarity',
+    distances.add_argument('--similarity',
                                   help='Strains similarity square matrix '
                                        '(for --lmm)')
-    similarity_group.add_argument('--load-lmm',
-                                  help='Load an existing lmm cache')
     distances.add_argument('--save-m',
                            help='Prefix for saving matrix decomposition')
-    distances.add_argument('--save-lmm',
-                           help='Prefix for saving LMM cache')
     distances.add_argument('--mds',
                            default="classic",
                            choices=['classic', 'metric', 'non-metric'],
@@ -253,7 +248,7 @@ def main():
         sys.stderr.write('Burden test can only be performed with VCF input\n')
         sys.exit(1)
     if not options.no_distances:
-        if (options.lmm and (options.distances or options.load_m) and not options.lineage) or (not options.lmm and (options.similarity or options.load_lmm)):
+        if (options.lmm and (options.distances or options.load_m) and not options.lineage) or (not options.lmm and options.similarity):
             sys.stderr.write('Must use distance matrix with fixed effects, or similarity matrix with random effects\n')
             sys.stderr.write('Unless performing a lineage analysis with random effects\n')
             sys.exit(1)
@@ -409,11 +404,12 @@ def main():
     if not options.continuous and (not (options.lmm or options.enet) or enet_seer):
         null_fit = null_fit.llf
 
-    # LMM setup - see _internal_single in fastlmm.association.single_snp
+    # LMM setup - takes sample intersection of matrices and runs h2
+    # estimation
     if options.lmm:
         sys.stderr.write("Setting up LMM\n")
-        p, lmm, h2 = initialise_lmm(p, cov, options.similarity, options.load_lmm,
-                                 options.save_lmm, lineage_samples)
+        p, lmm_covar, K, h2 = initialise_lmm(p, cov, options.similarity,
+                                options.continuous, lineage_samples)
         sys.stderr.write("h^2 = " + '{0:.2f}'.format(h2) + "\n")
 
     # Open variant file
@@ -458,8 +454,6 @@ def main():
                                     for i in range(1, options.max_dimensions+1)]
             if options.covariates is not None:
                 header += [x for x in cov.columns]
-        else:
-            header.append('variant_h2')
 
     if options.lineage:
         header.append('lineage')
@@ -484,7 +478,7 @@ def main():
                                 infile, all_strains, sample_order,
                                 options.min_af, options.max_af,
                                 options.uncompressed, options.block_size)
-        lmm_iter = iter_variants_lmm(v_iter, lmm, h2,
+        lmm_iter = iter_variants_lmm(v_iter, p, lmm_covar, K,
                                      options.lineage, lineage_clusters,
                                      cov.values,
                                      options.continuous,

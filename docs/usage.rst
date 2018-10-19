@@ -309,7 +309,7 @@ first 30 components.
 
 .. _mixed_model:
 
-Mixed model (FaST-LMM)
+Mixed model (limix)
 ^^^^^^^^^^^^^^^^^^^^^^
 A linear mixed model (LMM) of fixed and random effects can be fitted by
 adding the ``--lmm`` option, as well as either ``--similarities`` or
@@ -318,10 +318,9 @@ adding the ``--lmm`` option, as well as either ``--similarities`` or
 .. math::
    y \sim Wa + Xb + Ku
 
-We use `FaST-LMM's <http://dx.doi.org/10.1038/nmeth.1681>`_ likelihood calculation
-to compute this model in linear time for each variant. The phenotype is always
-treated as continuous, which in the case of case/control data may cause some
-loss of power.
+We use `FaST-LMM's <http://dx.doi.org/10.1038/nmeth.1681>`__ likelihood calculation
+to compute this model in linear time for each variant.  We now use the implementation
+in the `limix <https://github.com/limix/limix>`__ package.
 
 The main advantage of this model is that all relationships are implicitly
 included and selection of the number of components to retain is not necessary.
@@ -343,8 +342,7 @@ the heritability of pathogen traits.
 
 .. warning:: pyseer will print the :math:`h^2` estimate to STDERR, but it will
    only be valid under the assumptions of the model used. You may wish to
-   compare estimates from other software, and particular care should be taken
-   with binary phenotypes.
+   compare estimates from other software.
 
 Elastic net (enet)
 ^^^^^^^^^^^^^^^^^^

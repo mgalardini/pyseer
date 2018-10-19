@@ -553,14 +553,14 @@ def iter_variants(p, m, cov, var_type, burden, burden_regions, infile,
                    kstrains, nkstrains, continuous)
 
 
-def iter_variants_lmm(variant_iter, lmm, h2,
+def iter_variants_lmm(variant_iter, p, covar, K,
                       lineage, lineage_clusters,
                       covariates, continuous, filter_pvalue, lrt_pvalue):
     """Make an iterable to pass single variants to fixed effects regression"""
     for variants, variant_mat, eof in variant_iter:
         if len(variants) == 0:
             break
-        yield (lmm, h2, variants, variant_mat, lineage,
+        yield (p, covar, K, variants, variant_mat, lineage,
                lineage_clusters, covariates,
                continuous, filter_pvalue, lrt_pvalue)
         if eof:

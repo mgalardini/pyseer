@@ -177,7 +177,7 @@ inclusion of a comma separated list of samples the variant is present in
 This contains co-ordinates and p-values, which can be converted to a ``.plot``
 file using the following ``awk`` one-liner::
 
-   cat <(echo "#CHR SNP BP minLOG10(P) log10(p) r^2") \\ 
+   cat <(echo "#CHR SNP BP minLOG10(P) log10(p) r^2") \\
    <(paste <(sed '1d' penicillin_SNPs.txt | cut -d "_" -f 2) \\
    <(sed '1d' penicillin_SNPs.txt | cut -f 4) | \\
    awk '{p = -log($2)/log(10); print "26",".",$1,p,p,"0"}' ) | \\
@@ -278,19 +278,18 @@ and after about 5 hours the results have finished being written::
    resistance in this species (the sequence can give up to `99% prediction
    accuracy <http://mbio.asm.org/content/7/3/e00756-16>`_ of penicillin resistance).
 
-The results look similar, though also include the heritability of each variant
-tested::
+The results look similar::
 
-   variant af      filter-pvalue   lrt-pvalue      beta    beta-std-err    variant_h2      notes
-   TTTTTTTTTTTT    8.11E-01        1.51E-06        1.05E-01        6.13E-02        3.78E-02        6.60E-02
-   TTTTTTTTTTTTT   7.08E-01        6.20E-06        4.03E-01        -3.34E-02       3.98E-02        3.41E-02
-   TTTTTTTTTTTTTT  5.97E-01        6.39E-05        1.81E-01        -4.05E-02       3.03E-02        5.45E-02
-   TTTTTTTTTTTTTTT 3.55E-01        5.92E-04        7.90E-01        -6.84E-03       2.57E-02        1.09E-02
-   TTTTTTTTTTTTTTTT        1.48E-01        2.11E-03        7.38E-01        1.13E-02        3.37E-02        1.37E-02
-   TTTTTTTTTTTTTTTTT       6.47E-02        3.94E-01        4.89E-01        3.11E-02        4.49E-02        2.83E-02
-   TTTTTTTTTTTTTTTTTT      3.48E-02        2.73E-02        2.59E-01        -6.73E-02       5.96E-02        4.60E-02
-   TTTTTTTTTTTTTTTTTTT     2.32E-02        2.18E-01        6.96E-01        -2.81E-02       7.19E-02        1.59E-02
-   TTTTTTTTTTTTTTTTTTTT    1.66E-02        2.58E-01        9.46E-01        -5.63E-03       8.37E-02        2.74E-03
+   variant af      filter-pvalue   lrt-pvalue      beta    beta-std-err    notes
+   TTTTTTTTTTTT    8.11E-01        1.51E-06        1.05E-01        6.13E-02        3.78E-02
+   TTTTTTTTTTTTT   7.08E-01        6.20E-06        4.03E-01        -3.34E-02       3.98E-02
+   TTTTTTTTTTTTTT  5.97E-01        6.39E-05        1.81E-01        -4.05E-02       3.03E-02
+   TTTTTTTTTTTTTTT 3.55E-01        5.92E-04        7.90E-01        -6.84E-03       2.57E-02
+   TTTTTTTTTTTTTTTT        1.48E-01        2.11E-03        7.38E-01        1.13E-02        3.37E-02
+   TTTTTTTTTTTTTTTTT       6.47E-02        3.94E-01        4.89E-01        3.11E-02        4.49E-02
+   TTTTTTTTTTTTTTTTTT      3.48E-02        2.73E-02        2.59E-01        -6.73E-02       5.96E-02
+   TTTTTTTTTTTTTTTTTTT     2.32E-02        2.18E-01        6.96E-01        -2.81E-02       7.19E-02
+   TTTTTTTTTTTTTTTTTTTT    1.66E-02        2.58E-01        9.46E-01        -5.63E-03       8.37E-02
 
 The downstream processing of the k-mer results in ``penicillin_kmers.txt`` will be
 shown in the next section. Before that, we can determine a significance threshold

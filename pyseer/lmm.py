@@ -17,13 +17,14 @@ from scipy import stats
 import statsmodels.formula.api as smf
 
 import pyseer.classes as var_obj
-from .fastlmm.lmm_cov import LMM as lmm_cov
+from limix.heritability import estimate as estimate_h2
+from limix.qtl import qtl_test_lmm, qtl_test_glmm
 
 from .model import pre_filtering
 from .model import fit_lineage_effect
 
 
-def initialise_lmm(p, cov, K_in, lmm_cache_in=None, lmm_cache_out=None, lineage_samples=None):
+def initialise_lmm(p, cov, K_in, continuous=False, lineage_samples=None):
     """Initialises LMM using the similarity matrix
     see _internal_single in fastlmm.association.single_snp
 
@@ -34,87 +35,72 @@ def initialise_lmm(p, cov, K_in, lmm_cache_in=None, lmm_cache_out=None, lineage_
             Covariance matrix (n, m)
         K_in (str)
             Similarity matrix filename
-        lmm_chache_in (str or None)
-            Filename for an input LMM cache, None if it has to be computed
-        lmm_chache_out (str or None)
-            Filename to save the LMM cache, None otherwise.
+        continuous (bool)
+            If the phenotype is continuous (otherwise binary)
+
+            [default = False]
         lineage_samples (list or None)
             Sample names used for lineage (must match K_in)
 
     Returns:
         p (pandas.Series)
             Phenotype vector with the samples present in the similarity matrix
-        lmm (pyseer.fastlmm.lmm_cov.LMM)
-            Initialised LMM model
+        cov (numpy.array)
+            Covariates for use in LMM
+        K (numpy.array)
+            Kinship matrix for use in LMM
         h2 (float)
-            Trait's variance explained by covariates
+            Estimate of narrow-sense heritability
     """
-    if lmm_cache_in is not None and os.path.exists(lmm_cache_in):
-        if cov.shape[0] == p.shape[0]:
-            covar = np.c_[cov.values, np.ones((p.shape[0], 1))]
-        else:
-            covar = np.ones((p.shape[0], 1))
-        y = np.reshape(p.values, (-1, 1))
+    # read and normalise K
+    K = pd.read_table(K_in,
+                        index_col=0)
+    K.index = K.index.astype(str)
+    sys.stderr.write("Similarity matrix has dimension " + str(K.shape) + "\n")
 
-        lmm = lmm_cov(X=covar, Y=y, G=None, K=None)
-        with np.load(lmm_cache_in) as data:
-            lmm.U = data['arr_0']
-            lmm.S = data['arr_1']
-            h2 = data['arr_2'][0]
+    # If using lineages, check compatible with LMM
+    if lineage_samples is not None and set(K.index) != set(lineage_samples):
+        sys.stderr.write("Lineage file and similarity matrix contain different sets"
+                            " of samples\n")
+        sys.exit(1)
 
-            if (lmm.U.shape[0] != len(p)):
-                sys.stderr.write("Phenotype different length from cache file\n")
-                sys.exit(1)
+    intersecting_samples = p.index.intersection(K.index)
+    sys.stderr.write("Analysing " + str(len(intersecting_samples)) + " samples"
+                        " found in both phenotype and similarity matrix\n")
+    p = p.loc[intersecting_samples]
+    y = np.reshape(p.values, (-1, 1))
+    K = K.loc[p.index, p.index]
+    if cov.shape[0] == p.shape[0]:
+        cov = cov.loc[intersecting_samples]
+        covar = np.c_[cov.values, np.ones((p.shape[0], 1))]
     else:
-        # read and normalise K
-        K = pd.read_table(K_in,
-                          index_col=0)
-        K.index = K.index.astype(str)
-        sys.stderr.write("Similarity matrix has dimension " + str(K.shape) + "\n")
+        covar = np.ones((p.shape[0], 1))
 
-        # If using lineages, check compatible with LMM
-        if lineage_samples is not None and set(K.index) != set(lineage_samples):
-            sys.stderr.write("Lineage file and similarity matrix contain different sets"
-                             " of samples\n")
-            sys.exit(1)
+    factor = float(len(p)) / np.diag(K.values).sum()
+    if abs(factor-1.0) > 1e-15:
+        K *= factor
 
-        intersecting_samples = p.index.intersection(K.index)
-        sys.stderr.write("Analysing " + str(len(intersecting_samples)) + " samples"
-                         " found in both phenotype and similarity matrix\n")
-        p = p.loc[intersecting_samples]
-        y = np.reshape(p.values, (-1, 1))
-        K = K.loc[p.index, p.index]
-        if cov.shape[0] == p.shape[0]:
-            cov = cov.loc[intersecting_samples]
-            covar = np.c_[cov.values, np.ones((p.shape[0], 1))]
-        else:
-            covar = np.ones((p.shape[0], 1))
+    if continuous:
+        model_type = 'normal'
+    else:
+        model_type = 'bernoulli'
+    h2 = estimate_h2(pheno=y, lik=model_type, K=K, covs=covar, verbose=False)
 
-        factor = float(len(p)) / np.diag(K.values).sum()
-        if abs(factor-1.0) > 1e-15:
-            K *= factor
-
-        lmm = lmm_cov(X=covar, Y=y, K=K.values, G=None, inplace=True)
-        result = lmm.findH2()
-        h2 = result['h2']
-
-        if lmm_cache_out is not None and not os.path.exists(lmm_cache_out):
-            lmm.getSU()
-            np.savez(lmm_cache_out, lmm.U, lmm.S, np.array([h2]))
-
-    return(p, lmm, h2)
+    return(p, covar, K, h2)
 
 
-def fit_lmm(lmm, h2, variants, variant_mat, lineage_effects,
+def fit_lmm(p, covar, K, variants, variant_mat, lineage_effects,
             lineage_clusters, covariates, continuous,
             filter_pvalue, lrt_pvalue):
     """Fits LMM and returns LMM tuples for printing
 
     Args:
-        lmm (pyseer.fastlmm.lmm_cov.LMM)
-            Initialised LMM model
-        h2 (float)
-            Trait's variance explained by covariates
+        p (pandas.Dataframe)
+            Phenotype vector from initialise_lmm
+        covar (numpy.array)
+            Covariates from initialise_lmm
+        K (numpy.array)
+            Kinship matrix from initialise_lmm
         variants (iterable)
             Tuples with variant object, phenotype vector and variant vector
             (pyseer.classes.LMM, numpy.array, numpy.array)
@@ -177,7 +163,7 @@ def fit_lmm(lmm, h2, variants, variant_mat, lineage_effects,
         return all_variants
 
     # fit LMM to block
-    res = fit_lmm_block(lmm, h2, variant_mat)
+    res = fit_lmm_block(p.values, covar, K, variant_mat, continuous)
     assert len(res['p_values']) == len(filtered_variants), "length of LMM result does not match number of variants"
 
     passed_vars = []
@@ -202,7 +188,6 @@ def fit_lmm(lmm, h2, variants, variant_mat, lineage_effects,
                     pvalue=res['p_values'][lmm_result_idx],
                     kbeta=res['beta'][lmm_result_idx],
                     bse=res['bse'][lmm_result_idx],
-                    frac_h2=res['frac_h2'][lmm_result_idx],
                     notes=notes,
                     filter=False,
                     max_lineage=max_lineage)
@@ -211,36 +196,35 @@ def fit_lmm(lmm, h2, variants, variant_mat, lineage_effects,
 
     return all_variants
 
-def fit_lmm_block(lmm, h2, variant_block):
+def fit_lmm_block(p, covar, K, variant_block, continuous=False):
     """Actually fits the LMM to numpy variant array
-    see map/reduce section of _internal_single in fastlmm.association.single_snp
 
     Args:
-        lmm (pyseer.fastlmm.lmm_cov.LMM)
-            Initialised LMM model
-        h2 (float)
-            Trait's variance explained by covariates
+        p (numpy.array)
+            Phenotype vector from initialise_lmm
+        covar (numpy.array)
+            Covariates from initialise_lmm
+        K (numpy.array)
+            Kinship matrix from initialise_lmm
         variant_block (numpy.array)
             Variants presence absence matrix (n, k)
+        continuous (bool)
+            Whether the phenotype is continuous or binary
+
+            [default = False]
 
     Returns:
         lmm_results (dict)
             LMM results for this variants block
     """
-    res = lmm.nLLeval(h2=h2, dof=None, scale=1.0,
-                      penalty=0.0, snps=variant_block)
+    if continuous:
+        res = qtl_test_lmm(variant_block, p, K=K, covs=covar, test='lrt', verbose=False)
+    else:
+        res = qtl_test_glmm(variant_block, p, 'bernoulli', K, covs=covar, test='lrt', verbose=False)
 
-    beta = res['beta']
-    chi2stats = beta*beta/res['variance_beta']
-
-    lmm_results = {}
-    lmm_results['p_values'] = stats.f.sf(chi2stats,
-                                         1,
-                                         lmm.U.shape[0]-(lmm.linreg.D+1))[:, 0]
-    lmm_results['beta'] = beta[:, 0]
-    lmm_results['bse'] = np.sqrt(res['variance_beta'][:, 0])
-    lmm_results['frac_h2'] = np.sqrt(
-                        res['fraction_variance_explained_beta'][:, 0]
-                                    )
+    lmm_results = {'beta': res.getBetaSNP()[0, :],
+                   'bse': res.getBetaSNPste()[0, :],
+                   'p_values': res.getPv()[0, :]
+    }
 
     return(lmm_results)
