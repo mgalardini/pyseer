@@ -83,7 +83,7 @@ class TestInitialiseLmm(unittest.TestCase):
                                  lmm_cache_out=None)
         self.assertEqual(x.shape[0], 50)
         self.assertAlmostEqual(y.findH2()['nLL'][0],
-                               34.55403861)
+                               35.7033778)
         self.assertAlmostEqual(z, 0.0)
         # sample names not matching
         b = pd.Series(np.random.random(100),
@@ -106,7 +106,7 @@ class TestInitialiseLmm(unittest.TestCase):
                                  lmm_cache_out=None)
         self.assertEqual(x.shape[0], 50)
         self.assertAlmostEqual(y.findH2()['nLL'][0],
-                               34.55403861)
+                               35.7033778)
         self.assertAlmostEqual(z, 0.0)
         # different sizes
         b = pd.Series(np.random.random(10),

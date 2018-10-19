@@ -406,7 +406,7 @@ def read_variant(infile, p, var_type, burden, burden_regions,
     return (eof, k, var_name, kstrains, nkstrains, af)
 
 
-def read_vcf_var(variant, d, skip_list):
+def read_vcf_var(variant, d, skip_list = None):
     """Parses vcf variants from pysam
 
     Returns None if filtered variant. Mutates passed dictionary d
