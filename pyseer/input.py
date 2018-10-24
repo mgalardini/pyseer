@@ -560,7 +560,7 @@ def iter_variants_lmm(variant_iter, p, covar, K,
     for variants, variant_mat, eof in variant_iter:
         if len(variants) == 0:
             break
-        yield (p, covar, K, variants, variant_mat, lineage,
+        yield (covar, K, variants, variant_mat, lineage,
                lineage_clusters, covariates,
                continuous, filter_pvalue, lrt_pvalue)
         if eof:

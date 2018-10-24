@@ -34,7 +34,7 @@ requirements:
     - statsmodels
     - limix
     - scikit-learn
-    - glmnet_py
+    - glmnet_py >=1.0.0
     - pysam
     - dendropy
     - matplotlib

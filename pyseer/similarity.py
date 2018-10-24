@@ -8,6 +8,7 @@ import gzip
 import numpy as np
 import pandas as pd
 from pysam import VariantFile
+from limix.stats import linear_kinship
 
 from .__init__ import __version__
 
@@ -105,7 +106,7 @@ def main():
             G = variant_mat
 
     sys.stderr.write("Calculating sample similarity\n")
-    K = np.matmul(G, np.transpose(G))
+    K = linear_kinship(G, verbose=False)
     K_out = pd.DataFrame(K, index=p.index, columns=p.index)
     K_out.to_csv(sys.stdout,
                  sep='\t')

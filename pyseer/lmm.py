@@ -89,14 +89,12 @@ def initialise_lmm(p, cov, K_in, continuous=False, lineage_samples=None):
     return(p, covar, K, h2)
 
 
-def fit_lmm(p, covar, K, variants, variant_mat, lineage_effects,
+def fit_lmm(covar, K, variants, variant_mat, lineage_effects,
             lineage_clusters, covariates, continuous,
             filter_pvalue, lrt_pvalue):
     """Fits LMM and returns LMM tuples for printing
 
     Args:
-        p (pandas.Dataframe)
-            Phenotype vector from initialise_lmm
         covar (numpy.array)
             Covariates from initialise_lmm
         K (numpy.array)
@@ -163,7 +161,7 @@ def fit_lmm(p, covar, K, variants, variant_mat, lineage_effects,
         return all_variants
 
     # fit LMM to block
-    res = fit_lmm_block(p.values, covar, K, variant_mat, continuous)
+    res = fit_lmm_block(p, covar, K, variant_mat, continuous)
     assert len(res['p_values']) == len(filtered_variants), "length of LMM result does not match number of variants"
 
     passed_vars = []
