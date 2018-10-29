@@ -546,7 +546,7 @@ def main():
             with open(options.load_enet + ".pkl", 'rb') as pickle_obj:
                 var_file_original, var_indices, loaded = pickle.load(pickle_obj)
                 if var_file_original != file_hash(var_file):
-                    sys.stderr.write("WARNING: Variant file used to load variants " + var_file_original +
+                    sys.stderr.write("WARNING: Variant file used to load variants"
                                      " may be different from current input " + var_file + "\n")
         else:
             all_vars, var_indices, loaded = load_all_vars(var_type, p, burden, burden_regions,

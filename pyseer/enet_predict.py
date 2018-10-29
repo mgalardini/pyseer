@@ -155,23 +155,25 @@ def main():
 
     # apply link function
     if not continuous:
-        predictions = expit(predictions)
+        link = expit(predictions)
+    else:
+        link = predictions
 
     # output
     if continuous:
-        print("Sample\tPrediction")
+        print("\t".join(['Sample','Prediction','Link'])
     else:
-        print("Sample\tPrediction\tProbability")
+        print("\t".join(['Sample','Prediction','Probability','Link'])
 
-    p = pd.DataFrame(data=predictions,
+    p = pd.DataFrame(data=np.vstack(predictions, link),
                      index=samples,
-                     columns=['prediction'])
+                     columns=['prediction', 'link'])
     for row in p.itertuples():
         if not continuous:
             binary_prediction = 0
             if row[1] >= options.threshold:
                 binary_prediction = 1
-            print("\t".join([row[0], str(binary_prediction), str(row[1])]))
+            print("\t".join([row[0], str(binary_prediction), str(row[1]), str(row[2])]))
         else:
-            print("\t".join([row[0], row[1]]))
+            print("\t".join([row[0], str(row[1]), str(row[2])]))
 

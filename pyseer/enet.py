@@ -293,7 +293,7 @@ def find_enet_selected(enet_betas, var_indices, p, c, var_type, fit_seer, burden
         # find pvalues and lineages
         if fit_seer != None:
             m, null_res, null_firth = fit_seer
-            seer_fit = fixed_effects_regression(var_name, p, k, m, c, af, None,
+            seer_fit = fixed_effects_regression(var_name, p.values, k, m, c, af, None,
                              find_lineage, lin,
                              1, 1, null_res, null_firth,
                              kstrains, nkstrains, continuous)
@@ -303,7 +303,7 @@ def find_enet_selected(enet_betas, var_indices, p, c, var_type, fit_seer, burden
             notes = seer_fit.notes
         # find just unadjusted p-value and lineage
         else:
-            (pval, bad) = pre_filtering(p, k, continuous)
+            (pval, bad) = pre_filtering(p.values, k, continuous)
             adj_pval = math.nan
             if bad:
                 notes.append("bad-chisq")
