@@ -560,7 +560,7 @@ def main():
 
                 sys.stderr.write("Analysing " + str(len(intersecting_samples)) + " samples"
                                  " found in both phenotype and loaded npy\n")
-                p = p.loc(intersecting_samples)
+                p = p.loc[intersecting_samples]
                 all_vars = all_vars[:, intersecting_idx]
 
         else:

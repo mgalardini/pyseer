@@ -30,6 +30,7 @@ def get_options():
 def main():
     options = get_options()
 
+    import sys
     import pickle
     import pandas as pd
 
@@ -44,6 +45,7 @@ def main():
     with open(options.output + '_model.pkl', 'wb') as pickle_file:
         pickle.dump([pred_model, options.continuous], pickle_file)
 
+    sys.stderr.write("Saved " + str(len(pred_model)) + " variants\n")
 
 if __name__ == "__main__":
     main()

@@ -80,7 +80,11 @@ def main():
     # Read in model pickle
     with open(options.model, 'rb') as pickle_obj:
         model_dict, continuous = pickle.load(pickle_obj)
-    intercept = model_dict.pop('intercept')[1]
+    try:
+        intercept = model_dict.pop('intercept')[1]
+    except KeyError as e:
+        sys.stderr.write("Intercept not found in model\n")
+        intercept = 0
 
     # Read in samples, start building predictions
     samples = []
@@ -91,7 +95,7 @@ def main():
     p = pd.DataFrame(data=np.full(len(samples), intercept),
                      index=samples,
                      columns=['prediction'])
-    predictions = p.values
+    predictions = np.array(p.values, dtype=np.float)
 
     # Read in covariates
     if options.covariates is not None:
@@ -161,13 +165,13 @@ def main():
 
     # output
     if continuous:
-        print("\t".join(['Sample','Prediction','Link'])
+        print("\t".join(['Sample','Link','Prediction']))
     else:
-        print("\t".join(['Sample','Prediction','Probability','Link'])
+        print("\t".join(['Sample','Prediction','Link','Probability']))
 
-    p = pd.DataFrame(data=np.vstack(predictions, link),
+    p = pd.DataFrame(data=np.hstack((predictions, link)),
                      index=samples,
-                     columns=['prediction', 'link'])
+                     columns=['link', 'prediction'])
     for row in p.itertuples():
         if not continuous:
             binary_prediction = 0
