@@ -544,10 +544,25 @@ def main():
         if options.load_enet:
             all_vars = scipy.sparse.load_npz(options.load_enet + ".npz")
             with open(options.load_enet + ".pkl", 'rb') as pickle_obj:
-                var_file_original, var_indices, loaded = pickle.load(pickle_obj)
+                var_file_original, var_indices, saved_samples, loaded = pickle.load(pickle_obj)
                 if var_file_original != file_hash(var_file):
                     sys.stderr.write("WARNING: Variant file used to load variants"
                                      " may be different from current input " + var_file + "\n")
+
+                # Match up sample labels
+                loaded_samples = frozenset(p.index)
+                intersecting_samples = []
+                intersecting_idx = []
+                for idx, sample in enumerate(saved_samples):
+                    if sample in loaded_samples:
+                        intersecting_samples.append(sample)
+                        intersecting_idx.append(idx)
+
+                sys.stderr.write("Analysing " + str(len(intersecting_samples)) + " samples"
+                                 " found in both phenotype and loaded npy\n")
+                p = p.loc(intersecting_samples)
+                all_vars = all_vars[:, intersecting_idx]
+
         else:
             all_vars, var_indices, loaded = load_all_vars(var_type, p, burden, burden_regions,
                                     infile, all_strains, sample_order,
@@ -557,7 +572,7 @@ def main():
             if options.save_enet:
                 scipy.sparse.save_npz(options.save_enet + ".npz", all_vars)
                 with open(options.save_enet + ".pkl", 'wb') as pickle_file:
-                    pickle.dump([file_hash(var_file), var_indices, loaded], pickle_file)
+                    pickle.dump([file_hash(var_file), var_indices, p.index, loaded], pickle_file)
 
         # Apply the correlation filtering
         if options.cor_filter > 0:
