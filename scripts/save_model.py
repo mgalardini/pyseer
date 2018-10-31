@@ -39,7 +39,7 @@ def main():
 
     pred_model = {}
     for row in pyseer_out.itertuples():
-        if row[3] > options.p_cutoff:
+        if row[3] < options.p_cutoff:
             pred_model[row.variant] = (row.af, row.beta)
 
     with open(options.output + '_model.pkl', 'wb') as pickle_file:
