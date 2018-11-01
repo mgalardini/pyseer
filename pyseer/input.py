@@ -416,6 +416,8 @@ def read_vcf_var(variant, d, skip_list = None):
             Variant to be parsed
         d (dict)
             Dictionary to be populated in-place
+        skip_list (list)
+            List of variants to read
     """
     var_name = "_".join([variant.contig, str(variant.pos)] +
                         [str(allele) for allele in variant.alleles])

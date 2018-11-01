@@ -155,7 +155,7 @@ def main():
     # Note those variants which did not appear - impute
     for missing in model_dict.keys():
         sys.stderr.write("Could not find covariate/variant " + missing + " in input file\n")
-        predictions += (model_dict[missing][0] * model_dict[missing][1]).reshape(-1, 1)
+        predictions += model_dict[missing][0] * model_dict[missing][1]
 
     # apply link function
     if not continuous:
