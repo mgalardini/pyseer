@@ -573,6 +573,7 @@ def main():
                 scipy.sparse.save_npz(options.save_enet + ".npz", all_vars)
                 with open(options.save_enet + ".pkl", 'wb') as pickle_file:
                     pickle.dump([file_hash(var_file), var_indices, p.index, loaded], pickle_file)
+                    sys.stderr.write("Saved enet variants as %s.pkl\n" % options.save_enet)
 
         # Apply the correlation filtering
         if options.cor_filter > 0:
@@ -628,8 +629,9 @@ def main():
                 if enet_betas[cov_idx] > 0:
                     pred_model[covariate] = (np.mean(covariate), enet_betas[cov_idx])
 
-            with open(options.save_model + '_model.pkl', 'wb') as pickle_file:
+            with open(options.save_model + '.pkl', 'wb') as pickle_file:
                 pickle.dump([pred_model, options.continuous], pickle_file)
+                sys.stderr.write("Saved enet model as %s.pkl\n" % options.save_model)
 
     ################################
     #* SEER model (fixed effects) *#
