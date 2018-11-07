@@ -62,6 +62,7 @@ Between parenthesis the versions the script was tested against:
 * `scikit-learn` (0.20.0)
 * `statsmodels` (0.9.0)
 * `pysam` (0.15.1)
+* `glmnet_python` (commit `946b65c`)
 * `DendroPy` (4.4.0)
 
 If you would like to use the `scree_plot_pyseer` script you will also need to have

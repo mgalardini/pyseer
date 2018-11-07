@@ -34,7 +34,7 @@ We used the following versions, though higher should also work:
 * ``scikit-learn`` (0.19.1)
 * ``statsmodels`` (0.8.0)
 * ``pysam`` (0.13)
-* ``glmnet_py`` (0.1.0b2)
+* ``glmnet_py`` (commit ``946b65c``)
 * ``matplotlib`` (2.1.0) -- for scree plots
 * ``DendroPy`` (4.3.0) -- for phylogeny distances
 * ``pybedtools`` (0.7.10) -- for annotating k-mers
