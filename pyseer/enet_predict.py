@@ -138,7 +138,7 @@ def main():
                                         infile, p, var_type,
                                         burden, burden_regions,
                                         options.uncompressed, all_strains,
-                                        sample_order, skip_list = model_dict.keys())
+                                        sample_order, keep_list = model_dict.keys())
 
         # check for EOF
         if eof:

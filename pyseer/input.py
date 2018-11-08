@@ -258,7 +258,7 @@ def open_variant_file(var_type, var_file, burden_file, burden_regions, uncompres
 
 def read_variant(infile, p, var_type, burden, burden_regions,
                  uncompressed, all_strains, sample_order,
-                 skip_list = None, noparse = False):
+                 keep_list = None, noparse = False):
     """Read input line and parse depending on input file type
 
     Return a variant name and pres/abs vector
@@ -280,8 +280,8 @@ def read_variant(infile, p, var_type, burden, burden_regions,
             All sample labels that should be present
         sample_order
             Samples order to interpret each Rtab line
-        skip_list (dict)
-            Variant names to skip without parsing and
+        keep_list (dict)
+            Variant names to properly read, any other will
             return None
 
             (default = None)
@@ -337,7 +337,7 @@ def read_variant(infile, p, var_type, burden, burden_regions,
                                  line_in.rstrip().split(
                                  '|')[1].lstrip().split())
 
-            if skip_list != None and var_name in skip_list:
+            if keep_list != None and var_name not in keep_list:
                 return(eof, None, None, None, None, None)
             else:
                 d = {x.split(':')[0]: 1
@@ -345,7 +345,7 @@ def read_variant(infile, p, var_type, burden, burden_regions,
 
         elif var_type == "vcf":
             if not burden:
-                var_name = read_vcf_var(line_in, d, skip_list)
+                var_name = read_vcf_var(line_in, d, keep_list)
                 if var_name is None:
                     return (eof, None, None, None, None, None)
             else:
@@ -359,7 +359,7 @@ def read_variant(infile, p, var_type, burden, burden_regions,
                     for variant in infile.fetch(region.group(1),
                                                 int(region.group(2)) - 1,
                                                 int(region.group(3))):
-                        var_sub_name = read_vcf_var(variant, d)
+                        var_sub_name = read_vcf_var(variant, d, keep_list)
                 else:  # stop trying to make 'fetch' happen
                     sys.stderr.write("Could not parse region %s\n" %
                                      str(region))
@@ -372,7 +372,7 @@ def read_variant(infile, p, var_type, burden, burden_regions,
                 # python3 unicode corner case
                 split_line = line_in.decode().rstrip().split('\t')
             var_name, strains = split_line[0], split_line[1:]
-            if skip_list != None and var_name in skip_list:
+            if keep_list != None and var_name not in keep_list:
                 return (eof, None, None, None, None, None)
 
             # sanity check
@@ -406,7 +406,7 @@ def read_variant(infile, p, var_type, burden, burden_regions,
     return (eof, k, var_name, kstrains, nkstrains, af)
 
 
-def read_vcf_var(variant, d, skip_list = None):
+def read_vcf_var(variant, d, keep_list = None):
     """Parses vcf variants from pysam
 
     Returns None if filtered variant. Mutates passed dictionary d
@@ -416,13 +416,13 @@ def read_vcf_var(variant, d, skip_list = None):
             Variant to be parsed
         d (dict)
             Dictionary to be populated in-place
-        skip_list (list)
+        keep_list (list)
             List of variants to read
     """
     var_name = "_".join([variant.contig, str(variant.pos)] +
                         [str(allele) for allele in variant.alleles])
 
-    if skip_list == None or var_name in skip_list:
+    if keep_list == None or var_name in keep_list:
         # Do not support multiple alleles. Use 'bcftools norm' to split these
         if variant.alts != None and len(variant.alts) > 1:
             sys.stderr.write("Multiple alleles at %s_%s. Skipping\n" %
