@@ -175,7 +175,7 @@ def main():
     for row in p.itertuples():
         if not continuous:
             binary_prediction = 0
-            if row[1] >= options.threshold:
+            if row[2] >= options.threshold:
                 binary_prediction = 1
             print("\t".join([row[0], str(binary_prediction), str(row[1]), str(row[2])]))
         else:
