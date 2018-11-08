@@ -387,6 +387,7 @@ Option                 Use
 ``--save-model``       Save the fitted model so that one can perform :ref:`enet-predict` on samples with unobserved phenotypes.
 ``--alpha``            Sets the mixing between ridge regression (0) and lasso regression (1) in the above formula. Default is 0.0069 (closer to ridge regression)
 ``--n-folds``          Number of folds in cross validation (samples removed to test prediction accuracy). Default is 10.
+``--cor-filter``       Set the correlation filter to discard the variants with low correlation to the phenotype. Default is 0.25 (keeping the top 75% variants correlated with phenotype).
 =====================  =======
 
 .. note:: When using ``--load-enet`` you still need to provide the original variant file with

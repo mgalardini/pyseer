@@ -187,6 +187,8 @@ def get_options():
                            type=float,
                            default=0.25,
                            help='Correlation filter for elastic net '
+                           '(phenotype/variant correlation quantile '
+                           'at which to start keeping variants) '
                            '[Default: 0.25]')
 
     covariates = parser.add_argument_group('Covariates')
