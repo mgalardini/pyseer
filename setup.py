@@ -58,7 +58,8 @@ setup(
             'square_mash = pyseer.mash:main',
             'scree_plot_pyseer = pyseer.scree_plot:main',
             'phandango_mapper = pyseer.kmer_mapping.phandango_plot:main',
-            'annotate_hits_pyseer = pyseer.kmer_mapping.annotate_hits:main'
+            'annotate_hits_pyseer = pyseer.kmer_mapping.annotate_hits:main',
+            'enet_predict_pyseer = pyseer.enet_predict:main'
             ]
     },
     install_requires=['numpy',
@@ -69,6 +70,8 @@ setup(
                       'pysam',
                       'DendroPy',
                       'matplotlib',
-                      'pybedtools'],
+                      'pybedtools',
+                      'tqdm',
+                      'glmnet_py'],
     test_suite="tests",
 )

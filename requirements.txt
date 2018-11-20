@@ -1,4 +1,5 @@
 DendroPy==4.4.0
+git+https://github.com/bbalasub1/glmnet_python.git
 matplotlib==3.0.0
 numpy==1.15.2
 pandas==0.23.4
@@ -10,4 +11,5 @@ scikit-learn==0.20.0
 scipy==1.1.0
 six==1.11.0
 statsmodels==0.9.0
+tqdm==4.20.0
 pybedtools==0.7.10

@@ -5,6 +5,7 @@
 import sys
 from .utils import set_env
 import re
+import gzip
 # avoid numpy taking up more than one thread
 with set_env(MKL_NUM_THREADS='1',
              NUMEXPR_NUM_THREADS='1',
@@ -12,6 +13,7 @@ with set_env(MKL_NUM_THREADS='1',
     import numpy as np
 import pandas as pd
 from sklearn import manifold
+from pysam import VariantFile
 import hashlib
 import binascii
 
@@ -60,7 +62,7 @@ def load_structure(infile, p, max_dimensions, mds_type="classic", n_cpus=1,
             `metric` or `non-metric`. Any other input will trigger
             the `metric` MDS
         n_cpus (int)
-            Number of CPUs to be used for the `metric` or `non-metric`MDS
+            Number of CPUs to be used for the `metric` or `non-metric` MDS
         seed (int or None)
             Random seed for `metric` or `non-metric` MDS, None if not required
 
@@ -164,10 +166,9 @@ def load_covariates(infile, covariates, p):
             Covariance matrix (n, m)
     """
     c = pd.read_table(infile,
-                      header=None,
-                      index_col=0)
+                      index_col=0,
+                      header=0)
     c.index = c.index.astype(str)
-    c.columns = ['covariate%d' % (x+2) for x in range(c.shape[1])]
 
     if (len(p.index.difference(c.index)) > 0):
         sys.stderr.write("All samples with a phenotype must be present in covariate file\n")
@@ -189,18 +190,18 @@ def load_covariates(infile, covariates, p):
                 return None
             if col[-1] == 'q':
                 # quantitative
-                cov.append(c['covariate%d' % cnum])
+                cov.append(c.iloc[:,cnum-2])
             else:
                 # categorical, dummy-encode it
-                categories = set(c['covariate%d' % cnum])
+                categories = set(c.iloc[:,cnum-2])
                 categories.pop()
                 for i, categ in enumerate(categories):
                     cov.append(pd.Series([1 if x == categ
                                           else 0
                                           for x in
-                                          c['covariate%d' % cnum].values],
+                                          c.iloc[:,cnum-2].values],
                                          index=c.index,
-                                         name='covariate%d_%d' % (cnum, i)))
+                                         name=c.columns[cnum-2] + "_" + str(i)))
         if len(cov) > 0:
             cov = pd.concat(cov, axis=1)
         else:
@@ -222,9 +223,42 @@ def load_burden(infile, burden_regions):
             (name, region) = region.rstrip().split()
             burden_regions.append((name, region))
 
+def open_variant_file(var_type, var_file, burden_file, burden_regions, uncompressed):
+    """Open a variant file for use as an iterable
+
+    Args:
+        var_type (str)
+            Type of variants file (kmers, vcf, Rtab)
+        var_file (str)
+            Location of file
+        burden_file (str)
+            File containing regions to group burden tests
+        burden_regions (list)
+            List of burden regions to be filled in-place
+        uncompressed (bool)
+            True if kmer file is not gzipped
+    """
+    sample_order = []
+    if var_type == "kmers":
+        if uncompressed:
+            infile = open(var_file)
+        else:
+            infile = gzip.open(var_file, 'r')
+    elif var_type == "vcf":
+        infile = VariantFile(var_file)
+        if burden_file:
+            load_burden(burden_file, burden_regions)
+    else:
+        # Rtab files have a header, rather than sample names accessible by row
+        infile = open(var_file)
+        header = infile.readline().rstrip()
+        sample_order = header.split()[1:]
+
+    return infile, sample_order
 
 def read_variant(infile, p, var_type, burden, burden_regions,
-                 uncompressed, all_strains, sample_order):
+                 uncompressed, all_strains, sample_order,
+                 keep_list = None, noparse = False):
     """Read input line and parse depending on input file type
 
     Return a variant name and pres/abs vector
@@ -245,8 +279,18 @@ def read_variant(infile, p, var_type, burden, burden_regions,
         all_strains (set-like)
             All sample labels that should be present
         sample_order
-            Sampes order to interpret each Rtab line
+            Samples order to interpret each Rtab line
+        keep_list (dict)
+            Variant names to properly read, any other will
+            return None
 
+            (default = None)
+        noparse (bool)
+            Set True to skip line without parsing and
+            return None, irrespective of presence in
+            skip_list
+
+            (default = False)
     Returns:
         eof (bool)
             Whether we are at the end of the file
@@ -280,7 +324,7 @@ def read_variant(infile, p, var_type, burden, burden_regions,
         # kmers and Rtab plain text files
         line_in = infile.readline()
 
-    if not line_in:
+    if not line_in or noparse:
         eof = True
         return(eof, None, None, None, None, None)
     else:
@@ -293,12 +337,15 @@ def read_variant(infile, p, var_type, burden, burden_regions,
                                  line_in.rstrip().split(
                                  '|')[1].lstrip().split())
 
-            d = {x.split(':')[0]: 1
-                 for x in strains}
+            if keep_list != None and var_name not in keep_list:
+                return(eof, None, None, None, None, None)
+            else:
+                d = {x.split(':')[0]: 1
+                    for x in strains}
 
         elif var_type == "vcf":
             if not burden:
-                var_name = read_vcf_var(line_in, d)
+                var_name = read_vcf_var(line_in, d, keep_list)
                 if var_name is None:
                     return (eof, None, None, None, None, None)
             else:
@@ -312,7 +359,7 @@ def read_variant(infile, p, var_type, burden, burden_regions,
                     for variant in infile.fetch(region.group(1),
                                                 int(region.group(2)) - 1,
                                                 int(region.group(3))):
-                        var_sub_name = read_vcf_var(variant, d)
+                        var_sub_name = read_vcf_var(variant, d, keep_list)
                 else:  # stop trying to make 'fetch' happen
                     sys.stderr.write("Could not parse region %s\n" %
                                      str(region))
@@ -325,6 +372,9 @@ def read_variant(infile, p, var_type, burden, burden_regions,
                 # python3 unicode corner case
                 split_line = line_in.decode().rstrip().split('\t')
             var_name, strains = split_line[0], split_line[1:]
+            if keep_list != None and var_name not in keep_list:
+                return (eof, None, None, None, None, None)
+
             # sanity check
             if len(strains) == 0:
                 raise ValueError('No sample data found; is this a Rtab file?')
@@ -356,7 +406,7 @@ def read_variant(infile, p, var_type, burden, burden_regions,
     return (eof, k, var_name, kstrains, nkstrains, af)
 
 
-def read_vcf_var(variant, d):
+def read_vcf_var(variant, d, keep_list = None):
     """Parses vcf variants from pysam
 
     Returns None if filtered variant. Mutates passed dictionary d
@@ -366,27 +416,32 @@ def read_vcf_var(variant, d):
             Variant to be parsed
         d (dict)
             Dictionary to be populated in-place
+        keep_list (list)
+            List of variants to read
     """
     var_name = "_".join([variant.contig, str(variant.pos)] +
                         [str(allele) for allele in variant.alleles])
 
-    # Do not support multiple alleles. Use 'bcftools norm' to split these
-    if variant.alts != None and len(variant.alts) > 1:
-        sys.stderr.write("Multiple alleles at %s_%s. Skipping\n" %
-                         (variant.contig, str(variant.pos)))
-        var_name = None
-    elif len(variant.filter.keys()) > 0 and "PASS" not in variant.filter.keys():
-        var_name = None
+    if keep_list == None or var_name in keep_list:
+        # Do not support multiple alleles. Use 'bcftools norm' to split these
+        if variant.alts != None and len(variant.alts) > 1:
+            sys.stderr.write("Multiple alleles at %s_%s. Skipping\n" %
+                            (variant.contig, str(variant.pos)))
+            var_name = None
+        elif len(variant.filter.keys()) > 0 and "PASS" not in variant.filter.keys():
+            var_name = None
+        else:
+            for sample, call in variant.samples.items():
+                # This is dominant encoding. Any instance of '1' will count as present
+                # Could change to additive, summing instances, or reccessive only counting
+                # when all instances are 1.
+                # Shouldn't matter for bacteria, but some people call hets
+                for haplotype in call.get('GT', [None]):
+                    if str(haplotype) is not "." and haplotype is not None and haplotype != 0:
+                        d[sample] = 1
+                        break
     else:
-        for sample, call in variant.samples.items():
-            # This is dominant encoding. Any instance of '1' will count as present
-            # Could change to additive, summing instances, or reccessive only counting
-            # when all instances are 1.
-            # Shouldn't matter for bacteria, but some people call hets
-            for haplotype in call.get('GT', [None]):
-                if str(haplotype) is not "." and haplotype is not None and haplotype != 0:
-                    d[sample] = 1
-                    break
+        var_name = None
 
     return(var_name)
 
@@ -599,3 +654,21 @@ def hash_pattern(k):
     pattern = k.view(np.uint8)
     hashed = hashlib.md5(pattern)
     return (binascii.b2a_base64(hashed.digest()))
+
+
+def file_hash(filename):
+    """Calculates the hash of an entire file on disk
+
+    Args:
+        filename (str)
+            Location of file on disk
+
+    Returns:
+        hash (str)
+            SHA256 checksum
+    """
+    hash_sha256 = hashlib.sha256()
+    with open(filename, "rb") as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            hash_sha256.update(chunk)
+    return hash_sha256.hexdigest()

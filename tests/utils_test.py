@@ -289,19 +289,19 @@ class TestOutputFormatter(unittest.TestCase):
 
     def test_formatting_random(self):
         self.assertEqual(format_output(self.random, lineage_dict=None,
-                                       lmm=True, print_samples=False),
+                                       model='lmm', print_samples=False),
                          self.out5)
         self.assertEqual(format_output(self.random_nan, lineage_dict=None,
-                                       lmm=True, print_samples=False),
+                                       model='lmm', print_samples=False),
                          self.out5nan)
         self.assertEqual(format_output(self.random, lineage_dict=None,
-                                       lmm=True, print_samples=True),
+                                       model='lmm', print_samples=True),
                          self.out6)
         self.assertEqual(format_output(self.random_lineage, self.lineage_dict,
-                                       lmm=True, print_samples=False),
+                                       model='lmm', print_samples=False),
                          self.out7)
         self.assertEqual(format_output(self.random_lineage, self.lineage_dict,
-                                       lmm=True, print_samples=True),
+                                       model='lmm', print_samples=True),
                          self.out8)
 
         with self.assertRaises(TypeError):

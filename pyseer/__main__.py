@@ -4,12 +4,13 @@
 
 import os
 import sys
-import gzip
 import warnings
 import itertools
 import operator
 import re
+import pickle
 from collections import deque
+from decimal import Decimal
 from .utils import set_env
 # avoid numpy taking up more than one thread
 with set_env(MKL_NUM_THREADS='1',
@@ -17,10 +18,10 @@ with set_env(MKL_NUM_THREADS='1',
              OMP_NUM_THREADS='1'):
     import numpy as np
 from scipy.stats import norm
+import scipy.sparse
 import pandas as pd
 from sklearn import manifold
 from multiprocessing import Pool
-from pysam import VariantFile
 
 from .__init__ import __version__
 
@@ -29,15 +30,22 @@ from .input import load_structure
 from .input import load_lineage
 from .input import load_covariates
 from .input import load_burden
+from .input import open_variant_file
 from .input import iter_variants
 from .input import load_var_block
 from .input import iter_variants_lmm
+from .input import file_hash
 
 from .model import fixed_effects_regression
 from .model import fit_null
 
 from .lmm import initialise_lmm
 from .lmm import fit_lmm
+
+from .enet import load_all_vars
+from .enet import fit_enet
+from .enet import correlation_filter
+from .enet import find_enet_selected
 
 from .utils import format_output
 
@@ -121,6 +129,12 @@ def get_options():
                              help='Use random instead of fixed effects '
                                   'to correct for population structure. '
                                   'Requires a similarity matrix')
+    association.add_argument('--enet',
+                             action='store_true',
+                             default=False,
+                             help='Use an elastic net for association. '
+                                  'Population structure correction is '
+                                  'implicit.')
     association.add_argument('--lineage',
                              action='store_true',
                              help='Report lineage effects')
@@ -131,6 +145,24 @@ def get_options():
                              default="lineage_effects.txt",
                              help='File to write lineage association to '
                                   '[Default: lineage_effects.txt]')
+
+    enet = parser.add_argument_group('Elastic net options')
+    enet.add_argument('--save-enet',
+                      help='Prefix for saving enet variants')
+    enet.add_argument('--load-enet',
+                      help='Prefix for loading enet variants')
+    enet.add_argument('--save-model',
+                      help='Prefix for saving enet model')
+    enet.add_argument('--alpha',
+                      type=float,
+                      default=0.0069,
+                      help='Set the mixing between l1 and l2 penalties '
+                           '[Default: 0.0069]')
+    enet.add_argument('--n-folds',
+                      type=int,
+                      default=10,
+                      help='Number of folds cross-validation to perform '
+                           '[Default: 10]')
 
     filtering = parser.add_argument_group('Filtering options')
     filtering.add_argument('--min-af',
@@ -151,6 +183,13 @@ def get_options():
                            default=1,
                            help='Likelihood ratio test pvalue threshold '
                                 '[Default: 1]')
+    filtering.add_argument('--cor-filter',
+                           type=float,
+                           default=0.25,
+                           help='Correlation filter for elastic net '
+                           '(phenotype/variant correlation quantile '
+                           'at which to start keeping variants) '
+                           '[Default: 0.25]')
 
     covariates = parser.add_argument_group('Covariates')
     covariates.add_argument('--covariates',
@@ -202,6 +241,9 @@ def main():
     options = get_options()
 
     # check some arguments here
+    if options.lmm and options.enet:
+        sys.stderr.write('Choose only one model. Either --lmm, --enet or neither\n')
+        sys.exit(1)
     if options.max_dimensions < 1:
         sys.stderr.write('Minimum number of dimensions after MDS is 1\n')
         sys.exit(1)
@@ -257,8 +299,12 @@ def main():
     else:
         cov = pd.DataFrame([])
 
+    enet_seer = False
+    if options.enet and options.distances or options.load_m:
+        enet_seer = True
+
     # fixed effects or lineage effects require regressing p ~ m
-    if (options.lineage and not options.lineage_clusters) or not options.lmm:
+    if (options.lineage and not options.lineage_clusters) or enet_seer or not (options.lmm or options.enet):
         # reading genome distances
         if not options.no_distances:
             if options.load_m and os.path.isfile(options.load_m):
@@ -362,7 +408,7 @@ def main():
         lineage_dict = None
 
     # binary regression takes LLF as null, not full model fit
-    if not options.continuous and not options.lmm:
+    if not options.continuous and (not (options.lmm or options.enet) or enet_seer):
         null_fit = null_fit.llf
 
     # LMM setup - see _internal_single in fastlmm.association.single_snp
@@ -373,29 +419,23 @@ def main():
         sys.stderr.write("h^2 = " + '{0:.2f}'.format(h2) + "\n")
 
     # Open variant file
-    sample_order = []
     all_strains = set(p.index)
     burden_regions = deque([])
     burden = False
 
     if options.kmers:
         var_type = "kmers"
-        if options.uncompressed:
-            infile = open(options.kmers)
-        else:
-            infile = gzip.open(options.kmers, 'r')
+        var_file = options.kmers
     elif options.vcf:
         var_type = "vcf"
-        infile = VariantFile(options.vcf)
+        var_file = options.vcf
         if options.burden:
             burden = True
-            load_burden(options.burden, burden_regions)
     else:
-        # Rtab files have a header, rather than sample names accessible by row
         var_type = "Rtab"
-        infile = open(options.pres)
-        header = infile.readline().rstrip()
-        sample_order = header.split()[1:]
+        var_file = options.pres
+
+    infile, sample_order = open_variant_file(var_type, var_file, options.burden, burden_regions, options.uncompressed)
 
     # keep track of the number of the total number of kmers and tests
     prefilter = 0
@@ -408,85 +448,40 @@ def main():
 
     # header fields
     header = ['variant', 'af', 'filter-pvalue',
-              'lrt-pvalue', 'beta', 'beta-std-err']
+              'lrt-pvalue', 'beta']
+    if not options.enet:
+        header.append('beta-std-err')
 
-    if not options.lmm:
-        header = header + ['intercept']
+        if not options.lmm:
+            header.append('intercept')
 
-        if not options.no_distances:
-            header = header + ['PC%d' % i
-                                for i in range(1, options.max_dimensions+1)]
-        if options.covariates is not None:
-            header = header + [x for x in cov.columns]
-    else:
-        header = header + ['variant_h2']
+            if not options.no_distances:
+                header += ['PC%d' % i
+                                    for i in range(1, options.max_dimensions+1)]
+            if options.covariates is not None:
+                header += [x for x in cov.columns]
+        else:
+            header.append('variant_h2')
 
     if options.lineage:
-        header = header + ['lineage']
+        header.append('lineage')
     if options.print_samples:
-        header = header + ['k-samples', 'nk-samples']
-    header += ['notes']
-    print('\t'.join(header))
+        header += ['k-samples', 'nk-samples']
+    header.append('notes')
+    if not options.enet:
+        print('\t'.join(header))
 
     # multiprocessing setup
-    if options.cpu > 1:
+    if not options.enet and options.cpu > 1:
         pool = Pool(options.cpu)
 
-    # actual association test
-    if not options.lmm:
-        # iterator over each variant
-        # implements maf filtering
-        v_iter = iter_variants(p, m, cov, var_type, burden, burden_regions,
-                               infile, all_strains, sample_order,
-                               options.lineage, lineage_clusters,
-                               options.min_af, options.max_af,
-                               options.filter_pvalue,
-                               options.lrt_pvalue, null_fit, firth_null,
-                               options.uncompressed, options.continuous)
+    # actual association tests
 
-        if options.cpu > 1:
-            # multiprocessing proceeds X variants per core at a time
-            while True:
-                ret = pool.starmap(fixed_effects_regression,
-                                   itertools.islice(
-                                                v_iter,
-                                                options.cpu*options.block_size))
-                if not ret:
-                    break
-                for x in ret:
-                    if x.prefilter:
-                        prefilter += 1
-                        continue
-                    tested += 1
-                    if options.output_patterns:
-                        patterns.write(x.pattern)
-
-                    if x.filter and not options.print_filtered:
-                        continue
-                    printed += 1
-                    print(format_output(x,
-                                        lineage_dict,
-                                        options.lmm,
-                                        options.print_samples))
-        else:
-            for data in v_iter:
-                ret = fixed_effects_regression(*data)
-
-                if ret.prefilter:
-                    prefilter += 1
-                    continue
-                tested += 1
-                if options.output_patterns:
-                    patterns.write(ret.pattern)
-
-                if ret.filter and not options.print_filtered:
-                    continue
-                printed += 1
-                print(format_output(ret,
-                                    lineage_dict,
-                                    options.lmm,
-                                    options.print_samples))
-    else:
+    ###########################
+    #* Mixed model           *#
+    ###########################
+    if options.lmm:
+        model = 'lmm'
         v_iter = load_var_block(var_type, p, burden, burden_regions,
                                 infile, all_strains, sample_order,
                                 options.min_af, options.max_af,
@@ -519,7 +514,7 @@ def main():
                         printed += 1
                         print(format_output(x,
                                             lineage_dict,
-                                            options.lmm,
+                                            model,
                                             options.print_samples))
         else:
             for data in lmm_iter:
@@ -538,9 +533,168 @@ def main():
                     printed += 1
                     print(format_output(x,
                                         lineage_dict,
-                                        options.lmm,
+                                        model,
                                         options.print_samples))
 
+    ###########################
+    #* Elastic net model     *#
+    ###########################
+    elif options.enet:
+        model = 'enet'
+        # read all variants
+        sys.stderr.write("Reading all variants\n")
+        if options.load_enet:
+            all_vars = scipy.sparse.load_npz(options.load_enet + ".npz")
+            with open(options.load_enet + ".pkl", 'rb') as pickle_obj:
+                var_file_original, var_indices, saved_samples, loaded = pickle.load(pickle_obj)
+                if var_file_original != file_hash(var_file):
+                    sys.stderr.write("WARNING: Variant file used to load variants"
+                                     " may be different from current input " + var_file + "\n")
+
+                # Match up sample labels
+                loaded_samples = frozenset(p.index)
+                intersecting_samples = []
+                intersecting_idx = []
+                for idx, sample in enumerate(saved_samples):
+                    if sample in loaded_samples:
+                        intersecting_samples.append(sample)
+                        intersecting_idx.append(idx)
+
+                sys.stderr.write("Analysing " + str(len(intersecting_samples)) + " samples"
+                                 " found in both phenotype and loaded npy\n")
+                p = p.loc[intersecting_samples]
+                all_vars = all_vars[:, intersecting_idx]
+
+        else:
+            all_vars, var_indices, loaded = load_all_vars(var_type, p, burden, burden_regions,
+                                    infile, all_strains, sample_order,
+                                    options.min_af, options.max_af,
+                                    options.uncompressed)
+
+            if options.save_enet:
+                scipy.sparse.save_npz(options.save_enet + ".npz", all_vars)
+                with open(options.save_enet + ".pkl", 'wb') as pickle_file:
+                    pickle.dump([file_hash(var_file), var_indices, p.index, loaded], pickle_file)
+                    sys.stderr.write("Saved enet variants as %s.pkl\n" % options.save_enet)
+
+        # Apply the correlation filtering
+        if options.cor_filter > 0:
+            sys.stderr.write("Applying correlation filtering\n")
+            cor_filter = correlation_filter(p, all_vars, options.cor_filter)
+            all_vars = all_vars[cor_filter, :].transpose()
+            var_indices = np.array(var_indices)[cor_filter]
+        else:
+            all_vars = all_vars.transpose()
+            var_indices = np.array(var_indices)
+
+        tested = len(var_indices)
+        prefilter = loaded - tested
+
+        # fit enet with cross validation
+        sys.stderr.write("Fitting elastic net to top " + str(tested) + " variants\n")
+        enet_betas = fit_enet(p, all_vars, cov, options.continuous, options.alpha, options.n_folds, options.cpu)
+
+        # print those with passing indices, along with coefficient
+        sys.stderr.write("Finding and printing selected variants\n")
+        infile, sample_order = open_variant_file(var_type, var_file, options.burden, burden_regions, options.uncompressed)
+
+        pred_model = {'intercept': (1, enet_betas[0])}
+        if cov.shape[1] > 0:
+            covar_betas = enet_betas[1:cov.shape[1]]
+            for beta, covariate in zip(covar_betas, cov.columns):
+                if beta != 0:
+                    sys.stderr.write("Kept covariate '" + covariate + "', slope: " + '%.2E' % Decimal(beta) + "\n")
+                    pred_model[covariate] = (np.mean(cov[covariate]), beta)
+
+        if enet_seer:
+            fit_seer = (m, null_fit, firth_null)
+        else:
+            fit_seer = None
+        selected_vars = find_enet_selected(enet_betas, var_indices, p, cov, var_type, fit_seer, burden,
+                                           burden_regions, infile, all_strains, sample_order, options.continuous,
+                                           options.lineage, lineage_clusters, options.uncompressed)
+
+        print('\t'.join(header))
+        for x in selected_vars:
+            printed += 1
+            print(format_output(x,
+                                lineage_dict,
+                                model,
+                                options.print_samples))
+
+            # Save coefficients in a dict by variant name
+            pred_model[x.kmer] = (x.af, x.kbeta)
+
+        # Save the elements needed to perform prediction
+        if options.save_model:
+            for cov_idx, covariate in enumerate(cov):
+                if enet_betas[cov_idx] > 0:
+                    pred_model[covariate] = (np.mean(covariate), enet_betas[cov_idx])
+
+            with open(options.save_model + '.pkl', 'wb') as pickle_file:
+                pickle.dump([pred_model, options.continuous], pickle_file)
+                sys.stderr.write("Saved enet model as %s.pkl\n" % options.save_model)
+
+    ################################
+    #* SEER model (fixed effects) *#
+    ################################
+    else:
+        # iterator over each variant
+        # implements maf filtering
+        model = 'seer'
+        v_iter = iter_variants(p, m, cov, var_type, burden, burden_regions,
+                               infile, all_strains, sample_order,
+                               options.lineage, lineage_clusters,
+                               options.min_af, options.max_af,
+                               options.filter_pvalue,
+                               options.lrt_pvalue, null_fit, firth_null,
+                               options.uncompressed, options.continuous)
+
+        if options.cpu > 1:
+            # multiprocessing proceeds X variants per core at a time
+            while True:
+                ret = pool.starmap(fixed_effects_regression,
+                                   itertools.islice(
+                                                v_iter,
+                                                options.cpu*options.block_size))
+                if not ret:
+                    break
+                for x in ret:
+                    if x.prefilter:
+                        prefilter += 1
+                        continue
+                    tested += 1
+                    if options.output_patterns:
+                        patterns.write(x.pattern)
+
+                    if x.filter and not options.print_filtered:
+                        continue
+                    printed += 1
+                    print(format_output(x,
+                                        lineage_dict,
+                                        model,
+                                        options.print_samples))
+        else:
+            for data in v_iter:
+                ret = fixed_effects_regression(*data)
+
+                if ret.prefilter:
+                    prefilter += 1
+                    continue
+                tested += 1
+                if options.output_patterns:
+                    patterns.write(ret.pattern)
+
+                if ret.filter and not options.print_filtered:
+                    continue
+                printed += 1
+                print(format_output(ret,
+                                    lineage_dict,
+                                    model,
+                                    options.print_samples))
+
+
+    # End
     sys.stderr.write('%d loaded variants\n' % (prefilter + tested))
     sys.stderr.write('%d filtered variants\n' % prefilter)
     sys.stderr.write('%d tested variants\n' % tested)

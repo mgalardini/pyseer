@@ -62,6 +62,7 @@ Between parenthesis the versions the script was tested against:
 * `scikit-learn` (0.20.0)
 * `statsmodels` (0.9.0)
 * `pysam` (0.15.1)
+* `glmnet_python` (commit `946b65c`)
 * `DendroPy` (4.4.0)
 
 If you would like to use the `scree_plot_pyseer` script you will also need to have
@@ -73,19 +74,26 @@ If you would like to use the scripts to map and annotate kmers, you will also ne
 Installation
 ------------
 
-The easiest way to install `pyseer` is through `pip`:
+The easiest way to install pyseer and its dependencies is through `conda`::
 
-    python -m pip install pyseer
+    conda install pyseer
 
-If you want multithreading make sure that you are using a version 3 python interpreter:
+If you need `conda`, download [miniconda](https://conda.io/miniconda.html)
+and add the necessary channels::
 
-    python3 -m pip install pyseer
+    conda config --add channels defaults
+    conda config --add channels bioconda
+    conda config --add channels conda-forge
 
-You can also use the [conda](https://conda.io/docs/) package manager, using the [bioconda](https://bioconda.github.io/) channel:
+`pyseer` can also be installed through `pip`::
 
-    conda install -c bioconda pyseer
+   python -m pip install pyseer
 
-**For the impatient**, just clone/download this repository and run:
+If you want multithreading make sure that you are using a version 3 python interpreter::
+
+   python3 -m pip install pyseer
+
+**If you want the next pre-release**, just clone/download this repository and run:
 
     python pyseer-runner.py
 

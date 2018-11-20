@@ -91,7 +91,10 @@ def initialise_lmm(p, cov, K_in, lmm_cache_in=None, lmm_cache_out=None, lineage_
             covar = np.ones((p.shape[0], 1))
 
         factor = float(len(p)) / np.diag(K.values).sum()
-        if abs(factor-1.0) > 1e-15:
+        if factor == math.inf:
+            sys.stderr.write("Invalid similarity matrix. Did you use --calc-C?\n")
+            sys.exit(1)
+        elif abs(factor-1.0) > 1e-15:
             K *= factor
 
         lmm = lmm_cov(X=covar, Y=y, K=K.values, G=None, inplace=True)
