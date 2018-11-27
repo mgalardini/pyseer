@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Copyright 2018 Marco Galardini and John Lees
 
 '''Elastic net model implementations'''
