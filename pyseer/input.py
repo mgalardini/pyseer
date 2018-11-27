@@ -538,7 +538,7 @@ def iter_variants(p, m, cov, var_type, burden, burden_regions, infile,
 
         # check for EOF
         if eof:
-            raise StopIteration
+            return
 
         if (k is None) or not (min_af <= af <= max_af):
             yield (None, None, None, None, None, None,
