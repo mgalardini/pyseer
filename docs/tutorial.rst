@@ -37,6 +37,10 @@ Spn23F.gff                   `23FSpn <http://jb.asm.org/content/191/5/1480>`_ se
 6952_7#3.gff                 The draft annotation of the isolate.
 ===========================  ========
 
+.. note:: To run commands with the scripts/ directory you will need to have cloned
+      the github repository (though other commands can continue to be run using your
+      conda/pip install.
+
 SNP and COG association with fixed effects model
 ------------------------------------------------
 We will first of all demonstrate using ``pyseer`` with the original ``seer`` model,
@@ -177,7 +181,7 @@ inclusion of a comma separated list of samples the variant is present in
 This contains co-ordinates and p-values, which can be converted to a ``.plot``
 file using the following ``awk`` one-liner::
 
-   cat <(echo "#CHR SNP BP minLOG10(P) log10(p) r^2") \\ 
+   cat <(echo "#CHR SNP BP minLOG10(P) log10(p) r^2") \\
    <(paste <(sed '1d' penicillin_SNPs.txt | cut -d "_" -f 2) \\
    <(sed '1d' penicillin_SNPs.txt | cut -f 4) | \\
    awk '{p = -log($2)/log(10); print "26",".",$1,p,p,"0"}' ) | \\
