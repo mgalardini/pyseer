@@ -15,7 +15,7 @@ def get_options():
     import argparse
 
     description = 'Create Phandango Manhattan plot from kmer results'
-    parser = argparse.ArgumentParser(description=description, prog="phandango_plot")
+    parser = argparse.ArgumentParser(description=description, prog="phandango_mapper")
 
     parser.add_argument("kmers",
                         help="Kmers file, filtered output from SEER")

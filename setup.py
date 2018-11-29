@@ -56,6 +56,7 @@ setup(
         "console_scripts": [
             'pyseer = pyseer.__main__:main',
             'square_mash = pyseer.mash:main',
+            'similarity_pyseer = pyseer.similarity:main',
             'scree_plot_pyseer = pyseer.scree_plot:main',
             'phandango_mapper = pyseer.kmer_mapping.phandango_plot:main',
             'annotate_hits_pyseer = pyseer.kmer_mapping.annotate_hits:main',
