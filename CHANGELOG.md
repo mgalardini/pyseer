@@ -1,4 +1,10 @@
 # CHANGELOG
+v1.2.0 (November 2018)
+- Added elastic net functionality
+- Avoid exiting with error in python 3.7+
+- Allow spaces in Rtab's COG names
+- Make unit tests compatible with python 2
+
 v1.1.2 (October 2018)
 - Bugfix for sample names interpreted as integers
 - Bugfix for user-defined lineages
