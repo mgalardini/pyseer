@@ -6,7 +6,7 @@ package:
 
 source:
   url: https://pypi.io/packages/source/p/pyseer/pyseer-{{ version }}.tar.gz
-  sha256: 04ca9bf8dc96749be5b2f95b40c95b7ac56e832d62fed910aa4d4ba1ac465ea1
+  sha256: 892a6013cfc1883edd140e0a5bec8ce2cb9ef5b34f4cb3a6b7e81a5400a11c16
 
 
 build:
@@ -53,6 +53,7 @@ test:
   commands:
     - pyseer --help
     - square_mash --help
+    - similarity_pyseer --help
     - scree_plot_pyseer --help
     - phandango_mapper --help
     - annotate_hits_pyseer --help
