@@ -43,6 +43,7 @@ requirements:
     - bwa
     - bedtools
     - bedops
+    - tqdm
 
 test:
   imports:
