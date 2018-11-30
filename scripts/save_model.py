@@ -42,10 +42,11 @@ def main():
         if row[3] < options.p_cutoff:
             pred_model[row.variant] = (row.af, row.beta)
 
-    with open(options.output + '_model.pkl', 'wb') as pickle_file:
+    with open(options.output + '.pkl', 'wb') as pickle_file:
         pickle.dump([pred_model, options.continuous], pickle_file)
 
     sys.stderr.write("Saved " + str(len(pred_model)) + " variants\n")
+    sys.stderr.write("Saved enet variants as %s.pkl\n" % options.output)
 
 if __name__ == "__main__":
     main()
