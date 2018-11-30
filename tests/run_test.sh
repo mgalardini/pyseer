@@ -49,6 +49,10 @@ python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --lmm --lo
 python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --no-distances > 28.log 2> 28.err || die "No distances"
 python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --no-distances --use-covariates 3 --covariates covariates.txt > 29.log 2> 29.err || die "No distances and covariates"
 python ../pyseer-runner.py --kmers kmers_int.gz --phenotypes subset_int.pheno --distances distances_int.tsv.gz > 30.log 2> 30.err || die "Sample names are all integers"
+python ../pyseer-runner.py --vcf variants.vcf.gz --phenotypes subset.pheno --save-enet enet_vcf --enet --alpha 1 --cor-filter 0.25 > 31.log 2> 31.err || die "Enet with VCF input"
+python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --enet --alpha 1 --cor-filter 0.25 > 32.log 2> 32.err || die "Load Enet with kmers input"
+python ../pyseer-runner.py --pres presence_absence.Rtab --phenotypes subset.pheno --enet --alpha 1 --cor-filter 0.25 > 33.log 2> 33.err || die "Load Enet with roary/piggy input"
+python ../pyseer-runner.py --vcf variants.vcf.gz --phenotypes subset.pheno --load-enet enet_vcf --enet --save-model enet_vcf_model --alpha 1 --cor-filter 0.25 > 34.log 2> 34.err || die "Load Enet and save model"
 
 # test other pyseer commands
 python ../scree_plot_pyseer-runner.py distances.tsv.gz --max-dimensions 20 > /dev/null 2> /dev/null || die "Scree plot"
@@ -58,12 +62,17 @@ python ../similarity-runner.py samples.txt --pres presence_absence.Rtab > /dev/n
 cat mash.tsv | python ../square_mash-runner.py > /dev/null 2> /dev/null || die "Mash squarer"
 python ../annotate_hits_pyseer-runner.py significant_kmers.txt references.txt /dev/null > /dev/null 2> /dev/null || die 'Annotate hits'
 python ../phandango_mapper-runner.py significant_kmers.txt Spn23F.fa phandango.test.out > /dev/null 2> /dev/null || die 'Phandango mapper'
+python ../enet_predict-runner.py --vcf variants.vcf.gz enet_vcf_model.pkl subset.samples_list > /dev/null 2> /dev/null || die "Enet predict"
 
 # test the scripts folder
+python ../enet_predict-runner.py --vcf variants.vcf.gz enet_vcf_model.pkl subset.samples_list > /dev/null 2> /dev/null || die "Enet predict"
 python ../scripts/count_patterns.py patterns.txt > /dev/null 2> /dev/null || die "Count patterns"
 python ../scripts/phylogeny_distance.py tree.nwk > /dev/null 2> /dev/null || die "Tree distances"
 python ../scripts/phylogeny_distance.py tree.nwk --lmm > /dev/null 2> /dev/null || die "Tree distances (C)"
 python ../scripts/phylogeny_distance.py tree.nwk --topology > /dev/null 2> /dev/null || die "Tree distances (topology)"
+python ../pyseer-runner.py --vcf variants.vcf.gz --phenotypes subset.pheno --lmm --similarity similarity.tsv.gz > vcf.lmm.txt 2> /dev/null || die "LMM input for enet model"
+python ../scripts/save_model.py --p-cutoff 0.5 vcf.lmm.txt enet.lmm > /dev/null 2> /dev/null || die "Save enet model from LMM input"
+python ../enet_predict-runner.py --vcf variants.vcf.gz enet.lmm.pkl subset.samples_list > /dev/null 2> /dev/null || die "Enet predict with LMM model"
 
 # test all command line options (things that should fail or behave weirdly)
 python ../pyseer-runner.py --kmers kmers.txt --phenotypes subset.pheno --load-m pop_struct.pkl > /dev/null 2> /dev/null && die "Uncompressed kmers but no option"
@@ -76,9 +85,10 @@ python ../pyseer-runner.py --kmers kmers.gz --phenotypes supersubset.pheno --loa
 python ../pyseer-runner.py --kmers kmers.gz --phenotypes monosubset.pheno --load-m pop_struct.pkl > /dev/null 2> /dev/null && die "Extremely skewed binary phenotypes"
 python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --no-distances --lmm > /dev/null 2> /dev/null && die "No distances but LMM"
 python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --no-distances --load-m pop_struct.pkl > /dev/null 2> /dev/null && die "No distances but distances provided"
+# TODO: test enet options failures
 
 # Now compare the outputs
-for t in $(seq 1 30);
+for t in $(seq 1 34);
 do
   echo "Comparing results and error messages to baseline "$t;
   python compare_tests $t.log $t.err baseline/$t.log baseline/$t.err || die "Baseline comparison failed for $t";

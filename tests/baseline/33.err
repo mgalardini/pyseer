@@ -1,0 +1,15 @@
+Read 50 phenotypes
+Detected binary phenotype
+Reading all variants
+0variants [00:00, ?variants/s]250variants [00:00, 2498.83variants/s]510variants [00:00, 2528.06variants/s]769variants [00:00, 2544.53variants/s]1016variants [00:00, 2519.13variants/s]1261variants [00:00, 2493.30variants/s]1486variants [00:00, 2413.43variants/s]1499variants [00:00, 2469.76variants/s]
+Applying correlation filtering
+  0%|          | 0/412 [00:00<?, ?variants/s] 34%|███▍      | 141/412 [00:00<00:00, 1400.78variants/s] 71%|███████   | 293/412 [00:00<00:00, 1457.01variants/s]100%|██████████| 412/412 [00:00<00:00, 1463.89variants/s]
+Fitting elastic net to top 298 variants
+Best penalty (lambda) from cross-validation: 1.87E-01
+Best model deviance from cross-validation: 1.431 ± 3.32E-02
+Best R^2 from cross-validation: -0.786
+Finding and printing selected variants
+1499 loaded variants
+1201 filtered variants
+298 tested variants
+0 printed variants
