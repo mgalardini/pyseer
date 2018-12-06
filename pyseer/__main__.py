@@ -60,7 +60,7 @@ def get_options():
     phenotypes = parser.add_argument_group('Phenotype')
     phenotypes.add_argument('--phenotypes',
                             required=True,
-                            help='Phenotypes file')
+                            help='Phenotypes file (whitespace separated)')
     phenotypes.add_argument('--phenotype-column',
                             default=None,
                             help='Phenotype file column to use '

@@ -35,6 +35,10 @@ def load_phenotypes(infile, column):
             Phenotype vector (n, 1)
     """
     p = pd.read_table(infile, index_col=0)
+    if p.shape[1] < 1:
+        sys.stderr.write('Phenotype file must contain at least one phenotype column\n')
+        sys.exit(0)
+
     p.index = p.index.astype(str)
     if column is None:
         p = p[p.columns[-1]]

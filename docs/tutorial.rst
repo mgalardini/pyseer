@@ -14,7 +14,7 @@ These genomes were first reported `here <https://www.nature.com/articles/ng.2625
 studies in bacteria was performed using this data, and we will try to
 replicate `their results <http://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1004547>`__.
 
-The data for this tutorial can be accessed `here <https://drive.google.com/open?id=1pOnTS-KW_iNZ5t8kRpMLoTB9Jca3_MJt>`__.
+The data for this tutorial can be accessed `here <http://johnlees.me/hosted_downloads/pyseer_tutorial.tar.bz2>`__.
 Extract the archive::
 
    tar xvf pyseer_tutorial.tar.bz2
@@ -382,7 +382,7 @@ We'll start by creating a ``references.txt`` file listing the annotations we
 wish to use::
 
    Spn23F.fa	Spn23F.gff	ref
-   6952_7#3.fa	6952_7#3.fa	draft
+   6952_7#3.fa	6952_7#3.gff	draft
 
 Now run the script. This will iterate down the list of annotations, annotating the k-mers which
 haven't already been mapped to a previous annotation (requires ``bedtools``, ``bedops`` and the

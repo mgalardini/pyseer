@@ -34,19 +34,14 @@ def bwa_index(fasta_file):
 def bwa_iter(reference, fasta, algorithm):
 
     if algorithm == "mem":
-        command = "bwa mem -k 8 " + reference + " " + fasta
+        command = "bwa mem -v 1 -k 8 '" + reference + "' '" + fasta + "'"
     elif algorithm == "fastmap":
-        command = "bwa fastmap -l 9 " + reference + " " + fasta
+        command = "bwa fastmap -l 9 " + reference + " " + fasta + "'"
     else:
         sys.stderr.write("Unknown algorithm type for bwa\n")
         raise ValueError(algorithm)
 
-    try:
-        devnull = stderr=subprocess.DEVNULL
-    except AttributeError:
-        # python 2.x
-        devnull = open(os.devnull, 'w')
-    bwa_p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=devnull, shell=True, universal_newlines=True)
+    bwa_p = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True, universal_newlines=True)
     # read sam file from bwa mem
     if algorithm == "mem":
         for sam_line in bwa_p.stdout:
