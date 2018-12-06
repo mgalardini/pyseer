@@ -26,7 +26,7 @@ possible cases).
 In this version, as well as all the original features, many new features (input types,
 association models and output parsing) have been implemented. See the
 [documentation](http://pyseer.readthedocs.io/) and
-[preprint](https://www.biorxiv.org/content/early/2018/02/15/266312) for full details.
+[paper](https://doi.org/10.1093/bioinformatics/bty539) for full details.
 
 Citation
 --------
@@ -45,6 +45,7 @@ Documentation
 --------------------
 
 Full documentation is available at [readthedocs](http://pyseer.readthedocs.io/).
+
 You can also build the docs locally (requires `sphinx`) by typing:
 
     cd docs/
