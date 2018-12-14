@@ -17,15 +17,19 @@ DATA_DIR = 'tests'
 P = os.path.join(DATA_DIR, 'subset.pheno')
 M = os.path.join(DATA_DIR, 'distances.tsv.gz')
 KMER = os.path.join(DATA_DIR, 'kmers.gz')
-PRES = os.path.join(DATA_DIR, 'presence_absence.Rtab')
+PRES = os.path.join(DATA_DIR, 'presence_absence.Rtab.gz')
 PRESSMALL = os.path.join(DATA_DIR, 'presence_absence_smaller.Rtab')
 VCF = os.path.join(DATA_DIR, 'variants_smaller.vcf.gz')
 VENET = os.path.join(DATA_DIR, 'unit_tests_data', 'enet_variants.txt')
 
 
-def open_rtab(fname):
-    infile = open(fname)
-    header = infile.readline().rstrip()
+def open_rtab(fname, compressed=True):
+    if compressed:
+        infile = gzip.open(fname)
+        header = infile.readline().decode().rstrip()
+    else:
+        infile = open(fname)
+        header = infile.readline().rstrip()
     sample_order = header.split()[1:]
     return infile, sample_order
 
@@ -294,11 +298,11 @@ class TestLoadAllVars(unittest.TestCase):
                                infile, set([]), None,
                                0.45, 0.55, False)
         # different file
-        infile = open(PRES)
+        infile = gzip.open(PRES)
         with self.assertRaises(IndexError):
             _  = load_all_vars('kmers', p, False, None,
                                infile, set(p.index), None,
-                               0.45, 0.55, True)
+                               0.45, 0.55, False)
         infile = gzip.open(VCF)
         with self.assertRaises(IndexError):
             _  = load_all_vars('kmers', p, False, None,
@@ -350,7 +354,7 @@ class TestLoadAllVars(unittest.TestCase):
             _  = load_all_vars('vcf', p, False, None,
                                infile, set(p.index), None,
                                0.45, 0.55, False)
-        infile = open(PRES)
+        infile = gzip.open(PRES)
         with self.assertRaises(AttributeError):
             _  = load_all_vars('vcf', p, False, None,
                                infile, set(p.index), None,
@@ -379,13 +383,13 @@ class TestLoadAllVars(unittest.TestCase):
         self.assertEqual(vidx, 1499)
         # too few OGs
         with self.assertRaises(ValueError):
-            infile, sample_order = open_rtab(PRESSMALL)
+            infile, sample_order = open_rtab(PRESSMALL, compressed=False)
             _  = load_all_vars('Rtab', p, False, None,
                                infile, set(p.index), sample_order,
                                0.01, 0.99, False)
         # not providing samples
         with self.assertRaises(ValueError):
-            infile, sample_order = open_rtab(PRESSMALL)
+            infile, sample_order = open_rtab(PRESSMALL, compressed=False)
             _  = load_all_vars('Rtab', p, False, None,
                                infile, set([]), [],
                                0.45, 0.55, False)
@@ -394,7 +398,7 @@ class TestLoadAllVars(unittest.TestCase):
             infile, sample_orders = open_rtab(PRES)
             _  = load_all_vars('kmers', p, False, None,
                                infile, set(p.index), sample_order,
-                               0.01, 0.99, True)
+                               0.01, 0.99, False)
         with self.assertRaises(AttributeError):
             infile, sample_orders = open_rtab(PRES)
             _  = load_all_vars('vcf', p, False, None,
