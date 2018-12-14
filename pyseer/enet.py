@@ -65,8 +65,7 @@ def load_all_vars(var_type, p, burden, burden_regions, infile,
             0-Indices of variants in the input file in variants
             (which passed AF filtering)
         var_idx (int)
-            The number of variants passing AF filtering (number
-            of rows of variants)
+            The number of read variants (number of rows of variants)
     """
     # For building sparse matrix
     data = []
