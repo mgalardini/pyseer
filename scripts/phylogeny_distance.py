@@ -16,6 +16,11 @@ def get_options():
     parser.add_argument('--format',
                         default="newick",
                         help="Format of tree file [Default: newick]")
+    parser.add_argument('--midpoint',
+                        action='store_true',
+                        default=False,
+                        help='Midpoint root the tree before calculating '
+                             'distances.')
     method_group = parser.add_mutually_exclusive_group()
     method_group.add_argument('--lmm', '--calc-C',
                               action='store_true',
@@ -43,6 +48,11 @@ if __name__ == "__main__":
         schema=options.format,
         preserve_underscores=True)
 
+    if options.midpoint:
+        # Needs to be run twice
+        tree.reroot_at_midpoint(update_bipartitions=True, suppress_unifurcations=False)
+        tree.reroot_at_midpoint(update_bipartitions=True, suppress_unifurcations=False)
+
     d = {}
     pdm = tree.phylogenetic_distance_matrix()
     for idx1, taxon1 in enumerate(tree.taxon_namespace):
@@ -58,6 +68,7 @@ if __name__ == "__main__":
                     d[taxon1.label][taxon2.label] = pdm.patristic_distance(taxon1, taxon2)
 
     m = pd.DataFrame(d)
+    m = m.reindex(m.columns)
     m.to_csv(sys.stdout,
              sep='\t')
 
