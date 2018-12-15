@@ -11,6 +11,7 @@ from pyseer.enet import fit_enet
 from pyseer.enet import load_all_vars
 from pyseer.enet import correlation_filter
 from pyseer.enet import find_enet_selected
+from pyseer.model import fit_null
 
 
 DATA_DIR = 'tests'
@@ -21,6 +22,9 @@ PRES = os.path.join(DATA_DIR, 'presence_absence.Rtab.gz')
 PRESSMALL = os.path.join(DATA_DIR, 'presence_absence_smaller.Rtab')
 VCF = os.path.join(DATA_DIR, 'variants_smaller.vcf.gz')
 VENET = os.path.join(DATA_DIR, 'unit_tests_data', 'enet_variants.txt')
+PFIRTH = os.path.join(DATA_DIR, 'unit_tests_data', 'p_binary.txt')
+PFIRTHC = os.path.join(DATA_DIR, 'unit_tests_data', 'p_continuous.txt')
+MFIRTH = os.path.join(DATA_DIR, 'unit_tests_data', 'm.txt')
 
 
 def open_rtab(fname, compressed=True):
@@ -76,13 +80,57 @@ class TstFindEnetSelected(unittest.TestCase):
                         'sample_6', 'sample_7', 'sample_8', 'sample_9' 
                         ]
                         )
-        self.assertEqual(v.notes, [])
+        self.assertEqual(len(v.notes), 0)
         # read to exhaustion
         for v in g:
             pass
         self.assertEqual(v.kmer, 'FM211187_3592_G_A')
-        # TODO: test fit_seer
-    
+        # with fixed effects
+        pf = np.loadtxt(PFIRTH)
+        mf = np.loadtxt(MFIRTH)
+        cov = pd.DataFrame([])
+        null_res = fit_null(pf, mf, cov, False, firth=False).llr
+        null_firth = fit_null(pf, mf, cov, False, firth=True)
+        g = find_enet_selected(b, idx, p, np.array([[]]), 'vcf',
+                               (mf, null_res, null_firth), False,
+                               None, VariantFile(VCF), set(p.index),
+                               None, False, False, None, False)
+        v = next(g)
+        self.assertEqual(v.kmer, 'FM211187_83_G_A')
+        self.assertEqual(v.af, 0.28)
+        self.assertTrue(abs(v.prep - 0.17050715825327736) < 1E-7)
+        self.assertEqual(v.pvalue, 1)
+        self.assertTrue(abs(v.kbeta - 2.164502164502162e-37) < 1E-7)
+        self.assertEqual(v.max_lineage, None)
+        self.assertEqual(v.kstrains,
+                        [
+                         'sample_10', 'sample_11', 'sample_13', 'sample_18',
+                         'sample_19',
+                         'sample_20', 'sample_23', 'sample_25', 'sample_26',
+                         'sample_31', 'sample_34', 'sample_36', 'sample_40',
+                         'sample_45'
+                        ]
+                        )
+        self.assertEqual(v.nkstrains,
+                        [
+                        'sample_1', 'sample_12', 'sample_14', 'sample_15',
+                        'sample_16', 'sample_17', 'sample_2', 'sample_21',
+                        'sample_22', 'sample_24', 'sample_27', 'sample_28',
+                        'sample_29', 'sample_3', 'sample_30', 'sample_32',
+                        'sample_33', 'sample_35', 'sample_37', 'sample_38',
+                        'sample_39', 'sample_4', 'sample_41', 'sample_42',
+                        'sample_43', 'sample_44', 'sample_46', 'sample_47',
+                        'sample_48', 'sample_49', 'sample_5', 'sample_50',
+                        'sample_6', 'sample_7', 'sample_8', 'sample_9' 
+                        ]
+                        )
+        self.assertEqual(len(v.notes), 0)
+        # read to exhaustion
+        for v in g:
+            pass
+        self.assertEqual(v.kmer, 'FM211187_3592_G_A')
+
+
     def test_find_enet_selected_continuous(self):
         p = pd.read_table(P,
                           index_col=0)['continuous']
@@ -124,7 +172,7 @@ class TstFindEnetSelected(unittest.TestCase):
                         'sample_6', 'sample_7', 'sample_8', 'sample_9' 
                         ]
                         )
-        self.assertEqual(v.notes, [])
+        self.assertEqual(len(v.notes), 0)
         # read to exhaustion
         for v in g:
             pass
@@ -135,7 +183,49 @@ class TstFindEnetSelected(unittest.TestCase):
                                     None, False, None,
                                     VariantFile(VCF), set(p.index),
                                     None, False, False, None, False))
-        # TODO: test fit_seer
+        # with fixed effects
+        pf = np.loadtxt(PFIRTHC)
+        mf = np.loadtxt(MFIRTH)
+        cov = pd.DataFrame([])
+        null_res = fit_null(pf, mf, cov, True, firth=False)
+        g = find_enet_selected(b, idx, p, np.array([[]]), 'vcf',
+                               (mf, null_res, None), False,
+                               None, VariantFile(VCF), set(p.index),
+                               None, True, False, None, False)
+        v = next(g)
+        self.assertEqual(v.kmer, 'FM211187_83_G_A')
+        self.assertEqual(v.af, 0.28)
+        self.assertTrue(abs(v.prep - 0.8807556966503836) < 1E-7)
+        self.assertEqual(v.pvalue, 1)
+        self.assertTrue(abs(v.kbeta - 2.164502164502162e-37) < 1E-7)
+        self.assertEqual(v.max_lineage, None)
+        self.assertEqual(v.kstrains,
+                        [
+                         'sample_10', 'sample_11', 'sample_13', 'sample_18',
+                         'sample_19',
+                         'sample_20', 'sample_23', 'sample_25', 'sample_26',
+                         'sample_31', 'sample_34', 'sample_36', 'sample_40',
+                         'sample_45'
+                        ]
+                        )
+        self.assertEqual(v.nkstrains,
+                        [
+                        'sample_1', 'sample_12', 'sample_14', 'sample_15',
+                        'sample_16', 'sample_17', 'sample_2', 'sample_21',
+                        'sample_22', 'sample_24', 'sample_27', 'sample_28',
+                        'sample_29', 'sample_3', 'sample_30', 'sample_32',
+                        'sample_33', 'sample_35', 'sample_37', 'sample_38',
+                        'sample_39', 'sample_4', 'sample_41', 'sample_42',
+                        'sample_43', 'sample_44', 'sample_46', 'sample_47',
+                        'sample_48', 'sample_49', 'sample_5', 'sample_50',
+                        'sample_6', 'sample_7', 'sample_8', 'sample_9' 
+                        ]
+                        )
+        self.assertEqual(len(v.notes), 0)
+        # read to exhaustion
+        for v in g:
+            pass
+        self.assertEqual(v.kmer, 'FM211187_3592_G_A')
 
 class TestCorrelationFilter(unittest.TestCase):
     def test_filter_binary(self):
