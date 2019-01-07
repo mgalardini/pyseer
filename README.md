@@ -86,13 +86,13 @@ and add the necessary channels::
     conda config --add channels bioconda
     conda config --add channels conda-forge
 
-`pyseer` can also be installed through `pip`::
+`pyseer` can also be installed through `pip`:
 
-   python -m pip install pyseer
+   `python -m pip install pyseer`
 
 If you want multithreading make sure that you are using a version 3 python interpreter::
 
-   python3 -m pip install pyseer
+   `python3 -m pip install pyseer`
 
 **If you want the next pre-release**, just clone/download this repository and run:
 
