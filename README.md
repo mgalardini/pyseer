@@ -32,12 +32,12 @@ Citation
 --------
 
 ``Lees, John A., Galardini, M., et al. "pyseer: a comprehensive tool for microbial
-pangenome-wide association studies". Bioinformatics, bty539 (2018).``
+pangenome-wide association studies". Bioinformatics 34:4310–4312 (2018).``
 
 ``doi: 10.1093/bioinformatics/bty539``
 
 ``Lees, John A., et al. "Sequence element enrichment analysis to determine
-the genetic basis of bacterial phenotypes." Nature communications 7 (2016): 12797.``
+the genetic basis of bacterial phenotypes." Nature communications 7:12797 (2016).``
 
 ``doi: 10.1038/ncomms12797``
 

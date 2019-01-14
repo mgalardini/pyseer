@@ -110,9 +110,16 @@ def fit_null(p, m, cov, continuous, firth=False):
                 (intercept, kbeta, beta, bse, fitll) = firth_res
                 null_res = fitll
             else:
-                null_res = null_mod.fit(start_params=start_vec,
-                                        method='newton',
-                                        disp=False)
+                try:
+                    null_res = null_mod.fit(start_params=start_vec,
+                                            method='newton',
+                                            disp=False)
+                # Null fit with default optimiser may fail, Powell
+                # optimizer might work
+                except np.linalg.linalg.LinAlgError:
+                    null_res = null_mod.fit(start_params=start_vec,
+                                            method='powell',
+                                            disp=False)
     except np.linalg.linalg.LinAlgError:
         sys.stderr.write('Matrix inversion error for null model\n')
         return None
