@@ -14,7 +14,7 @@ These genomes were first reported `here <https://www.nature.com/articles/ng.2625
 studies in bacteria was performed using this data, and we will try to
 replicate `their results <http://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1004547>`__.
 
-The data for this tutorial can be accessed `here <http://johnlees.me/hosted_downloads/pyseer_tutorial.tar.bz2>`__.
+The data for this tutorial can be accessed `here <https://dx.doi.org/10.6084/m9.figshare.7588832>`__.
 Extract the archive::
 
    tar xvf pyseer_tutorial.tar.bz2
