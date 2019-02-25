@@ -8,7 +8,7 @@ class TestCommandScale(unittest.TestCase):
     input_file = 'tests/distances_smaller.tsv.gz'
     Y_file = 'tests/cmdscale.Y.txt.gz'
     e_file = 'tests/cmdscale.e.txt.gz'
-    input_data = pd.read_table(input_file, index_col=0)
+    input_data = pd.read_csv(input_file, index_col=0, sep='\t')
     Y = np.loadtxt(Y_file)
     e = np.loadtxt(e_file)
     # ugly hack to take into account minor

@@ -40,8 +40,9 @@ def open_rtab(fname, compressed=True):
 
 class TstFindEnetSelected(unittest.TestCase):
     def test_find_enet_selected_binary(self):
-        p = pd.read_table(P,
-                          index_col=0)['binary']
+        p = pd.read_csv(P,
+                        index_col=0,
+                        sep='\t')['binary']
         b = np.array([5.60000000e-01, 2.16450216e-37, -1.81966726e-37,
                       1.99034682e-38, -1.34400134e-37, -2.94000294e-38,
                       -1.90213827e-37, 8.08080808e-38,
@@ -132,8 +133,9 @@ class TstFindEnetSelected(unittest.TestCase):
 
 
     def test_find_enet_selected_continuous(self):
-        p = pd.read_table(P,
-                          index_col=0)['continuous']
+        p = pd.read_csv(P,
+                        index_col=0,
+                        sep='\t')['continuous']
         b = np.array([5.60000000e-01, 2.16450216e-37, -1.81966726e-37,
                       1.99034682e-38, -1.34400134e-37, -2.94000294e-38,
                       -1.90213827e-37, 8.08080808e-38,
@@ -229,16 +231,18 @@ class TstFindEnetSelected(unittest.TestCase):
 
 class TestCorrelationFilter(unittest.TestCase):
     def test_filter_binary(self):
-        p = pd.read_table(P,
-                          index_col=0)['binary']
+        p = pd.read_csv(P,
+                        index_col=0,
+                        sep='\t')['binary']
         a = np.loadtxt(VENET)
         a = csr_matrix(a.T)
         f = correlation_filter(p, a, 0.75)
         self.assertTrue(abs(f - np.array([0, 5])).max() < 1E-7)
     
     def test_filter_continuous(self):
-        p = pd.read_table(P,
-                          index_col=0)['continuous']
+        p = pd.read_csv(P,
+                        index_col=0,
+                        sep='\t')['continuous']
         a = np.loadtxt(VENET)
         a = csr_matrix(a.T)
         f = correlation_filter(p, a, 0.75)
@@ -247,8 +251,9 @@ class TestCorrelationFilter(unittest.TestCase):
 
 class TestFitEnet(unittest.TestCase):
     def test_fit_binary(self):
-        p = pd.read_table(P,
-                          index_col=0)['binary']
+        p = pd.read_csv(P,
+                        index_col=0,
+                        sep='\t')['binary']
         a = np.loadtxt(VENET)
         a = csc_matrix(a)
         # alpha = 1
@@ -287,8 +292,9 @@ class TestFitEnet(unittest.TestCase):
                                      ])).max() < 1E-7)
     
     def test_fit_continuous(self):
-        p = pd.read_table(P,
-                          index_col=0)['continuous']
+        p = pd.read_csv(P,
+                        index_col=0,
+                        sep='\t')['continuous']
         a = np.loadtxt(VENET)
         a = csc_matrix(a)
         # alpha = 1
@@ -341,8 +347,9 @@ class TestLoadAllVars(unittest.TestCase):
                           None, None, None, None, None)
 
     def test_load_all_vars_kmer(self):
-        p = pd.read_table(P,
-                          index_col=0)['binary']
+        p = pd.read_csv(P,
+                        index_col=0,
+                        sep='\t')['binary']
         infile = gzip.open(KMER)
         variants, sidx, vidx  = load_all_vars('kmers', p, False, None,
                                               infile, set(p.index), None,
@@ -400,8 +407,9 @@ class TestLoadAllVars(unittest.TestCase):
                                0.45, 0.55, False)
 
     def test_load_all_vars_vcf(self):
-        p = pd.read_table(P,
-                          index_col=0)['binary']
+        p = pd.read_csv(P,
+                        index_col=0,
+                        sep='\t')['binary']
         infile  = VariantFile(VCF)
         variants, sidx, vidx  = load_all_vars('vcf', p, False, None,
                                               infile, set(p.index),
@@ -451,8 +459,9 @@ class TestLoadAllVars(unittest.TestCase):
                                0.45, 0.55, True)
 
     def test_load_all_vars_rtab(self):
-        p = pd.read_table(P,
-                          index_col=0)['binary']
+        p = pd.read_csv(P,
+                        index_col=0,
+                        sep='\t')['binary']
         infile, sample_order = open_rtab(PRES)
         variants, sidx, vidx  = load_all_vars('Rtab', p, False, None,
                                               infile, set(p.index),

@@ -34,7 +34,7 @@ def load_phenotypes(infile, column):
         p (pandas.Series)
             Phenotype vector (n, 1)
     """
-    p = pd.read_table(infile, index_col=0)
+    p = pd.read_csv(infile, index_col=0, sep='\t')
     if p.shape[1] < 1:
         sys.stderr.write('Phenotype file must contain at least one phenotype column\n')
         sys.exit(0)
@@ -74,8 +74,9 @@ def load_structure(infile, p, max_dimensions, mds_type="classic", n_cpus=1,
         m (pandas.DataFrame)
             Population structure after MDS (n, m)
     """
-    m = pd.read_table(infile,
-                      index_col=0)
+    m = pd.read_csv(infile,
+                    index_col=0,
+                    sep='\t')
     m.index = m.index.astype(str)
     sys.stderr.write("Structure matrix has dimension " + str(m.shape) + "\n")
 
@@ -169,9 +170,10 @@ def load_covariates(infile, covariates, p):
         cov (pandas.DataFrame)
             Covariance matrix (n, m)
     """
-    c = pd.read_table(infile,
-                      index_col=0,
-                      header=0)
+    c = pd.read_csv(infile,
+                    index_col=0,
+                    header=0,
+                    sep='\t')
     c.index = c.index.astype(str)
 
     if (len(p.index.difference(c.index)) > 0):

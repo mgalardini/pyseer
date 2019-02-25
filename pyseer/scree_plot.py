@@ -33,8 +33,9 @@ def main():
     import pandas as pd
     import matplotlib.pyplot as plt
 
-    m = pd.read_table(options.distances,
-                      index_col=0)
+    m = pd.read_csv(options.distances,
+                    index_col=0,
+                    sep='\t')
     # metric MDS scaling
     projection, evals = cmdscale(m)
 

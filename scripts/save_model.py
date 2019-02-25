@@ -34,8 +34,9 @@ def main():
     import pickle
     import pandas as pd
 
-    pyseer_out = pd.read_table(options.table,
-                      usecols=['variant','af','lrt-pvalue','beta'])
+    pyseer_out = pd.read_csv(options.table,
+                             usecols=['variant','af','lrt-pvalue','beta'],
+                             sep='\t')
 
     pred_model = {}
     for row in pyseer_out.itertuples():

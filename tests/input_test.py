@@ -38,8 +38,9 @@ VCFNOGT = os.path.join(DATA_DIR, 'variants_no_gt.vcf.gz')
 
 class TestLoadFunctions(unittest.TestCase):
     def test_load_phenotypes(self):
-        p = pd.read_table(P,
-                          index_col=0)
+        p = pd.read_csv(P,
+                        index_col=0,
+                        sep='\t')
         t = load_phenotypes(P, None)
         self.assertTrue(abs((p['binary'].values - t.values).max()) < 1E-7)
         t = load_phenotypes(P, 'binary')
@@ -52,8 +53,9 @@ class TestLoadFunctions(unittest.TestCase):
             load_phenotypes('nope', None)
 
     def test_load_structure(self):
-        p = pd.read_table(P,
-                          index_col=0)['binary']
+        p = pd.read_csv(P,
+                        index_col=0,
+                        sep='\t')['binary']
         t = load_structure(M, p, 10, 'classic', 1, None)
         tr = np.array([-0.05277648, 0.97716044, 0.89997233, -0.00807741,
                        0.44765289, -0.10104701,  0.01159616, -0.06489092,
@@ -115,8 +117,9 @@ class TestLoadFunctions(unittest.TestCase):
         self.assertEqual(cm.exception.code, 1)
 
     def test_load_lineage(self):
-        p = pd.read_table(P,
-                          index_col=0)['binary']
+        p = pd.read_csv(P,
+                        index_col=0,
+                        sep='\t')['binary']
         t = load_lineage(LIN, p)
         tr = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                        0, 0, 1, 0, 0, 0, 0, 0])
@@ -144,8 +147,9 @@ class TestLoadFunctions(unittest.TestCase):
         self.assertEqual(cm.exception.code, 1)
 
     def test_load_covariates(self):
-        p = pd.read_table(P,
-                          index_col=0)['binary']
+        p = pd.read_csv(P,
+                        index_col=0,
+                        sep='\t')['binary']
         t = load_covariates(COV, ['2q', '3'], p)
         th = np.array([[1, 1, 0],
                        [2, 0, 1],
@@ -201,8 +205,9 @@ class TestVariantLoading(unittest.TestCase):
                          None, None)
 
     def test_read_variant_kmer(self):
-        p = pd.read_table(P,
-                          index_col=0)['binary']
+        p = pd.read_csv(P,
+                        index_col=0,
+                        sep='\t')['binary']
         infile = gzip.open(KMER)
         t = read_variant(infile, p, 'kmers',
                          False, [], False,
@@ -284,8 +289,9 @@ class TestVariantLoading(unittest.TestCase):
                              p.head(5).index, [])
 
     def test_read_variant_rtab(self):
-        p = pd.read_table(P,
-                          index_col=0)['binary']
+        p = pd.read_csv(P,
+                        index_col=0,
+                        sep='\t')['binary']
         infile = open(PRES)
         header = infile.readline().rstrip()
         sample_order = header.split()[1:]
@@ -398,8 +404,9 @@ class TestVariantLoading(unittest.TestCase):
         self.assertEqual(af, 1.0)
 
     def test_read_variant_vcf(self):
-        p = pd.read_table(P,
-                          index_col=0)['binary']
+        p = pd.read_csv(P,
+                        index_col=0,
+                        sep='\t')['binary']
         infile = VariantFile(VCF)
         t = read_variant(infile, p, 'vcf',
                          False, [], False,
@@ -538,8 +545,9 @@ class TestVariantLoading(unittest.TestCase):
 
 class TestIterVariants(unittest.TestCase):
     def test_iter_variants_kmers(self):
-        p = pd.read_table(P,
-                          index_col=0)['binary']
+        p = pd.read_csv(P,
+                        index_col=0,
+                        sep='\t')['binary']
         m = None
         cov = pd.DataFrame([0, 1])
         infile = gzip.open(KMER)
@@ -589,8 +597,9 @@ class TestIterVariants(unittest.TestCase):
                 next(i_var)
 
     def test_iter_variants_rtab(self):
-        p = pd.read_table(P,
-                          index_col=0)['binary']
+        p = pd.read_csv(P,
+                        index_col=0,
+                        sep='\t')['binary']
         m = None
         cov = pd.DataFrame([0, 1])
         infile = open(PRES)
@@ -643,8 +652,9 @@ class TestIterVariants(unittest.TestCase):
                 next(i_var)
 
     def test_iter_variants_vcf(self):
-        p = pd.read_table(P,
-                          index_col=0)['binary']
+        p = pd.read_csv(P,
+                        index_col=0,
+                        sep='\t')['binary']
         m = None
         cov = pd.DataFrame([0, 1])
         infile = VariantFile(VCF)
@@ -695,8 +705,9 @@ class TestIterVariants(unittest.TestCase):
 
 class TestHashing(unittest.TestCase):
     def test_hash_pattern(self):
-        p = pd.read_table(P,
-                          index_col=0)['binary']
+        p = pd.read_csv(P,
+                        index_col=0,
+                        sep='\t')['binary']
         h = hash_pattern(p.values)
         self.assertEqual(h, b'gwi2uQb68G5LfLr7qJuVpw==\n')
         # wrong input types
@@ -707,8 +718,9 @@ class TestHashing(unittest.TestCase):
 
 class TestLoadVarBlock(unittest.TestCase):
     def test_load_var_block_kmers(self):
-        p = pd.read_table(P,
-                          index_col=0)['binary']
+        p = pd.read_csv(P,
+                        index_col=0,
+                        sep='\t')['binary']
         m = None
         cov = pd.DataFrame([0, 1])
         infile = gzip.open(KMER)
@@ -736,8 +748,9 @@ class TestLoadVarBlock(unittest.TestCase):
         self.assertEqual(variant_mat, None)
 
     def test_load_var_block_rtab(self):
-        p = pd.read_table(P,
-                          index_col=0)['binary']
+        p = pd.read_csv(P,
+                        index_col=0,
+                        sep='\t')['binary']
         m = None
         cov = pd.DataFrame([0, 1])
         infile = open(PRES)
@@ -767,8 +780,9 @@ class TestLoadVarBlock(unittest.TestCase):
         self.assertEqual(variant_mat, None)
 
     def test_load_var_block_vcf(self):
-        p = pd.read_table(P,
-                          index_col=0)['binary']
+        p = pd.read_csv(P,
+                        index_col=0,
+                        sep='\t')['binary']
         m = None
         cov = pd.DataFrame([0, 1])
         infile = VariantFile(VCF)

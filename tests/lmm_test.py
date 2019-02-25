@@ -65,8 +65,9 @@ def eq_lmm(s1, s2):
 
 class TestInitialiseLmm(unittest.TestCase):
     def test_initialise_lmm(self):
-        p = pd.read_table(P_BINARY,
-                          index_col=0)['binary']
+        p = pd.read_csv(P_BINARY,
+                        index_col=0,
+                        sep='\t')['binary']
         cov = pd.DataFrame([])
         x, y, z = initialise_lmm(p, cov, S,
                                  lmm_cache_in=None,
@@ -76,8 +77,9 @@ class TestInitialiseLmm(unittest.TestCase):
                                35.7033778)
         self.assertAlmostEqual(z, 0.0)
         # covariates
-        cov = pd.read_table(COV, index_col=0,
-                            header=None)
+        cov = pd.read_csv(COV, index_col=0,
+                          header=None,
+                          sep='\t')
         x, y, z = initialise_lmm(p, cov, S,
                                  lmm_cache_in=None,
                                  lmm_cache_out=None)
@@ -118,7 +120,8 @@ class TestInitialiseLmm(unittest.TestCase):
             self.assertEqual(cm.exception.code, 1)
         # matching lineage samples
         cov = pd.DataFrame([])
-        s = pd.read_table(S, index_col=0)
+        s = pd.read_csv(S, index_col=0,
+                        sep='\t')
         x, y, z = initialise_lmm(p, cov, S,
                                  lmm_cache_in=None,
                                  lmm_cache_out=None,
@@ -133,8 +136,9 @@ class TestInitialiseLmm(unittest.TestCase):
 
 class TestFitLmm(unittest.TestCase):
     def test_fit_lmm(self):
-        p = pd.read_table(P_BINARY,
-                          index_col=0)['binary']
+        p = pd.read_csv(P_BINARY,
+                        index_col=0,
+                        sep='\t')['binary']
         cov = pd.DataFrame([])
         x, y, z = initialise_lmm(p, cov, S,
                                  lmm_cache_in=None,
@@ -335,7 +339,8 @@ class TestFitLmm(unittest.TestCase):
         variants = [(var, p.values, k),]
         variant_mat = k.reshape(-1, 1)
         m = np.loadtxt(M)[:p.shape[0]]
-        cov = pd.read_table(COV, index_col=0, header=None).values
+        cov = pd.read_csv(COV, index_col=0, header=None,
+                          sep='\t').values
         results = fit_lmm(y, z,
                           variants, variant_mat,
                           True, m, cov,
@@ -390,8 +395,9 @@ class TestFitLmm(unittest.TestCase):
 
 class TestFitLmmBlock(unittest.TestCase):
     def test_fit_lmm_block(self):
-        p = pd.read_table(P_BINARY,
-                          index_col=0)['binary']
+        p = pd.read_csv(P_BINARY,
+                        index_col=0,
+                        sep='\t')['binary']
         cov = pd.DataFrame([])
         x, y, z = initialise_lmm(p, cov, S,
                                  lmm_cache_in=None,

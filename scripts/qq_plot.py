@@ -28,8 +28,9 @@ def main():
     import statsmodels.api as sm
     import matplotlib.pyplot as plt
 
-    m = pd.read_table(options.table,
-                      usecols=['lrt-pvalue'])['lrt-pvalue']
+    m = pd.read_csv(options.table,
+                    usecols=['lrt-pvalue'],
+                    sep='\t')['lrt-pvalue']
 
     plt.figure(figsize=(4, 3.75))
     ax = plt.subplot(111)
