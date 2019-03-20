@@ -62,7 +62,7 @@ def bwa_iter(reference, fasta, algorithm):
                     strand = "-"
                 else:
                     strand = "+"
-                if len(sam_fields < 10):
+                if len(sam_fields) < 10:
                     mapped = False
                     positions = True
                 else:
