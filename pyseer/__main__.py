@@ -173,6 +173,10 @@ def get_options():
                            type=float,
                            default=0.99,
                            help='Maximum AF [Default: 0.99]')
+    filtering.add_argument('--max-missing',
+                           type=float,
+                           default=0.05,
+                           help='Maximum missing (vcf/Rtab) [Default: 0.03]')
     filtering.add_argument('--filter-pvalue',
                            type=float,
                            default=1,
@@ -485,7 +489,8 @@ def main():
         v_iter = load_var_block(var_type, p, burden, burden_regions,
                                 infile, all_strains, sample_order,
                                 options.min_af, options.max_af,
-                                options.uncompressed, options.block_size)
+                                options.max_missing, options.uncompressed,
+                                options.block_size)
         lmm_iter = iter_variants_lmm(v_iter, lmm, h2,
                                      options.lineage, lineage_clusters,
                                      cov.values,
@@ -569,7 +574,7 @@ def main():
             all_vars, var_indices, loaded = load_all_vars(var_type, p, burden, burden_regions,
                                     infile, all_strains, sample_order,
                                     options.min_af, options.max_af,
-                                    options.uncompressed)
+                                    options.max_missing, options.uncompressed)
 
             if options.save_enet:
                 scipy.sparse.save_npz(options.save_enet + ".npz", all_vars)
@@ -646,7 +651,7 @@ def main():
                                infile, all_strains, sample_order,
                                options.lineage, lineage_clusters,
                                options.min_af, options.max_af,
-                               options.filter_pvalue,
+                               options.max_missing, options.filter_pvalue,
                                options.lrt_pvalue, null_fit, firth_null,
                                options.uncompressed, options.continuous)
 

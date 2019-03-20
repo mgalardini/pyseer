@@ -31,7 +31,7 @@ from .model import fixed_effects_regression
 # Loads all variants into memory for use with elastic net
 def load_all_vars(var_type, p, burden, burden_regions, infile,
                    all_strains, sample_order, min_af, max_af,
-                   uncompressed):
+                   max_missing, uncompressed):
     """Load all variants in the input file into a sparse
     matrix representation
 
@@ -52,8 +52,10 @@ def load_all_vars(var_type, p, burden, burden_regions, infile,
             Sampes order to interpret each Rtab line
         min_af (float)
             Minimum allele frequency (inclusive)
-        max_af (bool)
+        max_af (float)
             maximum allele frequency (inclusive)
+        max_missing (float)
+            maximum missing frequency
         uncompressed (bool)
             Whether the kmers file is uncompressed
 
@@ -76,7 +78,7 @@ def load_all_vars(var_type, p, burden, burden_regions, infile,
 
     pbar = tqdm(unit="variants")
     while True:
-        eof, k, var_name, kstrains, nkstrains, af = read_variant(
+        eof, k, var_name, kstrains, nkstrains, af, missing = read_variant(
                                         infile, p, var_type,
                                         burden, burden_regions,
                                         uncompressed, all_strains,
@@ -89,7 +91,7 @@ def load_all_vars(var_type, p, burden, burden_regions, infile,
         else:
             pbar.update(1)
 
-        if k is not None and af > min_af and af < max_af:
+        if k is not None and af > min_af and af < max_af and missing < max_missing:
             # Minor allele encoding - most efficient use of sparse structure
             if af > 0.5:
                 pres = 0
@@ -272,14 +274,14 @@ def find_enet_selected(enet_betas, var_indices, p, c, var_type, fit_seer, burden
         if beta == 0:
             continue
         while current_var < var_idx:
-            eof, k, var_name, kstrains, nkstrains, af = read_variant(
+            eof, k, var_name, kstrains, nkstrains, af, missing = read_variant(
                                         infile, p, var_type,
                                         burden, burden_regions,
                                         uncompressed, all_strains,
                                         sample_order, noparse=True)
             current_var += 1
 
-        eof, k, var_name, kstrains, nkstrains, af = read_variant(
+        eof, k, var_name, kstrains, nkstrains, af, missing = read_variant(
                                         infile, p, var_type,
                                         burden, burden_regions,
                                         uncompressed, all_strains,

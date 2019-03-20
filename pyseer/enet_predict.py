@@ -134,7 +134,7 @@ def main():
     sys.stderr.write("Reading variants from input\n")
     pbar = tqdm(unit="variants")
     while True:
-        eof, k, var_name, kstrains, nkstrains, af = read_variant(
+        eof, k, var_name, kstrains, nkstrains, af, missing = read_variant(
                                         infile, p, var_type,
                                         burden, burden_regions,
                                         options.uncompressed, all_strains,

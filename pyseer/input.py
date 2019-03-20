@@ -389,13 +389,15 @@ def read_variant(infile, p, var_type, burden, burden_regions,
                 raise ValueError('Unexpected mismatch between header and data row')
             for present, sample in zip(strains, sample_order):
                 # sanity check
-                if present not in {'0', '1'}:
+                if present not in {'0', '1', '.'}:
                     raise ValueError('Rtab file not binary')
-                if present is not '0':
+                if present == '1':
                     d[sample] = 1
+                elif present == ".":
+                    d[sample] = np.nan
 
         # Use common dictionary to format design matrix etc
-        kstrains = sorted(set(d.keys()).intersection(all_strains))
+        kstrains = sorted(set(d.keys()).intersection(all_strains)) # This will include missing
         nkstrains = sorted(all_strains.difference(set(kstrains)))
 
         # default for missing samples is absent kmer
@@ -408,8 +410,9 @@ def read_variant(infile, p, var_type, burden, burden_regions,
 
         k = np.array([d[x] for x in p.index
                       if x in d])
+        missing = float(np.sum(np.isnan(k))) / len(all_strains)
 
-    return (eof, k, var_name, kstrains, nkstrains, af)
+    return (eof, k, var_name, kstrains, nkstrains, af, missing)
 
 
 def read_vcf_var(variant, d, keep_list = None):
@@ -443,7 +446,9 @@ def read_vcf_var(variant, d, keep_list = None):
                 # when all instances are 1.
                 # Shouldn't matter for bacteria, but some people call hets
                 for haplotype in call.get('GT', [None]):
-                    if str(haplotype) is not "." and haplotype is not None and haplotype != 0:
+                    if str(haplotype) == ".":
+                        d[sample] = np.nan
+                    elif haplotype is not None and haplotype != 0:
                         d[sample] = 1
                         break
     else:
@@ -454,7 +459,7 @@ def read_vcf_var(variant, d, keep_list = None):
 
 def iter_variants(p, m, cov, var_type, burden, burden_regions, infile,
                   all_strains, sample_order, lineage_effects, lineage_clusters,
-                  min_af, max_af, filter_pvalue, lrt_pvalue, null_fit,
+                  min_af, max_af, max_missing, filter_pvalue, lrt_pvalue, null_fit,
                   firth_null, uncompressed, continuous):
     """Make an iterable to pass single variants to fixed effects regression
 
@@ -483,8 +488,10 @@ def iter_variants(p, m, cov, var_type, burden, burden_regions, infile,
             Lineage clusters indexes
         min_af (float)
             Minimum allele frequency (inclusive)
-        max_af (bool)
+        max_af (float)
             maximum allele frequency (inclusive)
+        max_missing (float)
+            maximum missing frequency
         filter_pvalue (float)
             Pre-filtering p-value threshold
         lrt_pvalue (float)
@@ -533,7 +540,7 @@ def iter_variants(p, m, cov, var_type, burden, burden_regions, infile,
             Whether the phenotype is continuous or not
     """
     while True:
-        eof, k, var_name, kstrains, nkstrains, af = read_variant(infile,
+        eof, k, var_name, kstrains, nkstrains, af, missing = read_variant(infile,
                                                                  p,
                                                                  var_type,
                                                                  burden,
@@ -546,7 +553,7 @@ def iter_variants(p, m, cov, var_type, burden, burden_regions, infile,
         if eof:
             return
 
-        if (k is None) or not (min_af <= af <= max_af):
+        if (k is None) or not (min_af <= af <= max_af) or (missing > max_missing):
             yield (None, None, None, None, None, None,
                    None, None, None, None, None, None,
                    None, None, None, None)
@@ -578,7 +585,7 @@ def iter_variants_lmm(variant_iter, lmm, h2,
 # Loads a block of variants into memory for use with LMM
 def load_var_block(var_type, p, burden, burden_regions, infile,
                    all_strains, sample_order, min_af, max_af,
-                   uncompressed, block_size):
+                   max_missing, uncompressed, block_size):
     """Make in iterable to load blocks of variants for LMM
 
     Args:
@@ -598,8 +605,10 @@ def load_var_block(var_type, p, burden, burden_regions, infile,
             Sampes order to interpret each Rtab line
         min_af (float)
             Minimum allele frequency (inclusive)
-        max_af (bool)
+        max_af (float)
             maximum allele frequency (inclusive)
+        max_missing (float)
+            maximum missing frequency
         uncompressed (bool)
             Whether the kmers file is uncompressed
         block_size (int)
@@ -629,7 +638,7 @@ def load_var_block(var_type, p, burden, burden_regions, infile,
             if eof:
                 break
 
-            if k is None or af < min_af or af > max_af:
+            if k is None or af < min_af or af > max_af or missing > max_missing:
                 pattern = None
             else:
                 pattern = hash_pattern(k)
