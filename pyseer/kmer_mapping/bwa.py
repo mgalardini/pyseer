@@ -62,19 +62,26 @@ def bwa_iter(reference, fasta, algorithm):
                     strand = "-"
                 else:
                     strand = "+"
-                positions.append((sam_fields[2], sam_fields[3], int(sam_fields[3]) + len(sam_fields[9]) - 1, strand))
+                if len(sam_fields < 10):
+                    mapped = False
+                    positions = True
+                else:
+                    positions.append((sam_fields[2], sam_fields[3], int(sam_fields[3]) + len(sam_fields[9]) - 1, strand))
 
-                # secondary mappings (as good as primary - same CIGAR string)
-                if len(sam_fields) > 15:
-                    secondary = sam_fields[15].split(":")
-                    if secondary[0] == "XA" and secondary[1] == "Z":
-                        for secondary_mapping in secondary[2].split(";"):
-                            if secondary_mapping != '':
-                                (contig, pos, cigar, edit_distance) = secondary_mapping.split(",")
-                                if cigar == sam_fields[5]:
-                                    strand = pos[0]
-                                    positions.append((contig, pos[1:], int(pos[1:]) + len(sam_fields[9]) - 1, strand))
-
+                    # secondary mappings (as good as primary - same CIGAR string)
+                    if len(sam_fields) > 15:
+                        try:
+                            secondary = sam_fields[15].split(":")
+                            if secondary[0] == "XA" and secondary[1] == "Z":
+                                for secondary_mapping in secondary[2].split(";"):
+                                    if secondary_mapping != '':
+                                        (contig, pos, cigar, edit_distance) = secondary_mapping.split(",")
+                                        if cigar == sam_fields[5]:
+                                            strand = pos[0]
+                                            positions.append((contig, pos[1:], int(pos[1:]) + len(sam_fields[9]) - 1, strand))
+                        # Ignore secondary mappings which don't match the expected format
+                        except ValueError:
+                            pass
             yield(BWA(mapped, positions))
     # read bwa fastmap output
     else:
