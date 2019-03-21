@@ -90,7 +90,7 @@ def bwa_iter(reference, fasta, algorithm):
 
         first_line = bwa_p.stdout.readline().rstrip().split("\t")
         if first_line == ['']:
-            raise StopIteration
+            return
         (sq, idx, length) = first_line
         while True:
             fastmap_line = bwa_p.stdout.readline()
@@ -100,7 +100,7 @@ def bwa_iter(reference, fasta, algorithm):
                 fastmap_hit = BWA(mapped, positions)
                 if len(next_line) < 3:  # EOF reached
                     yield(fastmap_hit)
-                    raise StopIteration
+                    return
                 else:
                     (sq, idx, length) = next_line
                     mapped = False

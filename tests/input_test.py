@@ -105,7 +105,7 @@ class TestLoadFunctions(unittest.TestCase):
         # bogus mds_type, should default to "metric"
         t = load_structure(M, p, 5, 'test', 1, 42)
         self.assertTrue(abs((t.values[0] - tr).max()) < 1E-7)
-        self.assertTrue(abs((t.values[:,0] - tc).max()) < 1E-7) 
+        self.assertTrue(abs((t.values[:,0] - tc).max()) < 1E-7)
         # no file to be found
         with self.assertRaises(FileNotFoundError):
             t = load_structure('nope', p, 5, 'test', 1, 42)
@@ -129,7 +129,7 @@ class TestLoadFunctions(unittest.TestCase):
                        0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0,
                        0, 0, 0, 0, 0, 0])
         self.assertTrue(abs((t[0][0] - tr).max()) < 1E-7)
-        self.assertTrue(abs((t[0][:,0] - tc).max()) < 1E-7) 
+        self.assertTrue(abs((t[0][:,0] - tc).max()) < 1E-7)
         tl = ['BAPS_1', 'BAPS_10', 'BAPS_12', 'BAPS_14',
               'BAPS_15', 'BAPS_16', 'BAPS_19', 'BAPS_2',
               'BAPS_20', 'BAPS_22', 'BAPS_27', 'BAPS_28',
@@ -212,7 +212,7 @@ class TestVariantLoading(unittest.TestCase):
         t = read_variant(infile, p, 'kmers',
                          False, [], False,
                          p.index, [])
-        eof, k, var_name, kstrains, nkstrains, af = t
+        eof, k, var_name, kstrains, nkstrains, af, missing = t
         self.assertEqual(eof, False)
         self.assertTrue(abs((k -
                          np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -229,6 +229,7 @@ class TestVariantLoading(unittest.TestCase):
                                  for x in list(range(1, 43)) +
                                           list(range(44, 51))]))
         self.assertEqual(af, 0.02)
+        self.assertEqual(missing, 0.0)
         # not providing samples
         with self.assertRaises(ZeroDivisionError):
             t = read_variant(infile, p, 'kmers',
@@ -238,7 +239,7 @@ class TestVariantLoading(unittest.TestCase):
         t = read_variant(infile, p.head(5), 'kmers',
                          True, [], False,
                          p.head(5).index, [])
-        eof, k, var_name, kstrains, nkstrains, af = t
+        eof, k, var_name, kstrains, nkstrains, af, missing = t
         self.assertEqual(eof, False)
         self.assertTrue(abs((k -
                          np.array([1, 1, 0, 1, 0])).max()) < 1E-7)
@@ -249,6 +250,7 @@ class TestVariantLoading(unittest.TestCase):
         self.assertEqual(nkstrains,
                          ['sample_3', 'sample_5'])
         self.assertEqual(af, 0.6)
+        self.assertEqual(missing, 0.0)
         # uncompressed option - only with python3+
         if sys.version_info[0] >= 3:
             with self.assertRaises(TypeError):
@@ -269,13 +271,14 @@ class TestVariantLoading(unittest.TestCase):
             t = read_variant(infile, p, 'kmers',
                              False, [], False,
                              p.index, [])
-        eof, k, var_name, kstrains, nkstrains, af = t
+        eof, k, var_name, kstrains, nkstrains, af, missing = t
         self.assertEqual(eof, True)
         self.assertEqual(k, None)
         self.assertEqual(var_name, None)
         self.assertEqual(kstrains, None)
         self.assertEqual(nkstrains, None)
         self.assertEqual(af, None)
+        self.assertEqual(missing, None)
         # different file
         infile = open(PRES)
         with self.assertRaises(IndexError):
@@ -298,7 +301,7 @@ class TestVariantLoading(unittest.TestCase):
         t = read_variant(infile, p, 'Rtab',
                          False, [], False,
                          p.index, sample_order)
-        eof, k, var_name, kstrains, nkstrains, af = t
+        eof, k, var_name, kstrains, nkstrains, af, missing = t
         self.assertEqual(eof, False)
         self.assertEqual(abs((k - np.ones(50)).max()), 0.0)
         self.assertEqual(var_name,
@@ -309,6 +312,7 @@ class TestVariantLoading(unittest.TestCase):
         self.assertEqual(nkstrains,
                          [])
         self.assertEqual(af, 1.0)
+        self.assertEqual(missing, 0.0)
         # not providing samples
         with self.assertRaises(ValueError):
             t = read_variant(infile, p, 'Rtab',
@@ -322,7 +326,7 @@ class TestVariantLoading(unittest.TestCase):
         t = read_variant(infile, p.head(5), 'Rtab',
                          True, [], False,
                          p.head(5).index, sample_order)
-        eof, k, var_name, kstrains, nkstrains, af = t
+        eof, k, var_name, kstrains, nkstrains, af, missing = t
         self.assertEqual(eof, False)
         self.assertTrue(abs((k -
                          np.array([1, 1, 1, 1, 1])).max()) < 1E-7)
@@ -334,11 +338,12 @@ class TestVariantLoading(unittest.TestCase):
         self.assertEqual(nkstrains,
                          [])
         self.assertEqual(af, 1.0)
+        self.assertEqual(missing, 0.0)
         # uncompressed option - no effect
         t = read_variant(infile, p.head(5), 'Rtab',
                          False, [], True,
                          p.head(5).index, sample_order)
-        eof, k, var_name, kstrains, nkstrains, af = t
+        eof, k, var_name, kstrains, nkstrains, af, missing = t
         self.assertEqual(eof, False)
         self.assertTrue(abs((k -
                          np.array([1, 1, 1, 1, 1])).max()) < 1E-7)
@@ -350,6 +355,7 @@ class TestVariantLoading(unittest.TestCase):
         self.assertEqual(nkstrains,
                          [])
         self.assertEqual(af, 1.0)
+        self.assertEqual(missing, 0.0)
         # different type
         with self.assertRaises(IndexError):
             t = read_variant(infile, p.head(5), 'kmers',
@@ -366,13 +372,14 @@ class TestVariantLoading(unittest.TestCase):
             t = read_variant(infile, p, 'Rtab',
                              False, [], False,
                              p.index, sample_order)
-        eof, k, var_name, kstrains, nkstrains, af = t
+        eof, k, var_name, kstrains, nkstrains, af, missing = t
         self.assertEqual(eof, True)
         self.assertEqual(k, None)
         self.assertEqual(var_name, None)
         self.assertEqual(kstrains, None)
         self.assertEqual(nkstrains, None)
         self.assertEqual(af, None)
+        self.assertEqual(missing, None)
         # different file
         infile = gzip.open(KMER)
         with self.assertRaises(ValueError):
@@ -391,7 +398,7 @@ class TestVariantLoading(unittest.TestCase):
         t = read_variant(infile, p, 'Rtab',
                          False, [], False,
                          p.index, sample_order)
-        eof, k, var_name, kstrains, nkstrains, af = t
+        eof, k, var_name, kstrains, nkstrains, af, missing = t
         self.assertEqual(eof, False)
         self.assertEqual(abs((k - np.ones(50)).max()), 0.0)
         self.assertEqual(var_name,
@@ -402,6 +409,7 @@ class TestVariantLoading(unittest.TestCase):
         self.assertEqual(nkstrains,
                          [])
         self.assertEqual(af, 1.0)
+        self.assertEqual(missing, 0.0)
 
     def test_read_variant_vcf(self):
         p = pd.read_csv(P,
@@ -411,7 +419,7 @@ class TestVariantLoading(unittest.TestCase):
         t = read_variant(infile, p, 'vcf',
                          False, [], False,
                          p.index, [])
-        eof, k, var_name, kstrains, nkstrains, af = t
+        eof, k, var_name, kstrains, nkstrains, af, missing = t
         self.assertEqual(eof, False)
         self.assertEqual(abs((k - np.zeros(50)).max()), 0.0)
         self.assertEqual(var_name,
@@ -422,11 +430,12 @@ class TestVariantLoading(unittest.TestCase):
                          sorted(['sample_%d' % x
                                  for x in range(1, 51)]))
         self.assertEqual(af, 0.0)
+        self.assertEqual(missing, 0.0)
         # not providing samples
         t = read_variant(infile, p, 'vcf',
                          False, [], False,
                          set(), [])
-        eof, k, var_name, kstrains, nkstrains, af = t
+        eof, k, var_name, kstrains, nkstrains, af, missing = t
         self.assertEqual(eof, False)
         self.assertEqual(k, None)
         self.assertEqual(var_name, None)
@@ -439,7 +448,7 @@ class TestVariantLoading(unittest.TestCase):
         t = read_variant(infile, p.head(5), 'vcf',
                          True, burden_regions, False,
                          p.head(5).index, [])
-        eof, k, var_name, kstrains, nkstrains, af = t
+        eof, k, var_name, kstrains, nkstrains, af, missing = t
         self.assertEqual(eof, False)
         self.assertTrue(abs((k -
                          np.array([0, 0, 0, 0, 0])).max()) < 1E-7)
@@ -451,11 +460,12 @@ class TestVariantLoading(unittest.TestCase):
                          ['sample_1', 'sample_2', 'sample_3',
                           'sample_4', 'sample_5'])
         self.assertEqual(af, 0.0)
+        self.assertEqual(missing, 0)
         # uncompressed option - no effect
         t = read_variant(infile, p.head(5), 'vcf',
                          False, [], True,
                          p.head(5).index, [])
-        eof, k, var_name, kstrains, nkstrains, af = t
+        eof, k, var_name, kstrains, nkstrains, af, missing = t
         self.assertEqual(eof, False)
         self.assertTrue(abs((k -
                          np.array([0, 1, 0, 0, 0])).max()) < 1E-7)
@@ -467,6 +477,7 @@ class TestVariantLoading(unittest.TestCase):
                          ['sample_1', 'sample_3',
                           'sample_4', 'sample_5'])
         self.assertEqual(af, 0.2)
+        self.assertEqual(missing, 0.0)
         # different type
         with self.assertRaises(AttributeError):
             t = read_variant(infile, p.head(5), 'kmers',
@@ -481,13 +492,14 @@ class TestVariantLoading(unittest.TestCase):
             t = read_variant(infile, p, 'vcf',
                              False, [], False,
                              p.index, [])
-        eof, k, var_name, kstrains, nkstrains, af = t
+        eof, k, var_name, kstrains, nkstrains, af, missing = t
         self.assertEqual(eof, True)
         self.assertEqual(k, None)
         self.assertEqual(var_name, None)
         self.assertEqual(kstrains, None)
         self.assertEqual(nkstrains, None)
         self.assertEqual(af, None)
+        self.assertEqual(missing, None)
         # different file
         infile = gzip.open(KMER)
         with self.assertRaises(AttributeError):
@@ -554,7 +566,7 @@ class TestIterVariants(unittest.TestCase):
         i_var = iter_variants(p, m, cov, 'kmers',
                               False, [], infile,
                               p.index, [], False,
-                              [], 0.2, 0.8,
+                              [], 0.2, 0.8, 1.0,
                               1, 1, None, None,
                               False, False)
         # fist variant doesn't pass af filter
@@ -608,7 +620,7 @@ class TestIterVariants(unittest.TestCase):
         i_var = iter_variants(p, m, cov, 'Rtab',
                               False, [], infile,
                               p.index, sample_order, False,
-                              [], 0.01, 0.99,
+                              [], 0.01, 0.99, 1.0,
                               1, 1, None, None,
                               False, False)
         # fist variant doesn't pass af filter
@@ -622,7 +634,7 @@ class TestIterVariants(unittest.TestCase):
         i_var = iter_variants(p, m, cov, 'Rtab',
                               False, [], infile,
                               p.index, sample_order, False,
-                              [], 0.0, 1.0,
+                              [], 0.0, 1.0, 1.0,
                               1, 1, None, None,
                               False, False)
         v = next(i_var)
@@ -661,7 +673,7 @@ class TestIterVariants(unittest.TestCase):
         i_var = iter_variants(p, m, cov, 'vcf',
                               False, [], infile,
                               p.index, [], False,
-                              [], 0.2, 0.8,
+                              [], 0.2, 0.8, 1.0,
                               1, 1, None, None,
                               False, False)
         # fist variant doesn't pass af filter
@@ -673,7 +685,7 @@ class TestIterVariants(unittest.TestCase):
         i_var = iter_variants(p, m, cov, 'vcf',
                               False, [], infile,
                               p.index, [], False,
-                              [], 0.0, 1.0,
+                              [], 0.0, 1.0, 1.0,
                               1, 1, None, None,
                               False, False)
         v = next(i_var)
@@ -725,7 +737,7 @@ class TestLoadVarBlock(unittest.TestCase):
         cov = pd.DataFrame([0, 1])
         infile = gzip.open(KMER)
         i_var = load_var_block('kmers', p.head(5), False, [], infile,
-                               p.head(5).index, [], 0.2, 0.8,
+                               p.head(5).index, [], 0.2, 0.8, 1.0,
                                False, 4)
         variants, variant_mat, eof = next(i_var)
         self.assertEqual(eof, False)
@@ -758,7 +770,7 @@ class TestLoadVarBlock(unittest.TestCase):
         sample_order = header.split()[1:]
         i_var = load_var_block('Rtab', p.head(5), False, [], infile,
                                p.head(5).index, sample_order, 0.0, 1.0,
-                               False, 4)
+                               1.0, False, 4)
         variants, variant_mat, eof = next(i_var)
         self.assertEqual(eof, False)
         self.assertEqual(variant_mat.shape, (5, 4))
@@ -787,7 +799,7 @@ class TestLoadVarBlock(unittest.TestCase):
         cov = pd.DataFrame([0, 1])
         infile = VariantFile(VCF)
         i_var = load_var_block('vcf', p.head(5), False, [], infile,
-                               p.head(5).index, [], 0.0, 1.0,
+                               p.head(5).index, [], 0.0, 1.0, 1.0,
                                False, 4)
         variants, variant_mat, eof = next(i_var)
         self.assertEqual(eof, False)

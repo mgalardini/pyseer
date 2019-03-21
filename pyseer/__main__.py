@@ -176,7 +176,7 @@ def get_options():
     filtering.add_argument('--max-missing',
                            type=float,
                            default=0.05,
-                           help='Maximum missing (vcf/Rtab) [Default: 0.03]')
+                           help='Maximum missing (vcf/Rtab) [Default: 0.05]')
     filtering.add_argument('--filter-pvalue',
                            type=float,
                            default=1,

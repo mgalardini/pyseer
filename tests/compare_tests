@@ -28,8 +28,8 @@ if __name__ == "__main__":
 
     if not cmp(options.ilog, options.olog, shallow=False):
         try:
-            m1 = pd.read_table(options.ilog, index_col=0)
-            m2 = pd.read_table(options.olog, index_col=0)
+            m1 = pd.read_csv(options.ilog, index_col=0, sep='\t')
+            m2 = pd.read_csv(options.olog, index_col=0, sep='\t')
         except pd.errors.EmptyDataError:
             sys.stderr.write('One of the files is empty but not the other\n')
             sys.exit(1)

@@ -47,6 +47,10 @@ def get_options():
                         type=float,
                         default=0.99,
                         help='Maximum AF [Default: 0.99]')
+    parser.add_argument('--max-missing',
+                           type=float,
+                           default=0.05,
+                           help='Maximum missing (vcf/Rtab) [Default: 0.05]')
     parser.add_argument('--uncompressed',
                         action='store_true',
                         default=False,
@@ -96,7 +100,8 @@ def main():
     v_iter = load_var_block(var_type, p, None, None, infile,
                             all_strains, sample_order,
                             options.min_af, options.max_af,
-                            options.uncompressed, block_size)
+                            options.max_missing, options.uncompressed,
+                            block_size)
     while not eof:
         variants, variant_mat, eof = next(v_iter)
         if G.shape[1] > block_size:

@@ -310,6 +310,8 @@ def read_variant(infile, p, var_type, burden, burden_regions,
             Samples in which the variant is absent
         af (float)
             Allele frequency
+        missing (float)
+            Missing frequency
     """
     if var_type not in {'kmers', 'vcf', 'Rtab'}:
         raise ValueError('Variants type not supported')
@@ -332,7 +334,7 @@ def read_variant(infile, p, var_type, burden, burden_regions,
 
     if not line_in or noparse:
         eof = True
-        return(eof, None, None, None, None, None)
+        return(eof, None, None, None, None, None, None)
     else:
         eof = False
         d = {}
@@ -344,7 +346,7 @@ def read_variant(infile, p, var_type, burden, burden_regions,
                                  '|')[1].lstrip().split())
 
             if keep_list != None and var_name not in keep_list:
-                return(eof, None, None, None, None, None)
+                return(eof, None, None, None, None, None, None)
             else:
                 d = {x.split(':')[0]: 1
                     for x in strains}
@@ -353,7 +355,7 @@ def read_variant(infile, p, var_type, burden, burden_regions,
             if not burden:
                 var_name = read_vcf_var(line_in, d, keep_list)
                 if var_name is None:
-                    return (eof, None, None, None, None, None)
+                    return (eof, None, None, None, None, None, None)
             else:
                 # burden test. Regions are named contig:start-end.
                 # Start is non-inclusive, so start one before to include
@@ -369,7 +371,7 @@ def read_variant(infile, p, var_type, burden, burden_regions,
                 else:  # stop trying to make 'fetch' happen
                     sys.stderr.write("Could not parse region %s\n" %
                                      str(region))
-                    return (eof, None, None, None, None, None)
+                    return (eof, None, None, None, None, None, None)
 
         elif var_type == "Rtab":
             try:
@@ -379,7 +381,7 @@ def read_variant(infile, p, var_type, burden, burden_regions,
                 split_line = line_in.decode().rstrip().split('\t')
             var_name, strains = split_line[0], split_line[1:]
             if keep_list != None and var_name not in keep_list:
-                return (eof, None, None, None, None, None)
+                return (eof, None, None, None, None, None, None)
 
             # sanity check
             if len(strains) == 0:
@@ -628,7 +630,7 @@ def load_var_block(var_type, p, burden, burden_regions, infile,
         # pre-allocation of memory
         variant_mat = np.zeros((len(p), block_size))
         for var_idx in range(block_size):
-            eof, k, var_name, kstrains, nkstrains, af = read_variant(
+            eof, k, var_name, kstrains, nkstrains, af, missing = read_variant(
                                             infile, p, var_type,
                                             burden, burden_regions,
                                             uncompressed, all_strains,
