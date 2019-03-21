@@ -12,4 +12,4 @@ scipy==1.1.0
 six==1.11.0
 statsmodels==0.9.0
 tqdm==4.20.0
-pybedtools==0.7.10
+pybedtools==0.8.0
