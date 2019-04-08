@@ -27,6 +27,18 @@ Testing shows that results (p-values) should be the same as the original
 ``seer``, with a runtime that is roughly twice as long as the optimised C++
 code.
 
+Citations
+---------
+If you find pyseer useful, please cite:
+
+:emphasis:`Lees, John A., Galardini, M., et al. pyseer: a comprehensive tool for microbial pangenome-wide association studies.
+Bioinformatics 34:4310–4312 (2018). doi:10.1093/bioinformatics/bty539.`
+
+If you use unitigs (through `unitig-counter <https://github.com/johnlees/unitig-counter>`__) please cite:
+
+:emphasis:`Jaillard M., Lima L. et al. A fast and agnostic method for bacterial genome-wide association
+studies: Bridging the gap between k-mers and genetic events. PLOS Genetics. 14, e1007758 (2018). doi:10.1371/journal.pgen.1007758.`
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:

@@ -57,8 +57,8 @@ separated column numbers to use. The default is that the covariates are labels,
 but for a quantitative covariate add 'q' after the column number. For the above
 example ``--use-covariates 2q 3`` would be the correct argument.
 
-Common variants
-^^^^^^^^^^^^^^^
+k-mers
+^^^^^^
 Variable length k-mers counted by `fsm-lite <https://github.com/nvalimak/fsm-lite>`_
 or `dsm-framework <https://github.com/HIITMetagenomics/dsm-framework>`_ are input with the
 ``--kmers`` option. This file is assumed to be gzipped, use the
@@ -69,7 +69,7 @@ installation to convert them to the correct input format.
 If needed, both fsm-lite and seer can be installed through conda. See :doc:`installation` for
 details.
 
-.. note:: For common variation k-mers should probably be your variant of choice.
+.. note:: For common variation k-mers or unitigs should probably be your variant of choice.
    ``seer`` was mainly designed to work with k-mers, due to their ability to
    test variation across the pan-genome without the need to call variants
    against multiple references, or deal with the complexities of constructing
@@ -79,6 +79,21 @@ details.
    We would recommend the use of SNPs and genes *in addition* to k-mers, or for
    a quick first pass analysis.
 
+unitigs
+^^^^^^^
+Unitigs are nodes in a compressed de Bruijn graph, and remove some of the redundancy present
+in k-mer counting, as well as presenting fewer tests (and advantage both computationally and
+statistically) and being easier to interpret thanks to their length and context provided by
+the variation graph.
+
+Count unitigs with `unitig-counter <https://github.com/johnlees/unitig-counter>`__ (see documentation
+in the ``README.md``). This can be installed thorough conda, see :doc:`installation` for
+details.
+
+Usage is then identical to k-mers, with the ``--kmers`` options, and ``--uncompressed`` if necessary.
+
+SNPs and INDELs
+^^^^^^^^^^^^^^^
 Short variation (SNPs and INDELs) can be read from a VCF file using the ``PySAM`` module.
 If you have multiple VCF files (e.g. one per sample) you can combine them with
 ``bcftools``::
@@ -97,6 +112,8 @@ fields are present only those with 'PASS' will be processed.
    The ``GT`` field is used to determine variant presence/absence.
    '0' or '.' is absence, anything else is presence.
 
+Genes and intergenic regions, or any other variant type
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 COG or intergenic region variation is represented as an .Rtab file by `roary <https://sanger-pathogens.github.io/Roary/>`_ and
 `piggy <https://github.com/harry-thorpe/piggy>`_::
 
@@ -597,3 +614,19 @@ For each gene name, the number of overlapping significant k-mers, maximum p-valu
 MAF and average effect size will be reported. This is ideal input for plotting with
 `ggplot2 <http://ggplot2.tidyverse.org/reference/>`_.
 
+Processing unitig output
+------------------------
+
+As unitigs are sequence elements of variable length, identical steps can be taken as for k-mers,
+as described above.
+
+Additionally, ``cdbg-ops`` provided by installing ``unitig-counter`` can be used to extend
+short unitigs leftwards and rightwards by following the neightbouring nodes in the de Bruijn graph.
+This can help map sequences which on their own are difficult to align in a specific manner.
+
+Create a file ``unitigs.txt`` with the unitigs to extend (probably your significantly associated hits) and run::
+
+   cdbg-ops extend --graph output/graph --unitigs unitigs.txt > extended.txt
+
+The output ``extended.txt`` will contain possible extensions, comma separated, with lines corresponding
+to unitigs in the input. See the help for more options.
