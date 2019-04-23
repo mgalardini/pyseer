@@ -113,7 +113,7 @@ def load_all_vars(var_type, p, burden, burden_regions, infile,
 
     return(variants, selected_vars, var_idx)
 
-def fit_enet(p, variants, covariates, continuous, alpha, n_folds = 10, n_cpus = 1):
+def fit_enet(p, variants, covariates, weights, continuous, alpha, n_folds = 10, n_cpus = 1):
     """Fit an elastic net model to a set of variants. Prints
     information about model fit and prediction quality to STDERR
 
@@ -126,6 +126,8 @@ def fit_enet(p, variants, covariates, continuous, alpha, n_folds = 10, n_cpus = 
             (rows = samples, columns = variants)
         covariates (pandas.DataFrame)
             Covariate matrix (n, j)
+        weights (np.array)
+            Vector of sample weights (n, 1)
         continuous (bool)
             If True fit a Gaussian error model, otherwise Bionomial error
         alpha (float)
@@ -155,7 +157,7 @@ def fit_enet(p, variants, covariates, continuous, alpha, n_folds = 10, n_cpus = 
 
     # Run model fit
     enet_fit = cvglmnet(x = variants, y = p.values.astype('float64'), family = regression_type,
-                        nfolds = n_folds, alpha = alpha, parallel = n_cpus)
+                        nfolds = n_folds, alpha = alpha, parallel = n_cpus, weights = weights)
     betas = cvglmnetCoef(enet_fit, s = 'lambda_min')
 
     # Extract best lambda and predict class labels/values
