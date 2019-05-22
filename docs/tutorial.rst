@@ -256,7 +256,7 @@ has been midpointed rooted::
    python scripts/phylogeny_distance.py --lmm core_genome_aln.tree > phylogeny_K.tsv
 
 .. note:: Alternatively, we could extract a kinship matrix from the mapped SNPs by calculating :math:`K = GG^T`
-   ``similarity --vcf snps.vcf.gz samples.txt > gg.snps.txt``
+   ``similarity_pyseer --vcf snps.vcf.gz samples.txt > gg.snps.txt``
 
 We can now run ``pyseer`` with ``--lmm``. Due to the large number of k-mers we are going to test, we will increase the
 number of CPUs used to 8::
