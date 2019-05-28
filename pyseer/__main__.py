@@ -612,10 +612,11 @@ def main():
         prefilter = loaded - tested
 
         # perform sequence reweighting
-        weights = None
         if options.sequence_reweighting:
-            clus_totals = np.sum(lineage_clusters, axis=1)
-            weights = np.matmul(lineage_clusters, 1/clus_totals)
+            clus_totals = np.sum(lineage_clusters, axis=0)
+            weights = np.matmul(lineage_clusters, 1/clus_totals).reshape(-1, 1)
+        else:
+            weights = np.ones((p.shape[0], 1))
 
         # fit enet with cross validation
         if (model == "enet"):
@@ -701,7 +702,7 @@ def main():
             if options.save_model:
                 with open(options.save_model + '.pkl', 'wb') as pickle_file:
                     pickle.dump([rf_model, var_list, options.continuous], pickle_file)
-                    sys.stderr.write("Saved rf model as %s.pkl\n" % options.save_model))
+                    sys.stderr.write("Saved rf model as %s.pkl\n" % options.save_model)
 
         elif (model == "blup"):
             sys.stderr.write("BLUP model not yet implemented\n")
