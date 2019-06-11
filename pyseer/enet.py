@@ -113,7 +113,8 @@ def load_all_vars(var_type, p, burden, burden_regions, infile,
 
     return(variants, selected_vars, var_idx)
 
-def fit_enet(p, variants, covariates, weights, continuous, alpha, n_folds = 10, n_cpus = 1):
+def fit_enet(p, variants, covariates, weights, continuous, alpha,
+             fold_ids = None, n_folds = 10, n_cpus = 1):
     """Fit an elastic net model to a set of variants. Prints
     information about model fit and prediction quality to STDERR
 
@@ -133,6 +134,8 @@ def fit_enet(p, variants, covariates, weights, continuous, alpha, n_folds = 10, 
         alpha (float)
             Between 0-1, sets the mix between ridge regression and lasso
             regression
+        fold_ids (list)
+            Index of fold assignment for cross-validation, from 0 to 1-n_folds
         n_folds (int)
             Number of folds in cross-validation
 
@@ -156,29 +159,85 @@ def fit_enet(p, variants, covariates, weights, continuous, alpha, n_folds = 10, 
         variants = hstack([csc_matrix(covariates.values), variants])
 
     # Run model fit
-    enet_fit = cvglmnet(x = variants, y = p.values.astype('float64'), family = regression_type,
-                        nfolds = n_folds, alpha = alpha, parallel = n_cpus, weights = weights)
-    betas = cvglmnetCoef(enet_fit, s = 'lambda_min')
+    if fold_ids is None:
+        enet_fit = cvglmnet(x = variants, y = p.values.astype('float64'), family = regression_type,
+                            nfolds = n_folds, alpha = alpha, parallel = n_cpus, weights = weights)
+    else:
+        enet_fit = cvglmnet(x = variants, y = p.values.astype('float64'), family = regression_type,
+                            foldid = fold_ids, alpha = alpha, parallel = n_cpus, weights = weights)
 
     # Extract best lambda and predict class labels/values
+    betas = cvglmnetCoef(enet_fit, s = 'lambda_min')
     best_lambda_idx = np.argmin(enet_fit['cvm'])
-    if continuous:
-        preds = cvglmnetPredict(enet_fit, newx=variants, s='lambda_min', ptype='link')
-    else:
-        preds = cvglmnetPredict(enet_fit, newx=variants, s='lambda_min', ptype='class')
+    R2 = enet_predict(enet_fit, variants, continuous, p.values)[1]
 
     # Write some summary stats
     # R^2 = 1 - sum((yi_obs - yi_predicted)^2) /sum((yi_obs - yi_mean)^2)
-    SStot = np.sum(np.square(p.values - np.mean(p.values)))
-    SSerr = np.sum(np.square(p.values.reshape(-1, 1) - preds))
-    R2 = 1 - (SSerr/SStot)
     sys.stderr.write("Best penalty (lambda) from cross-validation: " + '%.2E' % Decimal(enet_fit['lambda_min'][0]) + "\n")
     if not continuous:
         sys.stderr.write("Best model deviance from cross-validation: " + '%.3f' % Decimal(enet_fit['cvm'][best_lambda_idx]) +
                          " ± " + '%.2E' % Decimal(enet_fit['cvsd'][best_lambda_idx]) + "\n")
     sys.stderr.write("Best R^2 from cross-validation: " + '%.3f' % Decimal(R2) + "\n")
 
+    # Report R2 for each fold (strain/clade)
+    if fold_ids is not None:
+        fold_R2 = []
+        sizes = []
+        for fold in range(max(fold_ids) + 1):
+            samples_in_fold = [1 if x == fold else 0 for x in fold_ids]
+            strain_R2 = enet_predict(enet_fit, variants[samples_in_fold, :], continuous, p.values[samples_in_fold])[1]
+            fold_R2.append(strain_R2)
+            sizes.append(sum(samples_in_fold))
+
+        sys.stderr.write("Mean lineage R^2: " + '%.3f' % Decimal(mean(R2)) + "\n")
+        sys.stderr.write("Individual lineage R^2 values\n")
+        sys.stderr.write("Size\tR2\n")
+        for strain_R2, size in zip(fold_R2, sizes):
+            sys.stderr.write(size + "\t" + '%.3f' % Decimal(strain_R2) + "\n")
+
     return(betas.reshape(-1,))
+
+
+def enet_predict(enet_fit, variants, continuous, responses = None):
+    """Use a fitted elastic net model to make predictions about
+    new observations. Returns accuracy if true responses known
+
+    Args:
+        enet_fit (cvglmnet)
+            An elastic net model fitted using cvglmnet or similar
+        variants (scipy.sparse.csc_matrix)
+            Wide sparse matrix representation of all variants to predict with
+            (rows = samples, columns = variants)
+        continuous (bool)
+            True if a continuous phenotype, False if a binary phenotype
+        responses (np.array)
+            True phenotypes to calculate R^2 with
+
+            [default = None]
+
+    Returns:
+        preds (numpy.array)
+            Predicted phenotype for each input sample in variants
+        R2 (float)
+            Variance explained by model (or None if true labels not
+            provided).
+    """
+    # Extract best lambda and predict class labels/values
+    if continuous:
+        preds = cvglmnetPredict(enet_fit, newx=variants, s='lambda_min', ptype='link')
+    else:
+        preds = cvglmnetPredict(enet_fit, newx=variants, s='lambda_min', ptype='class')
+
+    # R^2 = 1 - sum((yi_obs - yi_predicted)^2) /sum((yi_obs - yi_mean)^2)
+    if responses is not None and responses.shape == (variants.shape[0], 1):
+        SStot = np.sum(np.square(responses.values - np.mean(responses.values)))
+        SSerr = np.sum(np.square(responses.values.reshape(-1, 1) - preds))
+        R2 = 1 - (SSerr/SStot)
+    else:
+        R2 = None
+
+    return(preds, R2)
+
 
 def correlation_filter(p, all_vars, quantile_filter = 0.25):
     """Calculates correlations between phenotype and variants,
