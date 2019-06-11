@@ -134,7 +134,7 @@ def load_lineage(infile, p):
         sys.stderr.write("All samples with a phenotype must be present in lineage file\n")
         sys.exit(1)
     else:
-        lin = lin.loc[lin.index.intersection(p.index)]
+        lin = lin.loc[p.index.intersection(lin.index)]
 
     lineages = sorted(set(lin.values))
 
@@ -146,7 +146,9 @@ def load_lineage(infile, p):
                                              for x in lin.values],
                                             index=lin.index))
         lineage_assign.append(categ)
+
     lineage_design_mat = pd.concat(lineage_design_mat, axis=1)
+    assert(np.all(lineage_design_mat.index == p.index))
 
     return(lineage_design_mat.values, lineage_assign)
 
