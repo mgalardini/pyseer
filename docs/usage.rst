@@ -257,7 +257,7 @@ matrix (design matrix) of variant presence absence to calculate the kinship
 matrix :math:`K = GG^T`. To use this method for the ``--similarity`` option use
 the similarity script with any valid pyseer input variant type::
 
-   similarity --vcf core_gene_snps.vcf sample_list.txt > genotype_kinship.tsv
+   similarity_pyseer --vcf core_gene_snps.vcf sample_list.txt > genotype_kinship.tsv
 
 Where ``sample_list.txt`` is a file containing sample names to keep, one on
 each line.
