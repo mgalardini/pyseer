@@ -182,7 +182,7 @@ def load_covariates(infile, covariates, p):
         sys.stderr.write("All samples with a phenotype must be present in covariate file\n")
         sys.exit(1)
     else:
-        c = c.loc[c.index.intersection(p.index)]
+        c = c.loc[p.index.intersection(c.index)]
 
     # which covariates to use?
     if covariates is None:
