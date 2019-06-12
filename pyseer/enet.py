@@ -180,39 +180,19 @@ def fit_enet(p, variants, covariates, weights, continuous, alpha,
 
     # Write some summary stats
     # R^2 = 1 - sum((yi_obs - yi_predicted)^2) /sum((yi_obs - yi_mean)^2)
-    sys.stderr.write("Best penalty (lambda) from cross-validation: " + '%.2E' % Decimal(enet_fit['lambda_min'][0]) + "\n")
+    sys.stderr.write("Best penalty (lambda) from cross-validation: " +
+                     '%.2E' % Decimal(enet_fit['lambda_min'][0]) + "\n")
     if not continuous:
-        sys.stderr.write("Best model deviance from cross-validation: " + '%.3f' % Decimal(enet_fit['cvm'][best_lambda_idx]) +
+        sys.stderr.write("Best model deviance from cross-validation: " +
+                         '%.3f' % Decimal(enet_fit['cvm'][best_lambda_idx]) +
                          " ± " + '%.2E' % Decimal(enet_fit['cvsd'][best_lambda_idx]) + "\n")
     sys.stderr.write("Best R^2 from cross-validation: " + '%.3f' % Decimal(R2) + "\n")
 
     # Report R2 for each fold (strain/clade)
     if fold_ids is not None:
         sys.stderr.write("Predictions within each lineage\n")
-        sys.stderr.write("\t".join(['Lineage', 'Size', 'R2']))
-        if not continuous:
-            sys.stderr.write("\t" + "\t".join(['TP', 'TN', 'FP', 'FN']))
-        sys.stderr.write("\n")
-
-        for fold in range(max(fold_ids) + 1):
-            samples_in_fold = np.where(fold_ids == fold)[0]
-            y_true = p.values[samples_in_fold]
-            y_pred = predictions[samples_in_fold].reshape(-1, )
-
-            strain_R2 = r2_score(y_true, y_pred)
-            sys.stderr.write("\t".join([lineage_dict[fold],
-                                        str(samples_in_fold.shape[0]),
-                                        '%.3f' % Decimal(strain_R2)]))
-
-            if not continuous:
-                if np.all(y_true == y_pred) and np.all(y_true == 1):
-                    tn, fp, fn, tp = (0, 0, 0, y_true.shape[0])
-                elif np.all(y_true == y_pred) and np.all(y_true == 0):
-                    tn, fp, fn, tp = (y_true.shape[0], 0, 0, 0)
-                else:
-                    tn, fp, fn, tp = confusion_matrix(y_true, y_pred).ravel()
-                sys.stderr.write("\t" + "\t".join([str(x) for x in [tp, tn, fp, fn]]))
-            sys.stderr.write("\n")
+        write_lineage_predictions(p.values, predictions, fold_ids,
+                                  lineage_dict, continuous)
 
     return(betas.reshape(-1,))
 
@@ -259,6 +239,69 @@ def enet_predict(enet_fit, variants, continuous, responses = None):
         R2 = None
 
     return(preds, R2)
+
+
+def write_lineage_predictions(true_values, predictions, fold_ids,
+                              lineage_dict, continuous, stderr_print = True):
+    """Writes prediction ability stratified by lineage to stderr
+
+    Args:
+        true_values (np.array)
+            Observed values of phenotype
+        predictions (np.array)
+            Predicted phenotype values
+        lineage_dict (list)
+            Names of lineages, indices corrsponding to fold_ids
+        fold_ids (list)
+            Index of fold assignment for cross-validation, from 0 to 1-n_folds
+        continuous (bool)
+            True if a continuous phenotype, False if a binary phenotype
+        stderr_print (bool)
+            Print output to stderr
+
+            [default = True]
+    Returns:
+        R2_vals (list)
+            R2 values for each fold
+        confusion (list)
+            Tuple of tn, fp, fn, tp for each fold
+    """
+    if stderr_print:
+        sys.stderr.write("\t".join(['Lineage', 'Size', 'R2']))
+        if not continuous:
+            sys.stderr.write("\t" + "\t".join(['TP', 'TN', 'FP', 'FN']))
+        sys.stderr.write("\n")
+
+    R2_vals = []
+    confusion = []
+    for fold in range(max(fold_ids) + 1):
+        samples_in_fold = np.where(fold_ids == fold)[0]
+        y_true = true_values[samples_in_fold]
+        y_pred = predictions[samples_in_fold].reshape(-1, )
+
+        fold_R2 = r2_score(y_true, y_pred)
+        R2_vals.append(fold_R2)
+        if stderr_print:
+            sys.stderr.write("\t".join([lineage_dict[fold],
+                                        str(samples_in_fold.shape[0]),
+                                        '%.3f' % Decimal(fold_R2)]))
+
+        if not continuous:
+            if np.all(y_true == y_pred) and np.all(y_true == 1):
+                tn, fp, fn, tp = (0, 0, 0, y_true.shape[0])
+            elif np.all(y_true == y_pred) and np.all(y_true == 0):
+                tn, fp, fn, tp = (y_true.shape[0], 0, 0, 0)
+            else:
+                tn, fp, fn, tp = confusion_matrix(y_true, y_pred).ravel()
+
+            confusion.append((tn, fp, fn, tp))
+            if stderr_print:
+                sys.stderr.write("\t" + "\t".join([str(x) for x in [tp, tn, fp, fn]]))
+
+        if stderr_print:
+            sys.stderr.write("\n")
+
+    return(R2_vals, confusion)
 
 
 def correlation_filter(p, all_vars, quantile_filter = 0.25):

@@ -19,6 +19,9 @@ from tqdm import tqdm
 from .input import open_variant_file
 from .input import load_covariates
 from .input import read_variant
+from .input import load_lineage
+
+from .enet import write_lineage_predictions
 
 def get_options():
     import argparse
@@ -34,6 +37,9 @@ def get_options():
                         help='Threshold to pick binary predictions',
                         type=float,
                         default=0.5)
+    parser.add_argument('--lineage-clusters',
+                        help='Custom clusters to use as lineages '
+                             'to report stratified accuracy')
 
     variants = parser.add_argument_group('Variants')
     variant_group = variants.add_mutually_exclusive_group(required=True)
@@ -110,6 +116,13 @@ def main():
                 if pred_beta[1] != 0:
                     predictions += (cov[covariate] * pred_beta[1]).reshape(-1, 1)
 
+    # Read in lineages
+    if options.lineage_clusters:
+        lineage_clusters, lineage_dict = load_lineage(options.lineage_clusters, p)
+        fold_ids = np.where(lineage_clusters == 1)[1]
+    else:
+        lineage_clusters, lineage_dict, fold_ids = (None, None, None)
+
     # Open variant file
     sample_order = []
     all_strains = set(p.index)
@@ -162,6 +175,22 @@ def main():
         link = expit(predictions)
     else:
         link = predictions
+
+    # report summary
+    sys.stderr.write("Overall prediction accuracy\n")
+    R2, confusion = write_lineage_predictions(p.values, predictions, fold_ids,
+                                  lineage_dict, continuous, stderr_print=False)
+    tn, fp, fn, tp = confusion[0]
+    sys.stderr.write("R2: " + str(R2[0]) + "\n")
+    sys.stderr.write("tn: " + str(tn) + "\n")
+    sys.stderr.write("fp: " + str(fp) + "\n")
+    sys.stderr.write("fn: " + str(fn) + "\n")
+    sys.stderr.write("tp: " + str(fp) + "\n")
+
+    if fold_ids is not None:
+        sys.stderr.write("Predictions within each lineage\n")
+        write_lineage_predictions(p.values, predictions, fold_ids,
+                                  lineage_dict, continuous, stderr_print=True)
 
     # output
     if continuous:
