@@ -16,6 +16,7 @@ import math
 import pandas as pd
 from decimal import Decimal
 from tqdm import tqdm
+from sklearn.metrics import r2_score, confusion_matrix
 
 import glmnet_python
 from cvglmnet import cvglmnet
@@ -114,7 +115,7 @@ def load_all_vars(var_type, p, burden, burden_regions, infile,
     return(variants, selected_vars, var_idx)
 
 def fit_enet(p, variants, covariates, weights, continuous, alpha,
-             fold_ids = None, n_folds = 10, n_cpus = 1):
+             lineage_dict = None, fold_ids = None, n_folds = 10, n_cpus = 1):
     """Fit an elastic net model to a set of variants. Prints
     information about model fit and prediction quality to STDERR
 
@@ -134,8 +135,14 @@ def fit_enet(p, variants, covariates, weights, continuous, alpha,
         alpha (float)
             Between 0-1, sets the mix between ridge regression and lasso
             regression
+        lineage_dict (list)
+            Names of lineages, indices corrsponding to fold_ids
+
+            [default = None]
         fold_ids (list)
             Index of fold assignment for cross-validation, from 0 to 1-n_folds
+
+            [default = None]
         n_folds (int)
             Number of folds in cross-validation
 
@@ -169,7 +176,7 @@ def fit_enet(p, variants, covariates, weights, continuous, alpha,
     # Extract best lambda and predict class labels/values
     betas = cvglmnetCoef(enet_fit, s = 'lambda_min')
     best_lambda_idx = np.argmin(enet_fit['cvm'])
-    R2 = enet_predict(enet_fit, variants, continuous, p.values)[1]
+    predictions, R2 = enet_predict(enet_fit, variants, continuous, p.values)
 
     # Write some summary stats
     # R^2 = 1 - sum((yi_obs - yi_predicted)^2) /sum((yi_obs - yi_mean)^2)
@@ -181,19 +188,31 @@ def fit_enet(p, variants, covariates, weights, continuous, alpha,
 
     # Report R2 for each fold (strain/clade)
     if fold_ids is not None:
-        fold_R2 = []
-        sizes = []
-        for fold in range(max(fold_ids) + 1):
-            samples_in_fold = [1 if x == fold else 0 for x in fold_ids]
-            strain_R2 = enet_predict(enet_fit, variants[samples_in_fold, :], continuous, p.values[samples_in_fold])[1]
-            fold_R2.append(strain_R2)
-            sizes.append(sum(samples_in_fold))
+        sys.stderr.write("Predictions within each lineage\n")
+        sys.stderr.write("\t".join(['Lineage', 'Size', 'R2']))
+        if not continuous:
+            sys.stderr.write("\t" + "\t".join(['TP', 'TN', 'FP', 'FN']))
+        sys.stderr.write("\n")
 
-        sys.stderr.write("Mean lineage R^2: " + '%.3f' % Decimal(mean(R2)) + "\n")
-        sys.stderr.write("Individual lineage R^2 values\n")
-        sys.stderr.write("Size\tR2\n")
-        for strain_R2, size in zip(fold_R2, sizes):
-            sys.stderr.write(size + "\t" + '%.3f' % Decimal(strain_R2) + "\n")
+        for fold in range(max(fold_ids) + 1):
+            samples_in_fold = np.where(fold_ids == fold)[0]
+            y_true = p.values[samples_in_fold]
+            y_pred = predictions[samples_in_fold].reshape(-1, )
+
+            strain_R2 = r2_score(y_true, y_pred)
+            sys.stderr.write("\t".join([lineage_dict[fold],
+                                        str(samples_in_fold.shape[0]),
+                                        '%.3f' % Decimal(strain_R2)]))
+
+            if not continuous:
+                if np.all(y_true == y_pred) and np.all(y_true == 1):
+                    tn, fp, fn, tp = (0, 0, 0, y_true.shape[0])
+                elif np.all(y_true == y_pred) and np.all(y_true == 0):
+                    tn, fp, fn, tp = (y_true.shape[0], 0, 0, 0)
+                else:
+                    tn, fp, fn, tp = confusion_matrix(y_true, y_pred).ravel()
+                sys.stderr.write("\t" + "\t".join([str(x) for x in [tp, tn, fp, fn]]))
+            sys.stderr.write("\n")
 
     return(betas.reshape(-1,))
 
@@ -229,10 +248,13 @@ def enet_predict(enet_fit, variants, continuous, responses = None):
         preds = cvglmnetPredict(enet_fit, newx=variants, s='lambda_min', ptype='class')
 
     # R^2 = 1 - sum((yi_obs - yi_predicted)^2) /sum((yi_obs - yi_mean)^2)
-    if responses is not None and responses.shape == (variants.shape[0], 1):
-        SStot = np.sum(np.square(responses.values - np.mean(responses.values)))
-        SSerr = np.sum(np.square(responses.values.reshape(-1, 1) - preds))
-        R2 = 1 - (SSerr/SStot)
+    if responses is not None and responses.shape[0] == variants.shape[0]:
+        SStot = np.sum(np.square(responses - np.mean(responses)))
+        SSerr = np.sum(np.square(responses.reshape(-1, 1) - preds))
+        if SStot != 0:
+            R2 = 1 - (SSerr/SStot)
+        else: # Not defined for constant response
+            R2 = None
     else:
         R2 = None
 

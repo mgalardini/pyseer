@@ -421,7 +421,7 @@ def main():
                                         reverse=True):
                 pval = 2 * (1 - norm.cdf(wald))
                 lineage_out.write("\t".join([lineage, str(wald), str(pval)]) + "\n")
-    else:
+    elif not options.lineage and not options.lineage_clusters:
         lineage_dict = None
 
     # binary regression takes LLF as null, not full model fit
@@ -617,11 +617,17 @@ def main():
             weights = np.matmul(lineage_clusters, 1/clus_totals).reshape(-1, 1)
         else:
             weights = np.ones((p.shape[0], 1))
+        if options.lineage_clusters:
+            fold_ids = np.where(lineage_clusters == 1)[1]
+        else:
+            fold_ids = None
 
         # fit enet with cross validation
         if (model == "enet"):
             sys.stderr.write("Fitting elastic net to top " + str(tested) + " variants\n")
-            enet_betas = fit_enet(p, all_vars, cov, weights, options.continuous, options.alpha, options.n_folds, options.cpu)
+            enet_betas = fit_enet(p, all_vars, cov, weights,
+                                  options.continuous, options.alpha,
+                                  lineage_dict, fold_ids, options.n_folds, options.cpu)
 
             # print those with passing indices, along with coefficient
             sys.stderr.write("Finding and printing selected variants\n")
