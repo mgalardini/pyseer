@@ -66,7 +66,7 @@ setup(
     install_requires=['numpy',
                       'scipy',
                       'pandas',
-                      'statsmodels',
+                      'statsmodels<=0.8.0',
                       'scikit-learn',
                       'pysam',
                       'DendroPy',

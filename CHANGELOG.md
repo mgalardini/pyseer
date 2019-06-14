@@ -1,4 +1,17 @@
 # CHANGELOG
+v1.3.0 (June 2019)
+- Handle missing variants as missing (with new `--max-missing` option to control maximum allowed)
+- Unit testing for enet functionality
+- Added option to perform midpoint rooting on tree used by `phylogeny_distance.py`
+- Updated docs with a new section about the use of unitigs
+- Various bugfixes
+   - Checks on phenotypes file
+   - Improved BWA command and results handling
+   - New optimizer for `fit_null`
+   - Avoid deprecation warnings from pandas
+   - Report to user if multiple chromosome/contigs are found while mapping
+   - Use the correct samples order when using lineages and covariates
+
 v1.2.0 (November 2018)
 - Added elastic net functionality
 - Avoid exiting with error in python 3.7+
