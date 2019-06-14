@@ -56,6 +56,10 @@ if __name__ == "__main__":
             ncolumns.append('variant_h2')
 
         for c in ncolumns:
+            if m1[c].dropna().shape[0] == 0 and m2[c].dropna().shape[0] == 0:
+                sys.stderr.write('Skipping column %s because of all-NaNs\n' %
+                                 c)
+                continue
             corr = stats.pearsonr(m1[c], m2[c])[0]
             if corr < 0.9:
                 sys.stderr.write('Column %s correlation below 0.9 (%.3f)\n' % (c, corr))
@@ -63,7 +67,13 @@ if __name__ == "__main__":
             print('%s\t%.4f' % (c, corr))
         for c in ['filter-pvalue',
                   'lrt-pvalue']:
-            corr = stats.pearsonr(-np.log10(m1[c]), -np.log10(m2[c]))[0]
+            if m1[c].dropna().shape[0] == 0 and m2[c].dropna().shape[0] == 0:
+                sys.stderr.write('Skipping column %s because of all-NaNs\n' %
+                                 c)
+                continue
+            t = pd.DataFrame((-np.log10(m1[c]), -np.log10(m2[c]))).T.dropna()
+            t.columns = [0, 1]
+            corr = stats.pearsonr(t[0].values, t[1].values)[0]
             if corr < 0.95:
                 sys.stderr.write('Column %s correlation below 0.95 (%.3f)\n' % (c, corr))
                 sys.exit(1)
