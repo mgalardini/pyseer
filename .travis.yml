@@ -1,6 +1,8 @@
 language: python
 python:
   - "3.6"
+services: # to get matplotlib to work
+  - xvfb
 install:
   - sudo apt-get update
   - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
@@ -21,8 +23,6 @@ install:
   - python -m pip install --no-deps --ignore-installed .
 before_script: # to get matplotlib to work
   - "export DISPLAY=:99.0"
-  - "sh -e /etc/init.d/xvfb start"
-  - sleep 3 # give xvfb some time to start
 script:
   - pytest -v tests
   - cd tests && bash run_test.sh
