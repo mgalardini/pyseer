@@ -256,8 +256,9 @@ class TestFitEnet(unittest.TestCase):
                         sep='\t')['binary']
         a = np.loadtxt(VENET)
         a = csc_matrix(a)
+        weights = np.ones((p.shape[0], 1))
         # alpha = 1
-        b = fit_enet(p, a, pd.DataFrame([]), False, 1)
+        b = fit_enet(p, a, pd.DataFrame([]), weights, False, 1)
         self.assertTrue(b.sum() - 0.24116205681688876 < 1E-7)
         self.assertTrue(abs(b -
                             np.array([
@@ -265,7 +266,7 @@ class TestFitEnet(unittest.TestCase):
                                      0., 0., 0., 0.
                                      ])).max() < 1E-7)
         # alpha = 0
-        b = fit_enet(p, a, pd.DataFrame([]), False, 0)
+        b = fit_enet(p, a, pd.DataFrame([]), weights, False, 0)
         self.assertTrue(b.sum() - 0.24116205681688876 < 1E-7)
         self.assertTrue(abs(b -
                             np.array([
@@ -276,7 +277,7 @@ class TestFitEnet(unittest.TestCase):
                                      1.89393939e-37
                                      ])).max() < 1E-7)
         # alpha = 0.5
-        b = fit_enet(p, a, pd.DataFrame([]), False, 0.5)
+        b = fit_enet(p, a, pd.DataFrame([]), weights, False, 0.5)
         self.assertTrue(b.sum() - 0.24116205681688876 < 1E-7)
         self.assertTrue(abs(b -
                             np.array([
@@ -284,7 +285,7 @@ class TestFitEnet(unittest.TestCase):
                                      0., 0., 0., 0.
                                      ])).max() < 1E-7)
         # alpha = 0.5, continuous
-        b = fit_enet(p, a, pd.DataFrame([]), True, 0.5)
+        b = fit_enet(p, a, pd.DataFrame([]), weights, True, 0.5)
         self.assertTrue(b.sum() - 0.5600000000000002 < 1E-7)
         self.assertTrue(abs(b -
                             np.array([
@@ -297,8 +298,9 @@ class TestFitEnet(unittest.TestCase):
                         sep='\t')['continuous']
         a = np.loadtxt(VENET)
         a = csc_matrix(a)
+        weights = np.ones((p.shape[0], 1))
         # alpha = 1
-        b = fit_enet(p, a, pd.DataFrame([]), True, 1)
+        b = fit_enet(p, a, pd.DataFrame([]), weights, True, 1)
         self.assertTrue(b.sum() - 25.5 < 1E-7)
         self.assertTrue(abs(b -
                             np.array([
@@ -306,7 +308,7 @@ class TestFitEnet(unittest.TestCase):
                                      0., 0., 0., 0.
                                      ])).max() < 1E-7)
         # alpha = 0
-        b = fit_enet(p, a, pd.DataFrame([]), True, 0)
+        b = fit_enet(p, a, pd.DataFrame([]), weights, True, 0)
         self.assertTrue(b.sum() - 25.5 < 1E-7)
         self.assertTrue(abs(b -
                             np.array([
@@ -317,7 +319,7 @@ class TestFitEnet(unittest.TestCase):
                                      1.76396316e-36
                                      ])).max() < 1E-7)
         # alpha = 0.5
-        b = fit_enet(p, a, pd.DataFrame([]), True, 0.5)
+        b = fit_enet(p, a, pd.DataFrame([]), weights, True, 0.5)
         self.assertTrue(b.sum() - 25.5 < 1E-7)
         self.assertTrue(abs(b -
                             np.array([
@@ -326,7 +328,7 @@ class TestFitEnet(unittest.TestCase):
                                      ])).max() < 1E-7)
         # binary
         with self.assertRaises(ValueError):
-            b = fit_enet(p, a, pd.DataFrame([]), False, 0.5)
+            b = fit_enet(p, a, pd.DataFrame([]), weights, False, 0.5)
 
 
 class TestLoadAllVars(unittest.TestCase):

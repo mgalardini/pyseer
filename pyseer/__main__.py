@@ -370,6 +370,7 @@ def main():
     # lineage effects using null model - read BAPS clusters and fit pheno ~ lineage
     lineage_clusters = None
     lineage_samples = None
+    lineage_dict = None
 
     # Load in external clusters if provided
     if options.lineage_clusters:
@@ -378,7 +379,6 @@ def main():
     if options.lineage:
         lineage_samples = p.index # this is ensured in load_lineage
 
-        lineage_dict = []
         lineage_wald = {}
         if options.lineage_clusters:
             # The lineage design matrix is not full rank, so one lineage
@@ -421,8 +421,6 @@ def main():
                                         reverse=True):
                 pval = 2 * (1 - norm.cdf(wald))
                 lineage_out.write("\t".join([lineage, str(wald), str(pval)]) + "\n")
-    elif not options.lineage and not options.lineage_clusters:
-        lineage_dict = None
 
     # binary regression takes LLF as null, not full model fit
     if not options.continuous and (not (options.lmm or options.wg) or enet_seer):

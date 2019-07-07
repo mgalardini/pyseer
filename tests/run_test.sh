@@ -49,10 +49,10 @@ python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --lmm --lo
 python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --no-distances > 28.log 2> 28.err || die "No distances"
 python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --no-distances --use-covariates 3 --covariates covariates.txt > 29.log 2> 29.err || die "No distances and covariates"
 python ../pyseer-runner.py --kmers kmers_int.gz --phenotypes subset_int.pheno --distances distances_int.tsv.gz > 30.log 2> 30.err || die "Sample names are all integers"
-python ../pyseer-runner.py --vcf variants.vcf.gz --phenotypes subset.pheno --save-enet enet_vcf --enet --alpha 1 --cor-filter 0.25 > 31.log 2> 31.err || die "Enet with VCF input"
-python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --enet --alpha 1 --cor-filter 0.25 > 32.log 2> 32.err || die "Load Enet with kmers input"
-python ../pyseer-runner.py --pres presence_absence.Rtab --phenotypes subset.pheno --enet --alpha 1 --cor-filter 0.25 > 33.log 2> 33.err || die "Load Enet with roary/piggy input"
-python ../pyseer-runner.py --vcf variants.vcf.gz --phenotypes subset.pheno --load-enet enet_vcf --enet --save-model enet_vcf_model --alpha 1 --cor-filter 0.25 > 34.log 2> 34.err || die "Load Enet and save model"
+python ../pyseer-runner.py --vcf variants.vcf.gz --phenotypes subset.pheno --save-vars enet_vcf --wg enet --alpha 1 --cor-filter 0.25 > 31.log 2> 31.err || die "Enet with VCF input"
+python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --wg enet --alpha 1 --cor-filter 0.25 > 32.log 2> 32.err || die "Load Enet with kmers input"
+python ../pyseer-runner.py --pres presence_absence.Rtab --phenotypes subset.pheno --wg enet --alpha 1 --cor-filter 0.25 > 33.log 2> 33.err || die "Load Enet with roary/piggy input"
+python ../pyseer-runner.py --vcf variants.vcf.gz --phenotypes subset.pheno --load-vars enet_vcf --wg enet --save-model enet_vcf_model --alpha 1 --cor-filter 0.25 > 34.log 2> 34.err || die "Load Enet and save model"
 
 # test other pyseer commands
 python ../scree_plot_pyseer-runner.py distances.tsv.gz --max-dimensions 20 > /dev/null 2> /dev/null || die "Scree plot"

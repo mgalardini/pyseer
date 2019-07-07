@@ -20,6 +20,7 @@ from .input import open_variant_file
 from .input import load_covariates
 from .input import read_variant
 from .input import load_lineage
+from .input import load_phenotypes
 
 from .enet import write_lineage_predictions
 
@@ -40,6 +41,10 @@ def get_options():
     parser.add_argument('--lineage-clusters',
                         help='Custom clusters to use as lineages '
                              'to report stratified accuracy')
+    parser.add_argument('--true-values',
+                        help='Pheno file with known phenotypes '
+                             'to calculate accuracy',
+                        default=None)
 
     variants = parser.add_argument_group('Variants')
     variant_group = variants.add_mutually_exclusive_group(required=True)
@@ -172,25 +177,12 @@ def main():
 
     # apply link function
     if not continuous:
-        link = expit(predictions)
+        link = predictions
+        predictions = expit(link)
+        binary_predictions = np.zeros(predictions.shape[0])
+        binary_predictions[np.where(predictions > options.threshold)[0]] = 1
     else:
         link = predictions
-
-    # report summary
-    sys.stderr.write("Overall prediction accuracy\n")
-    R2, confusion = write_lineage_predictions(p.values, predictions, fold_ids,
-                                  lineage_dict, continuous, stderr_print=False)
-    tn, fp, fn, tp = confusion[0]
-    sys.stderr.write("R2: " + str(R2[0]) + "\n")
-    sys.stderr.write("tn: " + str(tn) + "\n")
-    sys.stderr.write("fp: " + str(fp) + "\n")
-    sys.stderr.write("fn: " + str(fn) + "\n")
-    sys.stderr.write("tp: " + str(fp) + "\n")
-
-    if fold_ids is not None:
-        sys.stderr.write("Predictions within each lineage\n")
-        write_lineage_predictions(p.values, predictions, fold_ids,
-                                  lineage_dict, continuous, stderr_print=True)
 
     # output
     if continuous:
@@ -198,15 +190,37 @@ def main():
     else:
         print("\t".join(['Sample','Prediction','Link','Probability']))
 
-    p = pd.DataFrame(data=np.hstack((predictions, link)),
+    p = pd.DataFrame(data=np.hstack((link, predictions)),
                      index=samples,
                      columns=['link', 'prediction'])
-    for row in p.itertuples():
+    for row_idx, row in enumerate(p.itertuples()):
         if not continuous:
-            binary_prediction = 0
-            if row[2] >= options.threshold:
-                binary_prediction = 1
-            print("\t".join([row[0], str(binary_prediction), str(row[1]), str(row[2])]))
+            print("\t".join([row[0], str(binary_predictions[row_idx]), str(row[1]), str(row[2])]))
         else:
             print("\t".join([row[0], str(row[1]), str(row[2])]))
 
+    # report summary
+    if options.true_values:
+        y_true = load_phenotypes(options.true_values)
+        intersecting_samples = p.index.intersection(y_true.index)
+        y_true = y_true.loc[intersecting_samples]
+
+        sys.stderr.write("Overall prediction accuracy\n")
+        if not continuous:
+            R2, confusion = write_lineage_predictions(y_true.values, binary_predictions, fold_ids,
+                                        lineage_dict, continuous, stderr_print=False)
+            tn, fp, fn, tp = confusion[0]
+            sys.stderr.write("R2: " + str(R2[0]) + "\n")
+            sys.stderr.write("tn: " + str(tn) + "\n")
+            sys.stderr.write("fp: " + str(fp) + "\n")
+            sys.stderr.write("fn: " + str(fn) + "\n")
+            sys.stderr.write("tp: " + str(fp) + "\n")
+        else:
+            R2, confusion = write_lineage_predictions(y_true.values, predictions, fold_ids,
+                                lineage_dict, continuous, stderr_print=False)
+            sys.stderr.write("R2: " + str(R2[0]) + "\n")
+
+        if fold_ids is not None:
+            sys.stderr.write("Predictions within each lineage\n")
+            write_lineage_predictions(p.values, predictions, fold_ids,
+                                    lineage_dict, continuous, stderr_print=True)

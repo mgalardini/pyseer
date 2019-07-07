@@ -272,6 +272,9 @@ def write_lineage_predictions(true_values, predictions, fold_ids,
             sys.stderr.write("\t" + "\t".join(['TP', 'TN', 'FP', 'FN']))
         sys.stderr.write("\n")
 
+    if np.any(fold_ids) == None:
+        fold_ids = np.zeros(true_values.shape[0], dtype=np.int8)
+
     R2_vals = []
     confusion = []
     for fold in range(max(fold_ids) + 1):
