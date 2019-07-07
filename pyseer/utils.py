@@ -55,7 +55,7 @@ def format_output(item, lineage_dict=None, model='seer', print_samples=False):
     """
     out = '%s' % item.kmer
 
-    if model is "enet":
+    if model == "enet" or model == "rf":
         out += '\t' + '\t'.join(['%.2E' % Decimal(x)
                                  if np.isfinite(x)
                                  else ''

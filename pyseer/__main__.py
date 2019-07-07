@@ -47,6 +47,8 @@ from .enet import fit_enet
 from .enet import correlation_filter
 from .enet import find_enet_selected
 
+from .rf import fit_rf
+
 from .utils import format_output
 
 
@@ -129,12 +131,12 @@ def get_options():
                              help='Use random instead of fixed effects '
                                   'to correct for population structure. '
                                   'Requires a similarity matrix')
-    association.add_argument('--enet',
-                             action='store_true',
-                             default=False,
-                             help='Use an elastic net for association. '
-                                  'Population structure correction is '
-                                  'implicit.')
+    association.add_argument('--wg',
+                             default=None,
+                             choices=['enet', 'rf', 'blup'],
+                             help='Use a whole genome model for association '
+                                  'and prediction. Population structure '
+                                  'correction is implicit.')
     association.add_argument('--lineage',
                              action='store_true',
                              help='Report lineage effects')
@@ -146,19 +148,23 @@ def get_options():
                              help='File to write lineage association to '
                                   '[Default: lineage_effects.txt]')
 
-    enet = parser.add_argument_group('Elastic net options')
-    enet.add_argument('--save-enet',
-                      help='Prefix for saving enet variants')
-    enet.add_argument('--load-enet',
-                      help='Prefix for loading enet variants')
-    enet.add_argument('--save-model',
-                      help='Prefix for saving enet model')
-    enet.add_argument('--alpha',
+    wg = parser.add_argument_group('Whole genome options')
+    wg.add_argument('--sequence-reweighting',
+                      action='store_true',
+                      help='Use --lineage-clusters to downweight '
+                           'sequences.')
+    wg.add_argument('--save-vars',
+                      help='Prefix for saving variants')
+    wg.add_argument('--load-vars',
+                      help='Prefix for loading variants')
+    wg.add_argument('--save-model',
+                      help='Prefix for saving model')
+    wg.add_argument('--alpha',
                       type=float,
                       default=0.0069,
                       help='Set the mixing between l1 and l2 penalties '
                            '[Default: 0.0069]')
-    enet.add_argument('--n-folds',
+    wg.add_argument('--n-folds',
                       type=int,
                       default=10,
                       help='Number of folds cross-validation to perform '
@@ -245,8 +251,8 @@ def main():
     options = get_options()
 
     # check some arguments here
-    if options.lmm and options.enet:
-        sys.stderr.write('Choose only one model. Either --lmm, --enet or neither\n')
+    if options.lmm and options.wg:
+        sys.stderr.write('Choose only one alternative model. Either --lmm, --wg or neither\n')
         sys.exit(1)
     if options.max_dimensions < 1:
         sys.stderr.write('Minimum number of dimensions after MDS is 1\n')
@@ -273,6 +279,10 @@ def main():
         if options.lmm:
             sys.stderr.write('Cannot use --no-distances with --lmm\n')
             sys.exit(1)
+    if ((options.wg and options.sequence_reweighting) and (not options.lineage_clusters or options.lineage)):
+        sys.stderr.write("Using sequence reweighting requires clusters to weight with.\n")
+        sys.stderr.write("Provide these with --lineage-clusters. Incompatible with --lineage.\n")
+        sys.exit(1)
     if (options.block_size < 1):
         sys.stderr.write('Block size must be at least 1\n')
         sys.exit(1)
@@ -304,11 +314,11 @@ def main():
         cov = pd.DataFrame([])
 
     enet_seer = False
-    if options.enet and options.distances or options.load_m:
+    if options.wg and options.distances or options.load_m:
         enet_seer = True
 
     # fixed effects or lineage effects require regressing p ~ m
-    if (options.lineage and not options.lineage_clusters) or enet_seer or not (options.lmm or options.enet):
+    if (options.lineage and not options.lineage_clusters) or enet_seer or not (options.lmm or options.wg):
         # reading genome distances
         if not options.no_distances:
             if options.load_m and os.path.isfile(options.load_m):
@@ -360,14 +370,17 @@ def main():
     # lineage effects using null model - read BAPS clusters and fit pheno ~ lineage
     lineage_clusters = None
     lineage_samples = None
+
+    # Load in external clusters if provided
+    if options.lineage_clusters:
+        lineage_clusters, lineage_dict = load_lineage(options.lineage_clusters, p)
+
     if options.lineage:
         lineage_samples = p.index # this is ensured in load_lineage
 
         lineage_dict = []
         lineage_wald = {}
         if options.lineage_clusters:
-            lineage_clusters, lineage_dict = load_lineage(options.lineage_clusters, p)
-
             # The lineage design matrix is not full rank, so one lineage
             # predictor needs to be removed. Do multiple single variable linear
             # regressions (as lineages are orthogonal, same as multiple linear
@@ -408,11 +421,11 @@ def main():
                                         reverse=True):
                 pval = 2 * (1 - norm.cdf(wald))
                 lineage_out.write("\t".join([lineage, str(wald), str(pval)]) + "\n")
-    else:
+    elif not options.lineage and not options.lineage_clusters:
         lineage_dict = None
 
     # binary regression takes LLF as null, not full model fit
-    if not options.continuous and (not (options.lmm or options.enet) or enet_seer):
+    if not options.continuous and (not (options.lmm or options.wg) or enet_seer):
         null_fit = null_fit.llf
 
     # LMM setup - see _internal_single in fastlmm.association.single_snp
@@ -452,8 +465,12 @@ def main():
 
     # header fields
     header = ['variant', 'af', 'filter-pvalue',
-              'lrt-pvalue', 'beta']
-    if not options.enet:
+              'lrt-pvalue']
+    if options.wg != "rf":
+        header.append('beta')
+    else:
+        header.append('importance')
+    if not options.wg:
         header.append('beta-std-err')
 
         if not options.lmm:
@@ -466,17 +483,16 @@ def main():
                 header += [x for x in cov.columns]
         else:
             header.append('variant_h2')
-
     if options.lineage:
         header.append('lineage')
     if options.print_samples:
         header += ['k-samples', 'nk-samples']
     header.append('notes')
-    if not options.enet:
+    if not options.wg:
         print('\t'.join(header))
 
     # multiprocessing setup
-    if not options.enet and options.cpu > 1:
+    if not options.wg and options.cpu > 1:
         pool = Pool(options.cpu)
 
     # actual association tests
@@ -544,13 +560,13 @@ def main():
     ###########################
     #* Elastic net model     *#
     ###########################
-    elif options.enet:
-        model = 'enet'
+    elif options.wg:
+        model = options.wg
         # read all variants
         sys.stderr.write("Reading all variants\n")
-        if options.load_enet:
-            all_vars = scipy.sparse.load_npz(options.load_enet + ".npz")
-            with open(options.load_enet + ".pkl", 'rb') as pickle_obj:
+        if options.load_vars:
+            all_vars = scipy.sparse.load_npz(options.load_vars + ".npz")
+            with open(options.load_vars + ".pkl", 'rb') as pickle_obj:
                 var_file_original, var_indices, saved_samples, loaded = pickle.load(pickle_obj)
                 if var_file_original != file_hash(var_file):
                     sys.stderr.write("WARNING: Variant file used to load variants"
@@ -576,11 +592,11 @@ def main():
                                     options.min_af, options.max_af,
                                     options.max_missing, options.uncompressed)
 
-            if options.save_enet:
-                scipy.sparse.save_npz(options.save_enet + ".npz", all_vars)
-                with open(options.save_enet + ".pkl", 'wb') as pickle_file:
+            if options.save_vars:
+                scipy.sparse.save_npz(options.save_vars + ".npz", all_vars)
+                with open(options.save_vars + ".pkl", 'wb') as pickle_file:
                     pickle.dump([file_hash(var_file), var_indices, p.index, loaded], pickle_file)
-                    sys.stderr.write("Saved enet variants as %s.pkl\n" % options.save_enet)
+                    sys.stderr.write("Saved enet variants as %s.pkl\n" % options.save_vars)
 
         # Apply the correlation filtering
         if options.cor_filter > 0:
@@ -595,50 +611,108 @@ def main():
         tested = len(var_indices)
         prefilter = loaded - tested
 
-        # fit enet with cross validation
-        sys.stderr.write("Fitting elastic net to top " + str(tested) + " variants\n")
-        enet_betas = fit_enet(p, all_vars, cov, options.continuous, options.alpha, options.n_folds, options.cpu)
-
-        # print those with passing indices, along with coefficient
-        sys.stderr.write("Finding and printing selected variants\n")
-        infile, sample_order = open_variant_file(var_type, var_file, options.burden, burden_regions, options.uncompressed)
-
-        pred_model = {'intercept': (1, enet_betas[0])}
-        if cov.shape[1] > 0:
-            covar_betas = enet_betas[1:cov.shape[1]]
-            for beta, covariate in zip(covar_betas, cov.columns):
-                if beta != 0:
-                    sys.stderr.write("Kept covariate '" + covariate + "', slope: " + '%.2E' % Decimal(beta) + "\n")
-                    pred_model[covariate] = (np.mean(cov[covariate]), beta)
-
-        if enet_seer:
-            fit_seer = (m, null_fit, firth_null)
+        # perform sequence reweighting
+        if options.sequence_reweighting:
+            clus_totals = np.sum(lineage_clusters, axis=0)
+            weights = np.matmul(lineage_clusters, 1/clus_totals).reshape(-1, 1)
         else:
-            fit_seer = None
-        selected_vars = find_enet_selected(enet_betas, var_indices, p, cov, var_type, fit_seer, burden,
-                                           burden_regions, infile, all_strains, sample_order, options.continuous,
-                                           options.lineage, lineage_clusters, options.uncompressed)
+            weights = np.ones((p.shape[0], 1))
+        if options.lineage_clusters:
+            fold_ids = np.where(lineage_clusters == 1)[1]
+        else:
+            fold_ids = None
 
-        print('\t'.join(header))
-        for x in selected_vars:
-            printed += 1
-            print(format_output(x,
-                                lineage_dict,
-                                model,
-                                options.print_samples))
+        # fit enet with cross validation
+        if (model == "enet"):
+            sys.stderr.write("Fitting elastic net to top " + str(tested) + " variants\n")
+            enet_betas = fit_enet(p, all_vars, cov, weights,
+                                  options.continuous, options.alpha,
+                                  lineage_dict, fold_ids, options.n_folds, options.cpu)
 
-            # Save coefficients in a dict by variant name
-            pred_model[x.kmer] = (x.af, x.kbeta)
+            # print those with passing indices, along with coefficient
+            sys.stderr.write("Finding and printing selected variants\n")
+            infile, sample_order = open_variant_file(var_type, var_file, options.burden, burden_regions, options.uncompressed)
 
-        # Save the elements needed to perform prediction
-        if options.save_model:
-            for cov_idx, covariate in enumerate(cov):
-                if enet_betas[cov_idx] > 0:
-                    pred_model[covariate] = (np.mean(covariate), enet_betas[cov_idx])
+            pred_model = {'intercept': (1, enet_betas[0])}
+            if cov.shape[1] > 0:
+                covar_betas = enet_betas[1:cov.shape[1]]
+                for beta, covariate in zip(covar_betas, cov.columns):
+                    if beta != 0:
+                        sys.stderr.write("Kept covariate '" + covariate + "', slope: " + '%.2E' % Decimal(beta) + "\n")
+                        pred_model[covariate] = (np.mean(cov[covariate]), beta)
 
-            with open(options.save_model + '.pkl', 'wb') as pickle_file:
-                pickle.dump([pred_model, options.continuous], pickle_file)
-                sys.stderr.write("Saved enet model as %s.pkl\n" % options.save_model)
+            if enet_seer:
+                fit_seer = (m, null_fit, firth_null)
+            else:
+                fit_seer = None
+            selected_vars = find_enet_selected(enet_betas, var_indices, p, cov, var_type, fit_seer, burden,
+                                            burden_regions, infile, all_strains, sample_order, options.continuous,
+                                            options.lineage, lineage_clusters, options.uncompressed)
+
+            print('\t'.join(header))
+            for x in selected_vars:
+                printed += 1
+                print(format_output(x,
+                                    lineage_dict,
+                                    model,
+                                    options.print_samples))
+
+                # Save coefficients in a dict by variant name
+                pred_model[x.kmer] = (x.af, x.kbeta)
+
+            # Save the elements needed to perform prediction
+            if options.save_model:
+                for cov_idx, covariate in enumerate(cov):
+                    if enet_betas[cov_idx] > 0:
+                        pred_model[covariate] = (np.mean(covariate), enet_betas[cov_idx])
+
+                with open(options.save_model + '.pkl', 'wb') as pickle_file:
+                    pickle.dump([pred_model, options.continuous], pickle_file)
+                    sys.stderr.write("Saved enet model as %s.pkl\n" % options.save_model)
+
+        elif (model == "rf"):
+            sys.stderr.write("Fitting random forest to top " + str(tested) + " variants\n")
+            rf_model, rf_betas = fit_rf(p, all_vars, cov, weights, options.continuous, options.alpha, options.n_folds, options.cpu)
+
+            # print those with passing indices, along with coefficient
+            sys.stderr.write("Printing variants\n")
+            infile, sample_order = open_variant_file(var_type, var_file, options.burden, burden_regions, options.uncompressed)
+
+            var_list = []
+            if cov.shape[1] > 0:
+                covar_betas = enet_betas[0:cov.shape[1]-1]
+                for beta, covariate in zip(covar_betas, cov.columns):
+                    sys.stderr.write("Covariate '" + covariate + "', importance: " + '%.2E' % Decimal(beta) + "\n")
+                    var_list.append(covariate)
+
+            if enet_seer:
+                fit_seer = (m, null_fit, firth_null)
+            else:
+                fit_seer = None
+            selected_vars = find_enet_selected(rf_betas, var_indices, p, cov, var_type, fit_seer, burden,
+                                            burden_regions, infile, all_strains, sample_order, options.continuous,
+                                            options.lineage, lineage_clusters, options.uncompressed)
+
+            print('\t'.join(header))
+            for x in selected_vars:
+                printed += 1
+                print(format_output(x,
+                                    lineage_dict,
+                                    model,
+                                    options.print_samples))
+
+                # Save coefficients in a dict by variant name
+                var_list.append(x.kmer)
+
+            # Save the elements needed to perform prediction
+            if options.save_model:
+                with open(options.save_model + '.pkl', 'wb') as pickle_file:
+                    pickle.dump([rf_model, var_list, options.continuous], pickle_file)
+                    sys.stderr.write("Saved rf model as %s.pkl\n" % options.save_model)
+
+        elif (model == "blup"):
+            sys.stderr.write("BLUP model not yet implemented\n")
+            sys.exit(1)
 
     ################################
     #* SEER model (fixed effects) *#
