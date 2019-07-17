@@ -1,4 +1,8 @@
 # CHANGELOG
+v1.3.1 (July 2019)
+- Handle API changes between different statsmodels versions
+- Handle corner cases where no distance matrix is provided but --no-distances should be used
+
 v1.3.0 (June 2019)
 - Handle missing variants as missing (with new `--max-missing` option to control maximum allowed)
 - Unit testing for enet functionality
