@@ -15,6 +15,15 @@ import statsmodels
 import pandas as pd
 from scipy import stats
 import statsmodels.formula.api as smf
+# handle different versions of statsmodels
+try:
+    smf.OLS
+except AttributeError:
+    smf.OLS = statsmodels.regression.linear_model.OLS
+try:
+    smf.Logit
+except AttributeError:
+    smf.Logit = statsmodels.discrete.discrete_model.Logit
 
 import pyseer.classes as var_obj
 
