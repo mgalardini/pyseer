@@ -71,7 +71,7 @@ if __name__ == "__main__":
                 sys.stderr.write('Skipping column %s because of all-NaNs\n' %
                                  c)
                 continue
-            t = pd.DataFrame((-np.log10(m1[c]), -np.log10(m2[c]))).T.dropna()
+            t = pd.DataFrame([-np.log10(m1[c]), -np.log10(m2[c])]).T.dropna()
             t.columns = [0, 1]
             corr = stats.pearsonr(t[0].values, t[1].values)[0]
             if corr < 0.95:
