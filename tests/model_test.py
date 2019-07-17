@@ -5,6 +5,11 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 import statsmodels.formula.api as smf
+# handle different versions of statsmodels
+try:
+    smf.Logit
+except AttributeError:
+    smf.Logit = statsmodels.discrete.discrete_model.Logit
 from pyseer.model import pre_filtering
 from pyseer.model import fit_null
 from pyseer.model import fit_firth
