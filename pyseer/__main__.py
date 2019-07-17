@@ -272,6 +272,9 @@ def main():
         if (options.lmm and not (options.distances or options.load_m) and options.lineage):
             sys.stderr.write('Must also provide a distance matrix to report lineage effects\n')
             sys.exit(1)
+        if not options.distances and not options.load_m:
+            sys.stderr.write('Option --no-distances must be used when no distance matrix is provided\n')
+            sys.exit(1)
     else:
         if options.distances or options.load_m:
             sys.stderr.write('Cannot use --no-distances with --distances or --load-m\n')
