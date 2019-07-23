@@ -242,7 +242,7 @@ def enet_predict(enet_fit, variants, continuous, responses = None):
 
 
 def write_lineage_predictions(true_values, predictions, fold_ids,
-                              lineage_dict, continuous, stderr_print = True):
+                              lineage_dict, continuous, stderr_print=True):
     """Writes prediction ability stratified by lineage to stderr
 
     Args:

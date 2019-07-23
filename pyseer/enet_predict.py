@@ -201,26 +201,30 @@ def main():
 
     # report summary
     if options.true_values:
-        y_true = load_phenotypes(options.true_values)
+        y_true = load_phenotypes(options.true_values, None)
         intersecting_samples = p.index.intersection(y_true.index)
         y_true = y_true.loc[intersecting_samples]
 
         sys.stderr.write("Overall prediction accuracy\n")
         if not continuous:
-            R2, confusion = write_lineage_predictions(y_true.values, binary_predictions, fold_ids,
-                                        lineage_dict, continuous, stderr_print=False)
+            R2, confusion = write_lineage_predictions(y_true.values, binary_predictions, None,
+                                        None, continuous, stderr_print=False)
             tn, fp, fn, tp = confusion[0]
             sys.stderr.write("R2: " + str(R2[0]) + "\n")
             sys.stderr.write("tn: " + str(tn) + "\n")
             sys.stderr.write("fp: " + str(fp) + "\n")
             sys.stderr.write("fn: " + str(fn) + "\n")
-            sys.stderr.write("tp: " + str(fp) + "\n")
+            sys.stderr.write("tp: " + str(tp) + "\n")
         else:
-            R2, confusion = write_lineage_predictions(y_true.values, predictions, fold_ids,
-                                lineage_dict, continuous, stderr_print=False)
+            R2, confusion = write_lineage_predictions(y_true.values, predictions, None,
+                                None, continuous, stderr_print=False)
             sys.stderr.write("R2: " + str(R2[0]) + "\n")
 
         if fold_ids is not None:
             sys.stderr.write("Predictions within each lineage\n")
-            write_lineage_predictions(p.values, predictions, fold_ids,
-                                    lineage_dict, continuous, stderr_print=True)
+            if continuous:
+                write_lineage_predictions(y_true.values, predictions, fold_ids,
+                                        lineage_dict, continuous, stderr_print=True)
+            else:
+                write_lineage_predictions(y_true.values, binary_predictions, fold_ids,
+                                        lineage_dict, continuous, stderr_print=True)

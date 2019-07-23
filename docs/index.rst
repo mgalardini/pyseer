@@ -5,7 +5,7 @@
 
 pyseer documentation
 ==================================
-``pyseer`` is a python reimplementation of `seer <https://github.com/johnlees/seer>`_, which was written in C++.
+``pyseer`` was first written a python reimplementation of `seer <https://github.com/johnlees/seer>`_, which was written in C++.
 ``pyseer`` uses linear models with fixed or mixed effects to estimate the
 effect of genetic variation in a bacterial population on a phenotype of
 interest, while accounting for potentially very strong confounding population
@@ -26,6 +26,9 @@ available, and tools to help with processing the output.
 Testing shows that results (p-values) should be the same as the original
 ``seer``, with a runtime that is roughly twice as long as the optimised C++
 code.
+
+We have also extended ``pyseer`` to fit association models to the whole genome, which also
+allows the use of machine learning to predict traits in new samples.
 
 Citations
 ---------
@@ -48,6 +51,7 @@ studies: Bridging the gap between k-mers and genetic events. PLOS Genetics. 14, 
    options.rst
    usage.rst
    tutorial.rst
+   predict.rst
    multiprocessing.rst
    api.rst
 

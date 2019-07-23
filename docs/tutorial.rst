@@ -1,5 +1,5 @@
-Tutorial
-========
+GWAS tutorial
+=============
 
 .. |nbsp| unicode:: 0xA0
    :trim:
@@ -245,6 +245,11 @@ First, count the k-mers from the assemblies::
 This will require you to have `fsm-lite <https://github.com/nvalimak/fsm-lite>`_ installed
 If you do not have the time/resources to do this, you can follow the rest of these steps using the
 SNPs as above.
+
+.. note:: Everything here also applies to unitigs, which can be
+      called with `unitig-counter <https://github.com/johnlees/unitig-counter>`__.
+      These are generally recommended due to their lower redundancy (and are also therefore
+      faster) and potentially easier interpretation.
 
 To correct for population structure we must supply ``pyseer`` with the kinship
 matrix :math:`K` using the ``--similarities`` argument (or ``--load-lmm`` if using

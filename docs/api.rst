@@ -31,3 +31,8 @@ cmdscale.py
 .. automodule:: pyseer.cmdscale
    :members:
 
+enet.py
+-------
+
+.. automodule:: pyseer.enet
+   :members:

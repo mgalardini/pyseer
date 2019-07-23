@@ -8,6 +8,15 @@ Will run the original ``seer`` model on given phenotypes and k-mers, using
 MDS scaling of the pairwise distances provided to correct for population
 structure. This will paralellize the analysis over 15 cores.
 
+Current 'best-practice' GWAS recommendations:
+
+* Use the ``--lmm`` mode.
+* Use a phylogeny to generate the ``--similarity`` matrix.
+* Use `unitigs <https://github.com/johnlees/unitig-counter>`__ as the input,
+  with ``--kmers``. End-to-end analysis is identical to k-mers.
+
+For whole-genome models or prediction we recommend you read :doc:`predict`.
+
 .. contents::
    :local:
 
@@ -94,7 +103,9 @@ Usage is then identical to k-mers, with the ``--kmers`` options, and ``--uncompr
 
 SNPs and INDELs
 ^^^^^^^^^^^^^^^
-Short variation (SNPs and INDELs) can be read from a VCF file using the ``PySAM`` module.
+Short variation (SNPs and INDELs) can be read from a VCF file using the ``PySAM`` module. Simply use
+the ``--vcf`` option to read in your file.
+
 If you have multiple VCF files (e.g. one per sample) you can combine them with
 ``bcftools``::
 
@@ -363,9 +374,12 @@ the heritability of pathogen traits.
    compare estimates from other software, and particular care should be taken
    with binary phenotypes.
 
-Elastic net (enet)
-^^^^^^^^^^^^^^^^^^
-An elastic net can be fitted to all the variants at once by providing the ``--enet``
+Whole genome models (elastic net)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+All variants can be included at once with the ``--wg`` mode. Currently only the elastic
+net is implemented, but more models will be included in future.
+
+An elastic net can be fitted to all the variants at once by providing the ``--wg enet``
 option, using the `glmnet <https://web.stanford.edu/~hastie/glmnet/glmnet_alpha.html>`__
 package to solve the following problem:
 
@@ -383,14 +397,15 @@ These values, along with the corresponding best :math:`R^2` will be written to `
 Setting :math:`\alpha` closer to one will remove more variants from the model by giving
 them zero beta.
 
-.. tip:: Population structure is not directly included in this model, but can be incorporated
-    when calcualting the p-values of selected predictors.
+.. tip:: Population structure can be included using ``--sequence-reweighting`` and
+      ``--lineage-clusters``. Use of the latter will also use these clusters to give
+      a more representative cross-validation accuracy. See :doc:`predict` for more details.
 
 Cross-validation uses ``--cpu`` threads, which is recommended for better performance.
 
 .. warning:: As all variants are stored in memory, and potentially copied, very large
     variant files will cause this method to run out of RAM. We therefore do not recommend
-    running on k-mers, but SNPs or genes work fine.
+    running on k-mers, but to use unitigs instead. SNPs and genes work fine.
 
 By default, the top 75% of variants correlated with the phenotype are included in the fit.
 Variants will include the unadjusted single-variate p-values, if distances have been provided
@@ -399,24 +414,24 @@ with either ``--distances`` or ``--load-m`` the adjusted p-values will also be p
 =====================  =======
 Option                 Use
 =====================  =======
-``--save-enet``        Save the object representing all objects to disk. Useful for reruns, or using multiple phenotypes.
-``--load-enet``        Load the variants saved to disk, the most time-consuming step.
+``--save-vars``        Save the object representing all objects to disk. Useful for reruns, or using multiple phenotypes.
+``--load-vars``        Load the variants saved to disk, the most time-consuming step.
 ``--save-model``       Save the fitted model so that one can perform :ref:`enet-predict` on samples with unobserved phenotypes.
 ``--alpha``            Sets the mixing between ridge regression (0) and lasso regression (1) in the above formula. Default is 0.0069 (closer to ridge regression)
 ``--n-folds``          Number of folds in cross validation (samples removed to test prediction accuracy). Default is 10.
 ``--cor-filter``       Set the correlation filter to discard the variants with low correlation to the phenotype. Default is 0.25 (keeping the top 75% variants correlated with phenotype).
 =====================  =======
 
-.. note:: When using ``--load-enet`` you still need to provide the original variant file with
-    ``--vcf`` or ``--Rtab`` as this is read again to output the selected variants. pyseer will
-    test that the checksums of this files is identical to that used with ``--save-enet``, and will
+.. note:: When using ``--load-vars`` you still need to provide the original variant file with
+    ``--vcf``, ``--kmers`` or ``--pres`` as this is read again to output the selected variants. pyseer will
+    test that the checksums of this files is identical to that used with ``--save-vars``, and will
     warn if any difference is detected.
 
 .. _enet-predict:
 
 Prediction with the elastic net
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-If ``--enet`` was used with ``--save-model`` this fit can be used to attempt to predict the
+If ``--wg`` was used with ``--save-model`` this fit can be used to attempt to predict the
 phenotype of new samples without a phenotype label::
 
     enet_predict --vcf new_snps.vcf.gz old_snps.lasso_model.pkl samples.list > lasso.predictions.txt
