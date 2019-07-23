@@ -44,7 +44,8 @@ def extract_genes(bedtools_intervals):
     annotations = {}
     for match in bedtools_intervals.features():
         kmer_id, hit_id = match.fields[3].split("_")
-        annotations[int(kmer_id)] = {}
+        if annotations.get(int(kmer_id)) == None:
+            annotations[int(kmer_id)] = {}
 
         ID = None
         gene = None
@@ -62,7 +63,10 @@ def extract_genes(bedtools_intervals):
             else:
                 gene = ""
 
-        annotations[int(kmer_id)][int(hit_id)] = gene
+        if annotations[int(kmer_id)].get(int(hit_id)) == None or annotations[int(kmer_id)][int(hit_id)] == "":
+            annotations[int(kmer_id)][int(hit_id)] = gene
+        else:
+            annotations[int(kmer_id)][int(hit_id)] += "|" + gene
 
     return annotations
 

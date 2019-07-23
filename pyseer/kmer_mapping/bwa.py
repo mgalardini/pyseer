@@ -36,7 +36,7 @@ def bwa_iter(reference, fasta, algorithm):
     if algorithm == "mem":
         command = "bwa mem -v 1 -k 8 '" + reference + "' '" + fasta + "'"
     elif algorithm == "fastmap":
-        command = "bwa fastmap -l 9 " + reference + " " + fasta + "'"
+        command = "bwa fastmap -l 9 '" + reference + "' '" + fasta + "'"
     else:
         sys.stderr.write("Unknown algorithm type for bwa\n")
         raise ValueError(algorithm)
