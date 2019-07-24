@@ -171,9 +171,13 @@ given to each sample in the loss function
 is set by
 
 .. math::
-    \frac{1}{w_i} = \sum_{j=1}^N [j \in C(i)]
+    \frac{1}{u_i} = \sum_{j=1}^N [j \in C(i)] \\
+    w_i = u_i \cdot \frac{N}{\sum_{j=1}^N u_i}
 
 where :math:`C(x)` is the lineage cluster of :math:`x`.
+
+This sets the weights as being inversely proportional to the size of the cluster, and rescales all
+weights to sum to :math:`N`. Without this option :math:`w_i = 1 \; \forall \; i`.
 
 Using the model to predict phenotype in new samples
 ---------------------------------------------------

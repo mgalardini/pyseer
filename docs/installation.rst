@@ -60,7 +60,7 @@ as above::
     conda install fsm-lite
     conda install seer
 
-A package to count `unitigs <https://doi.org/10.1371/journal.pgen.1007758>`__ and
-help with their interpretation is also available on bioconda::
+Packages to count `unitigs <https://doi.org/10.1371/journal.pgen.1007758>`__ and
+help with their interpretation are also available on bioconda::
 
-   conda install unitig-counter
+   conda install unitig-counter unitig-caller
