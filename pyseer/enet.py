@@ -223,7 +223,7 @@ def enet_predict(enet_fit, variants, continuous, responses = None):
     """
     # Extract best lambda and predict class labels/values
     if continuous:
-        preds = cvglmnetPredict(enet_fit, newx=variants, s='lambda_min', ptype='link')
+        preds = np.array(cvglmnetPredict(enet_fit, newx=variants, s='lambda_min', ptype='link'))
     else:
         preds = cvglmnetPredict(enet_fit, newx=variants, s='lambda_min', ptype='class')
 
@@ -282,7 +282,11 @@ def write_lineage_predictions(true_values, predictions, fold_ids,
         y_true = true_values[samples_in_fold]
         y_pred = predictions[samples_in_fold].reshape(-1, )
 
-        fold_R2 = r2_score(y_true, y_pred)
+        if np.all(y_true == y_true[0]):
+            fold_R2 = np.nan
+        else:
+            fold_R2 = r2_score(y_true, y_pred)
+
         R2_vals.append(fold_R2)
         if stderr_print:
             sys.stderr.write("\t".join([lineage_dict[fold],

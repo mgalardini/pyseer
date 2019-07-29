@@ -10,8 +10,7 @@ to predict the phenotype for new samples. This tutorial starts from the same dat
 
 .. note:: Presently only the elastic net is implemented, which is the method used in this
         tutorial. Future methods will include random forests and best linear unbiased
-        predictors (BLUPs). This tutorial also demonstrates a simple method with
-        polygenic risk scores (PRS).
+        predictors (BLUPs).
 
 .. contents::
    :local:

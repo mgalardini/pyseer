@@ -129,6 +129,8 @@ def load_lineage(infile, p):
                      for x in open(infile)],
                     index=[x.split()[0]
                            for x in open(infile)])
+    if np.any(lin.index.duplicated()):
+        lin = lin.loc[~lin.index.duplicated()] # tilde is unary inversion
 
     if (len(p.index.difference(lin.index)) > 0):
         sys.stderr.write("All samples with a phenotype must be present in lineage file\n")
