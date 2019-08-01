@@ -439,7 +439,14 @@ phenotype of new samples without a phenotype label::
 Provide the samples you wish to predict the phenotype of in ``samples.list`` along with
 comparable variants and covariates to that which were used in the original model. If any
 variant or covariate is not found in the new input this will be noted on ``STDERR`` and the
-mean values (the originally observed allele frequency) will be used instead.
+mean values (the originally observed allele frequency) will be used instead. Use
+``--ignore-missing`` to turn this off.
+
+See :doc:`predict` for more examples.
+
+.. information:: :math:`\beta` in the output is coded in terms of the minor variant, so
+      when making predictions observation vectors will need to be coded in the same manner
+      as the reference panel. Using `enet_predict` does this automatically.
 
 Lineage effects (bugwas)
 ^^^^^^^^^^^^^^^^^^^^^^^^

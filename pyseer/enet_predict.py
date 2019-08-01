@@ -45,6 +45,11 @@ def get_options():
                         help='Pheno file with known phenotypes '
                              'to calculate accuracy',
                         default=None)
+    parser.add_argument('--ignore-missing',
+                        help='Treat missing values as REF/0 rather than '
+                             'using the mean AF'
+                        action='store_true',
+                        default=False)
 
     variants = parser.add_argument_group('Variants')
     variant_group = variants.add_mutually_exclusive_group(required=True)
@@ -166,14 +171,17 @@ def main():
             pbar.update(1)
 
         # return 0 if not found. remove from dict if found
-        pred_beta = model_dict.pop(var_name, (0, 0))
-        if pred_beta[1] != 0:
-            predictions += (k * pred_beta[1]).reshape(-1, 1)
+        (pred_af, pred_beta) = model_dict.pop(var_name, (0, 0))
+        if pred_beta != 0:
+            if pred_af > 0.5: # model is fitted to minor allele encoded variants
+                k = ~k        # so flip obs to make compatible
+            predictions += (k * pred_beta).reshape(-1, 1)
 
     # Note those variants which did not appear - impute
     for missing in model_dict.keys():
         sys.stderr.write("Could not find covariate/variant " + missing + " in input file\n")
-        predictions += model_dict[missing][0] * model_dict[missing][1]
+        if not options.ignore_missing:
+            predictions += model_dict[missing][0] * model_dict[missing][1]
 
     # apply link function
     if not continuous:

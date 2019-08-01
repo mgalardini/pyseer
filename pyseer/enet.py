@@ -420,8 +420,6 @@ def find_enet_selected(enet_betas, var_indices, p, c, var_type, fit_seer, burden
                                         uncompressed, all_strains,
                                         sample_order)
         current_var += 1
-        if af > 0.5:
-            beta *= -1
 
         notes = []
 
