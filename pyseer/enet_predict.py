@@ -159,7 +159,7 @@ def main():
                                         sample_order, keep_list = model_dict.keys())
 
         # check for EOF
-        if eof:
+        if eof or len(model_dict.keys()) == 0:
             pbar.close()
             break
         else:
