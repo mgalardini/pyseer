@@ -47,7 +47,7 @@ def get_options():
                         default=None)
     parser.add_argument('--ignore-missing',
                         help='Treat missing values as REF/0 rather than '
-                             'using the mean AF'
+                             'using the mean AF',
                         action='store_true',
                         default=False)
 
