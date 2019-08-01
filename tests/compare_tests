@@ -49,13 +49,13 @@ if __name__ == "__main__":
         ncolumns = ['af', 'beta']
         if 'beta-std-err' in m1.columns: # enet does not have this column
             ncolumns.append('beta-std-err')
-        if 'variant_h2' not in m1.columns:
-            ncolumns.append('intercept')
-            ncolumns += [x for x in m1.columns
-                         if x.startswith('PC')
-                         or x.startswith('covariate')]
-        else:
-            ncolumns.append('variant_h2')
+            if 'variant_h2' not in m1.columns:
+                ncolumns.append('intercept')
+                ncolumns += [x for x in m1.columns
+                            if x.startswith('PC')
+                            or x.startswith('covariate')]
+            else:
+                ncolumns.append('variant_h2')
 
         for c in ncolumns:
             if m1[c].dropna().shape[0] == 0 and m2[c].dropna().shape[0] == 0:
