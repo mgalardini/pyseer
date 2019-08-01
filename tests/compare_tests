@@ -46,7 +46,9 @@ if __name__ == "__main__":
         m2 = m2.loc[idx]
 
         # differentiate the type of output
-        ncolumns = ['af', 'beta', 'beta-std-err']
+        ncolumns = ['af', 'beta']
+        if 'beta-std-err' in m1.columns: # enet does not have this column
+            ncolumns.append('beta-std-err')
         if 'variant_h2' not in m1.columns:
             ncolumns.append('intercept')
             ncolumns += [x for x in m1.columns

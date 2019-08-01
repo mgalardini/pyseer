@@ -173,8 +173,9 @@ def main():
         # return 0 if not found. remove from dict if found
         (pred_af, pred_beta) = model_dict.pop(var_name, (0, 0))
         if pred_beta != 0:
-            if pred_af > 0.5: # model is fitted to minor allele encoded variants
-                k = ~k        # so flip obs to make compatible
+            # model is fitted to minor allele encoded variants so flip obs to make compatible
+            if pred_af > 0.5:
+                k = np.array(~np.array(k, dtype=bool), dtype=np.int64)
             predictions += (k * pred_beta).reshape(-1, 1)
 
     # Note those variants which did not appear - impute
