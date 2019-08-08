@@ -34,8 +34,7 @@ def get_options():
                         default=os.getcwd())
     parser.add_argument("--use-filter-p",
                         help="Plot the unadjusted p-value "
-                        "[Default: plot lrt-p-value]",
-                        type=bool,
+                        "[Default: lrt-p-value]",
                         action='store_true',
                         default=False)
 
