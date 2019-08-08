@@ -32,6 +32,13 @@ def get_options():
                         help="Directory to store temporary files "
                         "[Default: cwd]",
                         default=os.getcwd())
+    parser.add_argument("--use-filter-p",
+                        help="Plot the unadjusted p-value "
+                        "[Default: plot lrt-p-value]",
+                        type=bool,
+                        action='store_true',
+                        default=False)
+
     return parser.parse_args()
 
 
@@ -45,7 +52,9 @@ def main():
     lrt_idx = None
     lin_idx = None
     for idx, column in enumerate(header_vals):
-        if column == "lrt-pvalue":
+        if column == "lrt-pvalue" and not options.use_filter_p:
+            lrt_idx = idx
+        elif column == "filter-pvalue" and options.use_filter_p:
             lrt_idx = idx
         elif column == "lineage":
             lin_idx = idx
