@@ -384,7 +384,7 @@ class TestFixedEffectsRegression(unittest.TestCase):
         # 3- matrix-inversion-error
         # 4- high-bse
 
-    def test_fixed_effects_regression_continuos(self):
+    def test_fixed_effects_regression_continuous(self):
         p_cont = np.loadtxt(P_CONT)
         k = np.loadtxt(K)
         m = np.loadtxt(M)
@@ -407,7 +407,7 @@ class TestFixedEffectsRegression(unittest.TestCase):
         t_obj = Seer(variant, pattern,
                      af,
                      0.29623810011571716,
-                     1.0267174980317177e-24,
+                     0.4694146479961355,
                      -0.043638262259610316,
                      0.06006023185402142,
                      0.6655803214920781,
@@ -456,7 +456,7 @@ class TestFixedEffectsRegression(unittest.TestCase):
         t_obj = Seer(variant, pattern,
                      af,
                      0.29623810011571716,
-                     1.0267174980317177e-24,
+                     0.4694146479961355,
                      -0.043638262259610316,
                      0.06006023185402142,
                      0.6655803214920781,
@@ -478,7 +478,7 @@ class TestFixedEffectsRegression(unittest.TestCase):
         t_obj = Seer(variant, pattern,
                      af,
                      0.29623810011571716,
-                     9.291985115699727e-24,
+                     0.4039092383440829,
                      -0.04946894010582922,
                      0.05897268709495734,
                      0.49957867277580303,
@@ -501,7 +501,7 @@ class TestFixedEffectsRegression(unittest.TestCase):
         t_obj = Seer(variant, pattern,
                      af,
                      0.29623810011571716,
-                     1.0267174980317177e-24,
+                     0.4694146479961355,
                      -0.043638262259610316,
                      0.06006023185402142,
                      0.6655803214920781,

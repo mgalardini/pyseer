@@ -198,7 +198,7 @@ class TstFindEnetSelected(unittest.TestCase):
         self.assertEqual(v.kmer, 'FM211187_83_G_A')
         self.assertEqual(v.af, 0.28)
         self.assertTrue(abs(v.prep - 0.8807556966503836) < 1E-7)
-        self.assertEqual(v.pvalue, 1)
+        self.assertTrue(abs(v.pvalue - 0.8984215870932599) < 1E-7)
         self.assertTrue(abs(v.kbeta - 2.164502164502162e-37) < 1E-7)
         self.assertEqual(v.max_lineage, None)
         self.assertEqual(v.kstrains,
