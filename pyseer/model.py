@@ -101,7 +101,7 @@ def fit_null(p, m, cov, continuous, firth=False):
         v = np.concatenate((v, cov.values), axis=1)
 
     if continuous:
-        null_mod = mod = smf.OLS(p, v)
+        null_mod = smf.OLS(p, v)
     else:
         start_vec = np.zeros(v.shape[1])
         start_vec[0] = np.log(np.mean(p)/(1-np.mean(p)))
@@ -289,7 +289,8 @@ def fixed_effects_regression(variant, p, k, m, c, af, pattern,
             kbeta = res.params[1]
             beta = res.params[2:]
             bse = res.bse[1]
-            lrt_pvalue = res.compare_lr_test(null_res)[1]
+            lrt_pvalue = res.pvalues[1]
+            #lrt_pvalue = res.compare_lr_test(null_res)[1]
 
         else:
             mod = smf.Logit(p, v)
