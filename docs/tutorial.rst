@@ -384,7 +384,8 @@ a single type of each annotation, but this could be expanded by adding all
 the annotated assemblies to the input.
 
 We'll start by creating a ``references.txt`` file listing the annotations we
-wish to use::
+wish to use (see :ref:`annotate-kmers` for more information on how to construct
+this file)::
 
    Spn23F.fa	Spn23F.gff	ref
    6952_7#3.fa	6952_7#3.gff	draft

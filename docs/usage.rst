@@ -595,6 +595,8 @@ as its position. The y-axis is :math:`-\mathrm{log}_{10}(p)`.
    a real time interface, so we recommend filtering out those with a p-value
    below a threshold value for interactive performance.
 
+.. _annotate-kmers:
+
 Annotating k-mers
 ^^^^^^^^^^^^^^^^^
 
@@ -616,6 +618,10 @@ references to be used::
    TIGR4.fa	TIGR4.gff	ref
    sample1.fa	sample1.gff	draft
    sample2.fa	sample2.gff	draft
+
+To map all of the k-mers, and ensure good quality annotation where possible, provide
+a few trusted references as the first lines in this file. You can then list all of the assemblies
+used as input after this, designated as draft.
 
 For each k-mer, each match will be returned in the format 'contig:pos;gene_down;gene_in;gene_up'
 i.e. the closest downstream gene, the gene the k-mer is in (if it is), the closest
