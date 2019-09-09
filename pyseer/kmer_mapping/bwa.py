@@ -42,6 +42,8 @@ def bwa_iter(reference, fasta, algorithm):
         raise ValueError(algorithm)
 
     bwa_p = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True, universal_newlines=True)
+    prev_record = None
+
     # read sam file from bwa mem
     if algorithm == "mem":
         for sam_line in bwa_p.stdout:
@@ -50,6 +52,16 @@ def bwa_iter(reference, fasta, algorithm):
             # discard header
             if sam_fields[0][0] == "@":
                 continue
+
+            # ignore supplementary alignments
+            if int(sam_fields[1]) & 2048 == 2048:
+                continue
+
+            if sam_fields[0] == prev_record:
+                sys.stderr.write("WARNING: Found same k-mer line multiple times in SAM file")
+                continue
+            else:
+                prev_record = sam_fields[0]
 
             positions = []
             if int(sam_fields[1]) & 4 == 4:
