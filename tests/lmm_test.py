@@ -378,7 +378,7 @@ class TestFitLmm(unittest.TestCase):
                           False, [], cov,
                           True, 1, 1)
         test_results = [LMM('variant', 'pattern', 0.2,
-                            0.0,
+                            0.2937152511367835,
                             0.2920532220978148,
                             0.1513687600644123,
                             0.1420853593711293,

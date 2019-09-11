@@ -154,11 +154,8 @@ def fit_lmm(lmm, h2, variants, variant_mat, lineage_effects,
                                              filter=False))
             variant_mat[:, var_idx] = np.zeros(variant_mat.shape[0])
             continue
-        if not continuous:
-            prep, bad_chisq = pre_filtering(p, k, continuous)
-        else:
-            prep = 0
-            bad_chisq = False
+
+        prep, bad_chisq = pre_filtering(p, k, continuous)
         if bad_chisq:
             notes.add('bad-chisq')
         if prep >= filter_pvalue or not np.isfinite(prep):
