@@ -229,9 +229,12 @@ def load_burden(infile, burden_regions):
             List to be filled in-place
     """
     with open(infile, "r") as region_file:
-        for region in region_file:
-            (name, region) = region.rstrip().split()
-            burden_regions.append((name, region))
+        for line in region_file:
+            name, regions = line.rstrip().split()
+            region = (name, [])
+            for section in regions.split(','):
+                region[1].append(section)
+            burden_regions.append(region)
 
 def open_variant_file(var_type, var_file, burden_file, burden_regions, uncompressed):
     """Open a variant file for use as an iterable
@@ -363,19 +366,20 @@ def read_variant(infile, p, var_type, burden, burden_regions,
             else:
                 # burden test. Regions are named contig:start-end.
                 # Start is non-inclusive, so start one before to include
-                (var_name, region) = line_in
-                region = re.match('^(.+):(\d+)-(\d+)$', region)
-                if region:
-                    # Adds presence to d for every variant
-                    # observation in region
-                    for variant in infile.fetch(region.group(1),
-                                                int(region.group(2)) - 1,
-                                                int(region.group(3))):
-                        var_sub_name = read_vcf_var(variant, d, keep_list)
-                else:  # stop trying to make 'fetch' happen
-                    sys.stderr.write("Could not parse region %s\n" %
-                                     str(region))
-                    return (eof, None, None, None, None, None, None)
+                (var_name, regions) = line_in
+                for region in regions:
+                    region = re.match('^(.+):(\d+)-(\d+)$', region)
+                    if region:
+                        # Adds presence to d for every variant
+                        # observation in region
+                        for variant in infile.fetch(region.group(1),
+                                                    int(region.group(2)) - 1,
+                                                    int(region.group(3))):
+                            var_sub_name = read_vcf_var(variant, d, keep_list)
+                    else:  # stop trying to make 'fetch' happen
+                        sys.stderr.write("Could not parse region %s\n" %
+                                        str(region))
+                        return (eof, None, None, None, None, None, None)
 
         elif var_type == "Rtab":
             try:

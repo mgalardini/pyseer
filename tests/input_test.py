@@ -29,6 +29,7 @@ M = os.path.join(DATA_DIR, 'distances_smaller.tsv.gz')
 LIN = os.path.join(DATA_DIR, 'lineage_clusters.txt')
 COV = os.path.join(DATA_DIR, 'covariates.txt')
 B = os.path.join(DATA_DIR, 'burden_regions.txt')
+BM = os.path.join(DATA_DIR, 'burden_regions_multiple.txt')
 KMER = os.path.join(DATA_DIR, 'kmers.gz')
 PRES = os.path.join(DATA_DIR, 'presence_absence_smaller.Rtab')
 PRESSPACE = os.path.join(DATA_DIR, 'presence_absence_smaller_space.Rtab')
@@ -186,8 +187,15 @@ class TestLoadFunctions(unittest.TestCase):
     def test_load_burden(self):
         t = []
         load_burden(B, t)
-        tl = [('CDS1', 'FM211187:3910-3951'),
-              ('CDS2', 'FM211187:4006-4057')]
+        tl = [('CDS1', ['FM211187:3910-3951',]),
+              ('CDS2', ['FM211187:4006-4057',])]
+        self.assertEqual(t, tl)
+        t = []
+        load_burden(BM, t)
+        tl = [('CDS1', ['FM211187:3910-3951',]),
+              ('CDS2', ['FM211187:4006-4057',]),
+              ('CDS3', ['FM211187:3910-3951',
+                        'FM211187:4006-4057',])]
         self.assertEqual(t, tl)
         # no file found
         with self.assertRaises(FileNotFoundError):
@@ -461,22 +469,45 @@ class TestVariantLoading(unittest.TestCase):
                           'sample_4', 'sample_5'])
         self.assertEqual(af, 0.0)
         self.assertEqual(missing, 0)
-        # uncompressed option - no effect
+        # providing burden
+        burden_regions = deque([])
+        load_burden(BM, burden_regions)
+        # last one has multiple regions
+        burden_regions.reverse()
         t = read_variant(infile, p.head(5), 'vcf',
-                         False, [], True,
+                         True, burden_regions, False,
                          p.head(5).index, [])
         eof, k, var_name, kstrains, nkstrains, af, missing = t
         self.assertEqual(eof, False)
         self.assertTrue(abs((k -
-                         np.array([0, 1, 0, 0, 0])).max()) < 1E-7)
+                         np.array([0, 0, 0, 0, 0])).max()) < 1E-7)
         self.assertEqual(var_name,
-                         'FM211187_3982_C_A')
+                         'CDS3')
         self.assertEqual(kstrains,
-                         ['sample_2'])
+                         [])
         self.assertEqual(nkstrains,
-                         ['sample_1', 'sample_3',
+                         ['sample_1', 'sample_2', 'sample_3',
                           'sample_4', 'sample_5'])
-        self.assertEqual(af, 0.2)
+        self.assertEqual(af, 0.0)
+        self.assertEqual(missing, 0)
+        # uncompressed option - no effect
+        infile = VariantFile(VCF)
+        t = read_variant(infile, p.head(5), 'vcf',
+                         False, [], True,
+                         p.head(5).index, [])
+        eof, k, var_name, kstrains, nkstrains, af, missing = t
+        print(t)
+        self.assertEqual(eof, False)
+        self.assertTrue(abs((k -
+                         np.array([0, 0, 0, 0, 0])).max()) < 1E-7)
+        self.assertEqual(var_name,
+                         'FM211187_16_G_A')
+        self.assertEqual(kstrains,
+                         [])
+        self.assertEqual(nkstrains,
+                         ['sample_1', 'sample_2', 'sample_3',
+                          'sample_4', 'sample_5'])
+        self.assertEqual(af, 0.0)
         self.assertEqual(missing, 0.0)
         # different type
         with self.assertRaises(AttributeError):
