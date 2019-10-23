@@ -452,11 +452,17 @@ def read_vcf_var(variant, d, keep_list = None):
                 # when all instances are 1.
                 # Shouldn't matter for bacteria, but some people call hets
                 for haplotype in call.get('GT', [None]):
-                    if str(haplotype) == ".":
+                    # if sample already present in dictionary do not overwrite
+                    # important for burden testing
+                    if str(haplotype) == "." and sample not in d:
                         d[sample] = np.nan
                     elif haplotype is not None and haplotype != 0:
                         d[sample] = 1
                         break
+                    # if sample already present as missing and haplotype is '0'
+                    # then remove
+                    elif sample in d and np.isnan(d[sample]) and str(haplotype) != '.':
+                        del d[sample]
     else:
         var_name = None
 

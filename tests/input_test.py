@@ -29,11 +29,13 @@ M = os.path.join(DATA_DIR, 'distances_smaller.tsv.gz')
 LIN = os.path.join(DATA_DIR, 'lineage_clusters.txt')
 COV = os.path.join(DATA_DIR, 'covariates.txt')
 B = os.path.join(DATA_DIR, 'burden_regions.txt')
+BMISSING = os.path.join(DATA_DIR, 'burden_missing.txt')
 KMER = os.path.join(DATA_DIR, 'kmers.gz')
 PRES = os.path.join(DATA_DIR, 'presence_absence_smaller.Rtab')
 PRESSPACE = os.path.join(DATA_DIR, 'presence_absence_smaller_space.Rtab')
 VCF = os.path.join(DATA_DIR, 'variants_smaller.vcf.gz')
 VCFNOGT = os.path.join(DATA_DIR, 'variants_no_gt.vcf.gz')
+VCFMISSING = os.path.join(DATA_DIR, 'variants_missing.vcf.gz')
 
 
 class TestLoadFunctions(unittest.TestCase):
@@ -511,6 +513,29 @@ class TestVariantLoading(unittest.TestCase):
             t = read_variant(infile, p.head(5), 'vcf',
                              False, [], False,
                              p.head(5).index, [])
+        # burden with missing genotypes in last read variant
+        # issue #90
+        p = pd.read_csv(P,
+                        index_col=0,
+                        sep='\t')['binary']
+        infile = VariantFile(VCFMISSING)
+        burden_regions = deque([])
+        load_burden(BMISSING, burden_regions)
+        t = read_variant(infile, p.head(5), 'vcf',
+                         True, burden_regions, False,
+                         p.head(5).index, [])
+        eof, k, var_name, kstrains, nkstrains, af, missing = t
+        self.assertEqual(eof, False)
+        self.assertTrue(abs((k -
+                         np.array([1, 1, 0, 0, 0])).max()) < 1E-7)
+        self.assertEqual(var_name,
+                         'CDS1')
+        self.assertEqual(kstrains,
+                         ['sample_1', 'sample_2'])
+        self.assertEqual(nkstrains,
+                         ['sample_3', 'sample_4', 'sample_5'])
+        self.assertEqual(af, 0.4)
+        self.assertEqual(missing, 0)
 
     def test_read_vcf_var(self):
         infile = VariantFile(VCF)
