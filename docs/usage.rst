@@ -165,6 +165,11 @@ These regions are one per line, with their name and the bcftools style region co
    CDS1    FM211187:3910-3951
    CDS2    FM211187:4006-4057
 
+Multiple regions can be specified for a single burden test, by separating each
+region using a comma::
+
+   pathway1    FM211187:4006-4057,FM211187:5673-5777
+
 .. warning:: The same frequency filters as for common variants still apply.
    Only groups within the threshold will be tested. To ensure only rare
    variants enter the sets, you will need to pre-filter the VCF file with
