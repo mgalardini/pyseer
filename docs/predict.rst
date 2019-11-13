@@ -171,7 +171,7 @@ is set by
 
 .. math::
     \frac{1}{u_i} = \sum_{j=1}^N [j \in C(i)] \\
-    w_i = u_i \cdot \frac{N}{\sum_{j=1}^N u_i}
+    w_i = u_i \cdot \frac{N}{\sum_{j=1}^N u_j}
 
 where :math:`C(x)` is the lineage cluster of :math:`x`.
 
