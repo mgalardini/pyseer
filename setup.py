@@ -34,6 +34,7 @@ setup(
     version=find_version("pyseer/__init__.py"),
     description='Sequence Elements Enrichment Analysis (SEER), python implementation',
     long_description=long_description,
+    long_description_content_type='text/markdown',
     url='https://github.com/mgalardini/pyseer',
     author='Marco Galardini and John Lees',
     author_email='marco@ebi.ac.uk',
