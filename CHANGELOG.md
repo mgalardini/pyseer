@@ -1,4 +1,15 @@
 # CHANGELOG
+v1.3.4 (December 2019)
+- Update installation from pip and setup.py
+- Allow multiple intervals for a single burden tests
+
+v1.3.3 (September 2019)
+- Fix for multiple reported alignments from bwa
+
+v1.3.2 (September 2019)
+- Features, bugfixes and documentation for prediction
+- Bugfix for multiple hits/overlapping regions in annotate hits
+
 v1.3.1 (July 2019)
 - Handle API changes between different statsmodels versions
 - Handle corner cases where no distance matrix is provided but --no-distances should be used
