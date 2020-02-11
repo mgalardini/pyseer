@@ -50,10 +50,17 @@ def initialise_lmm(p, cov, K_in, lmm_cache_in=None, lmm_cache_out=None, lineage_
             Trait's variance explained by covariates
     """
     if lmm_cache_in is not None and os.path.exists(lmm_cache_in):
-        if cov.shape[0] == p.shape[0]:
-            covar = np.c_[cov.values, np.ones((p.shape[0], 1))]
-        else:
+        if len(p.index.intersection(cov.index)) == p.shape[0]:
+            covar = np.c_[cov.loc[p.index].values, np.ones((p.shape[0], 1))]
+        # empty covariate
+        elif (cov.shape[0] == 0 and cov.shape[1] == 0) or len(cov.shape) == 0:
             covar = np.ones((p.shape[0], 1))
+        # inform the user about missing covariate/phenotypes and exit
+        # special case for LMM
+        else:
+            sys.stderr.write("Phenotype and covariate file should have "
+                             "matching samples for LMM\n")
+            sys.exit(1)
         y = np.reshape(p.values, (-1, 1))
 
         lmm = lmm_cov(X=covar, Y=y, G=None, K=None)
@@ -85,11 +92,17 @@ def initialise_lmm(p, cov, K_in, lmm_cache_in=None, lmm_cache_out=None, lineage_
         p = p.loc[intersecting_samples]
         y = np.reshape(p.values, (-1, 1))
         K = K.loc[p.index, p.index]
-        if cov.shape[0] == p.shape[0]:
-            cov = cov.loc[intersecting_samples]
-            covar = np.c_[cov.values, np.ones((p.shape[0], 1))]
-        else:
+        if len(p.index.intersection(cov.index)) == p.shape[0]:
+            covar = np.c_[cov.loc[p.index].values, np.ones((p.shape[0], 1))]
+        # empty covariate
+        elif (cov.shape[0] == 0 and cov.shape[1] == 0) or len(cov.shape) == 0:
             covar = np.ones((p.shape[0], 1))
+        # inform the user about missing covariate/phenotypes and exit
+        # special case for LMM
+        else:
+            sys.stderr.write("Phenotype and covariate file should have "
+                             "matching samples for LMM\n")
+            sys.exit(1)
 
         factor = float(len(p)) / np.diag(K.values).sum()
         if factor == math.inf:
