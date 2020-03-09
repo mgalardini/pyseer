@@ -129,6 +129,7 @@ def load_lineage(infile, p):
                      for x in open(infile)],
                     index=[x.split()[0]
                            for x in open(infile)])
+    lin.index = lin.index.astype(str)
     if np.any(lin.index.duplicated()):
         lin = lin.loc[~lin.index.duplicated()] # tilde is unary inversion
 
@@ -265,7 +266,7 @@ def open_variant_file(var_type, var_file, burden_file, burden_regions, uncompres
         # Rtab files have a header, rather than sample names accessible by row
         infile = open(var_file)
         header = infile.readline().rstrip()
-        sample_order = header.split()[1:]
+        sample_order = [str(x) for x in header.split()[1:]]
 
     return infile, sample_order
 
@@ -355,7 +356,7 @@ def read_variant(infile, p, var_type, burden, burden_regions,
             if keep_list != None and var_name not in keep_list:
                 return(eof, None, None, None, None, None, None)
             else:
-                d = {x.split(':')[0]: 1
+                d = {str(x.split(':')[0]): 1
                     for x in strains}
 
         elif var_type == "vcf":

@@ -49,6 +49,11 @@ Missing phenotypes can be supplied as 'NA'. If all values are 0 or 1 a binary
 phenotype is assumed (only relevant for the fixed effect model), otherwise a continuous phenotype is used.
 Use ``--continuous`` to force this behaviour.
 
+.. warning:: Using numbers as the sample names has been reported to cause
+   problems in some modes and versions of pyseer. While we have tried to fix
+   this issue, if you run into trouble try chaning your sample names into a 
+   string (e.g. by adding an underscore at the end of every name).
+
 Covariate files (``--covariates``) must be tab-delimited with a header row, and the first column
 must contain the sample names::
 
