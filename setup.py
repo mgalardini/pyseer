@@ -74,7 +74,7 @@ setup(
                       'DendroPy',
                       'matplotlib',
                       'pybedtools',
-                      'tqdm'],
-    dependency_links=['http://github.com/johnlees/glmnet_python/tarball/master#egg=package-1.0'],
+                      'tqdm',
+                      'glmnet_py @ https://github.com/johnlees/glmnet_python/archive/6f0ce0b6009a9066aaf4a49201ad7f806a24a4a3.zip'],
     test_suite="tests",
 )
