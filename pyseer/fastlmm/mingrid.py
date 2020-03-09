@@ -5,6 +5,7 @@
 '''FaST-LMM 1D fit for h2. Modified to python3 syntax and removed logging'''
 #
 
+import numpy as np
 import scipy as SP
 import scipy.optimize as opt
 
@@ -90,13 +91,13 @@ def evalgrid1D(f, evalgrid = None, nGrid=10, minval=0.0, maxval = 0.99999, dimF=
     '''
     if evalgrid is None:
         step = (maxval-minval)/(nGrid)
-        evalgrid = SP.arange(minval,maxval+step,step)
+        evalgrid = np.arange(minval,maxval+step,step)
     if dimF:
-        resultgrid = SP.ones((evalgrid.shape[0],dimF))*9999999999999.0
+        resultgrid = np.ones((evalgrid.shape[0],dimF))*9999999999999.0
     else:
-        resultgrid = SP.ones(evalgrid.shape[0])*9999999999999.0
+        resultgrid = np.ones(evalgrid.shape[0])*9999999999999.0
     for i in range(evalgrid.shape[0]):
         fevalgrid = f(evalgrid[i])
-        assert SP.isreal(fevalgrid).all(),"function returned imaginary value"
+        assert np.isreal(fevalgrid).all(),"function returned imaginary value"
         resultgrid[i] = fevalgrid
     return (evalgrid,resultgrid)

@@ -245,7 +245,7 @@ def intersect_ids(idslist,sep="Q_Q"):
                 elif observed[l]:
                     for i in range(id_list.shape[0]):
                         id=id_list[i,0] +sep+ id_list[i,1]
-                        if id2ind.has_key(id):
+                        if id in id2ind:
                             id2ind[id][l]=i
 
     indarr=np.array(id2ind.values(),dtype='float')  #need float because may contain NaNs
@@ -329,7 +329,7 @@ def create_directory_if_necessary(name, isfile=True, robust=False):
                     if not os.path.isdir(directory_name):
                         time_to_sleep *= 1.1
                         warnings.warn("creating directory robust=True, try#{0},time={3} error: not valid path: '{1}'. (Working directory is '{2}'".format(i, directory_name,os.getcwd(),int(time_to_sleep)))
-                        time.sleep(int(time_to_sleep)) ; #make random?
+                        time.sleep(int(time_to_sleep))  #make random?
                     else:
                         is_ok = True
                         break

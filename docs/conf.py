@@ -64,7 +64,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'pyseer'
-copyright = '2018, John Lees and Marco Galardini'
+copyright = '2018-2020, John Lees and Marco Galardini'
 author = 'John Lees and Marco Galardini'
 
 # The version info for the project you're documenting, acts as replacement for
