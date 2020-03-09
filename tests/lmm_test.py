@@ -78,14 +78,13 @@ class TestInitialiseLmm(unittest.TestCase):
         self.assertAlmostEqual(z, 0.0)
         # covariates
         cov = pd.read_csv(COV, index_col=0,
-                          header=None,
                           sep='\t')
         x, y, z = initialise_lmm(p, cov, S,
                                  lmm_cache_in=None,
                                  lmm_cache_out=None)
         self.assertEqual(x.shape[0], 50)
         self.assertAlmostEqual(y.findH2()['nLL'][0],
-                               35.7033778)
+                               34.554038607321814)
         self.assertAlmostEqual(z, 0.0)
         # sample names not matching
         b = pd.Series(np.random.random(100),
@@ -108,7 +107,7 @@ class TestInitialiseLmm(unittest.TestCase):
                                  lmm_cache_out=None)
         self.assertEqual(x.shape[0], 50)
         self.assertAlmostEqual(y.findH2()['nLL'][0],
-                               35.7033778)
+                               34.554038607321814)
         self.assertAlmostEqual(z, 0.0)
         # different sizes
         b = pd.Series(np.random.random(10),
