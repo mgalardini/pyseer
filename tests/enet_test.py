@@ -238,6 +238,10 @@ class TestCorrelationFilter(unittest.TestCase):
         a = csr_matrix(a.T)
         f = correlation_filter(p, a, 0.75)
         self.assertTrue(abs(f - np.array([0, 5])).max() < 1E-7)
+        # variant absent in all
+        a = csr_matrix(np.zeros(a.T.shape))
+        f = correlation_filter(p, a, 0.75)
+        self.assertEqual(f.shape[0], 0)
 
     def test_filter_continuous(self):
         p = pd.read_csv(P,
@@ -247,6 +251,10 @@ class TestCorrelationFilter(unittest.TestCase):
         a = csr_matrix(a.T)
         f = correlation_filter(p, a, 0.75)
         self.assertTrue(abs(f - np.array([1, 2])).max() < 1E-7)
+        # variant absent in all
+        a = csr_matrix(np.zeros(a.T.shape))
+        f = correlation_filter(p, a, 0.75)
+        self.assertEqual(f.shape[0], 0)
 
 
 class TestFitEnet(unittest.TestCase):
