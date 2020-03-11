@@ -343,11 +343,14 @@ def correlation_filter(p, all_vars, quantile_filter = 0.25):
     for row_idx in tqdm(range(all_vars.shape[0]), unit="variants"):
         k = all_vars.getrow(row_idx)
         k_mean = csr_matrix.mean(k)
-
-        ab = k.dot(b) - np.sum(k_mean * b)
-        sum_a_squared = k.dot(k.transpose()).data[0] - 2*k_mean*csr_matrix.sum(k) + pow(k_mean, 2) * all_vars.shape[1]
-        cor = np.abs(ab / np.sqrt(sum_a_squared * sum_b_squared))
-        correlations.append(cor)
+        if k_mean == 0:
+            # avoid crashes due to an empty sparse vector
+            correlations.append([np.nan])
+        else:
+            ab = k.dot(b) - np.sum(k_mean * b)
+            sum_a_squared = k.dot(k.transpose()).data[0] - 2*k_mean*csr_matrix.sum(k) + pow(k_mean, 2) * all_vars.shape[1]
+            cor = np.abs(ab / np.sqrt(sum_a_squared * sum_b_squared))
+            correlations.append(cor)
 
     cor_filter = np.nonzero(correlations > np.percentile(correlations, quantile_filter*100))[0]
     return(cor_filter)
