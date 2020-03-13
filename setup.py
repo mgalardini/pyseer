@@ -75,6 +75,7 @@ setup(
                       'matplotlib',
                       'pybedtools',
                       'tqdm',
-                      'glmnet_py @ https://github.com/johnlees/glmnet_python/archive/6f0ce0b6009a9066aaf4a49201ad7f806a24a4a3.zip'],
+                      'glmnet_python@https://github.com/johnlees/glmnet_python/archive/v1.0.2.zip'],
+    dependency_links = ['https://github.com/johnlees/glmnet_python/tarball/v1.0.2#egg=glmnet_python-v1.0.2'],
     test_suite="tests",
 )
