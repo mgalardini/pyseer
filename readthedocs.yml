@@ -18,5 +18,5 @@ python:
    install:
       - requirements: docs/requirements.txt
       - method: setuptools
-        path: .
+        path: rtd_setup.py
    system_packages: true
