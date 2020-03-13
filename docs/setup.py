@@ -39,7 +39,7 @@ setup(
     author='Marco Galardini and John Lees',
     author_email='marco@ebi.ac.uk',
     license='Apache Software License',
-    package_dir = {'': '..'},
+    # package_dir = {'': '..'},
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Science/Research',
