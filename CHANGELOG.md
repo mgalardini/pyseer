@@ -1,4 +1,11 @@
 # CHANGELOG
+v1.3.5 (March 2020)
+- Bugfix for covariates samples mismatching for LMM
+- Bugfix for numeric sample names
+- Bugfix for crashes happening during enet variants filtering
+- Fix pip and setup.py installs (glmnet_py)
+- Remove deprecation warnings for fastlmm
+
 v1.3.4 (December 2019)
 - Update installation from pip and setup.py
 - Allow multiple intervals for a single burden tests
