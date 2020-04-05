@@ -8,7 +8,6 @@ pyseer
 
 [![Build Status](https://travis-ci.org/mgalardini/pyseer.svg?branch=master)](https://travis-ci.org/mgalardini/pyseer)
 [![Documentation Status](https://readthedocs.org/projects/pyseer/badge/?version=master)](http://pyseer.readthedocs.io/)
-[![PyPI version](https://badge.fury.io/py/pyseer.svg)](https://pypi.org/project/pyseer/)
 [![Anaconda package](https://anaconda.org/bioconda/pyseer/badges/version.svg)](https://anaconda.org/bioconda/pyseer)
 
 Motivation
@@ -85,11 +84,11 @@ and add the necessary channels::
     conda config --add channels conda-forge
 
 `pyseer` can also be installed through `pip`; download this repository
-(or one of the [releases](https://github.com/mgalardini/pyseer/releases)), `cd` into it, followed by::
+(or one of the [releases](https://github.com/mgalardini/pyseer/releases)), `cd` into it, followed by:
 
    `python -m pip install .`
 
-If you want multithreading make sure that you are using a version 3 python interpreter::
+If you want multithreading make sure that you are using a version 3 python interpreter:
 
    `python3 -m pip install .`
 
