@@ -22,8 +22,12 @@ phenotype. The trained models in pyseer can also be used for association purpose
 variants associated with the phenotype are reported.
 
 Here we will try and find SNPs which can predict penicillin resistance in *S. pneumoniae*. It
-would also be possible to use unitigs by changing ``--vcf`` to ``--kmers``. Variants are loaded,
-the model is fitted and saved. This can all be done in a single step::
+would also be possible to use unitigs by changing ``--vcf`` to ``--kmers``. We will use the same
+data as from the GWAS :doc:`tutorial` -- instructions on how to download this data can be found
+at the top of that page. 
+
+Variants are loaded, the model is fitted and saved. 
+This can all be done in a single step::
 
     pyseer --vcf snps.vcf.gz --phenotypes resistances.pheno --wg enet \
     --save-vars output/ma_snps --save-model penicillin.lasso --cpu 4 --alpha 1 > selected.txt
@@ -125,10 +129,20 @@ This correction is based on providing discrete definitions of lineages/strains. 
         `PopPUNK <https://poppunk.readthedocs.io/en/latest/>`__. Connecting samples together
         which are below a certain distance threshold will also work.
 
+If you need to convert from PopPUNK output to this format with the tutorial, you can use the 
+following code::
+
+    import csv, re
+    reader = csv.DictReader(open("poppunk/poppunk_clusters.csv"))
+    writer = csv.DictWriter(open("lineages.txt", "w"), delimiter=' ', fieldnames=reader.fieldnames)
+    for row in reader:
+        row['Taxon'] = re.match(r'.*/(.*)\.contigs_velvet\.fa', row['Taxon']).group(1)
+        writer.writerow(row)
+
 Now add this to the analysis::
 
     pyseer --vcf snps.vcf.gz --phenotypes resistances.pheno --wg enet \
-    --load-vars output/ma_snps --lineage-clusters poppunk_clusters.csv --sequence-reweighting
+    --load-vars output/ma_snps --lineage-clusters lineages.txt --sequence-reweighting
 
     Read 603 phenotypes
     Detected binary phenotype
@@ -197,7 +211,7 @@ a model to the training set::
 
     pyseer --vcf snps.vcf.gz --phenotypes train.pheno --wg enet \
     --load-vars output/ma_snps --alpha 1 --save-model test_lasso --cpu 4 \
-    --lineage-clusters poppunk_clusters.csv --sequence-reweighting
+    --lineage-clusters lineages.txt --sequence-reweighting
 
     Read 499 phenotypes
     Detected binary phenotype
@@ -284,7 +298,7 @@ test set is a similar makeup of lineages hopefully prediction accuracy will be s
 
 ``enet_predict`` is used to make the predictions::
 
-    enet_predict --vcf snps.vcf.gz --lineage-clusters poppunk_clusters.csv --true-values test.pheno \
+    enet_predict --vcf snps.vcf.gz --lineage-clusters lineages.txt --true-values test.pheno \
     test_lasso.pkl test.samples > test_predictions.txt
 
     Reading variants from input

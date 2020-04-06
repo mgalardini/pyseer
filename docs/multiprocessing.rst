@@ -20,3 +20,8 @@ can be done using GNU ``split``::
 
 This would split the input k-mers into 8 separate files.
 
+Prediction
+----------
+The ``--wg enet`` mode also supports CPUs, but can be very memory-hungry (memory
+use scales linearly with number of cores). For large datasets, if you are running
+out of memory, you may wish to try with just a single core.
