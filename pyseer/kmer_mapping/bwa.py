@@ -10,6 +10,7 @@ import sys
 from collections import namedtuple
 
 BWA = namedtuple('BWA', ['mapped', 'positions'])
+MAX_FASTMAP_HITS = 100
 
 # Creates a bwa index, if it does not already exist
 def bwa_index(fasta_file):
@@ -32,11 +33,10 @@ def bwa_index(fasta_file):
 
 # Runs bwa, iterates over results and parses them
 def bwa_iter(reference, fasta, algorithm):
-
     if algorithm == "mem":
         command = "bwa mem -v 1 -k 8 '" + reference + "' '" + fasta + "'"
     elif algorithm == "fastmap":
-        command = "bwa fastmap -l 9 '" + reference + "' '" + fasta + "'"
+        command = "bwa fastmap -w %d -l 9 '" % (MAX_FASTMAP_HITS) + reference + "' '" + fasta + "'"
     else:
         sys.stderr.write("Unknown algorithm type for bwa\n")
         raise ValueError(algorithm)
@@ -58,7 +58,7 @@ def bwa_iter(reference, fasta, algorithm):
                 continue
 
             if sam_fields[0] == prev_record:
-                sys.stderr.write("WARNING: Found same k-mer line multiple times in SAM file")
+                sys.stderr.write("WARNING: Found same k-mer line multiple times in SAM file\n")
                 continue
             else:
                 prev_record = sam_fields[0]
@@ -128,6 +128,11 @@ def bwa_iter(reference, fasta, algorithm):
                 if fastmap_fields[1] == '0' and fastmap_fields[2] == length: #  full hits only
                     mapped = True
                     for hit in fastmap_fields[4:]:
+                        # too many hits, skip this entry
+                        # (see: https://bioinformatics.stackexchange.com/a/13052/123) 
+                        if hit == '*':
+                            sys.stderr.write("Skipping fastmap entry with more than %d hits\n" % MAX_FASTMAP_HITS)
+                            continue
                         (contig, pos) = hit.split(":")
                         strand = pos[0]
                         positions.append((contig, int(pos[1:]), int(pos[1:]) + int(length) - 1, strand))
