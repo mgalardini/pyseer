@@ -132,6 +132,11 @@ def bwa_iter(reference, fasta, algorithm):
                         # (see: https://bioinformatics.stackexchange.com/a/13052/123) 
                         if hit == '*':
                             sys.stderr.write("Skipping fastmap entry with more than %d hits\n" % MAX_FASTMAP_HITS)
+                            # corner case: if still not mapped, flag this k-mer as unmapped
+                            # as we don't have a small enough set of mapping positions
+                            if not mapped:
+                                mapped = False
+                            #
                             continue
                         (contig, pos) = hit.split(":")
                         strand = pos[0]
