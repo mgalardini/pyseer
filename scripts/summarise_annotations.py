@@ -48,6 +48,12 @@ if __name__ == "__main__":
             af = float(anot_fields[1])
             pvalue = float(anot_fields[3])
             beta = abs(float(anot_fields[4]))
+            # double check that there are actual hits here
+            if anot_fields[-1].count(';') == 0:
+                sys.stderr.write('K-mer %s seemingly has no '
+                                 'annotations. Skipping\n' % anot_fields[0])
+                continue
+            #
             annotations = anot_fields[-1].split(",")
 
             if pvalue > 0:
