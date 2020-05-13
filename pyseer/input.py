@@ -459,9 +459,9 @@ def read_vcf_var(variant, d, keep_list = None):
                 for haplotype in call.get('GT', [None]):
                     # if sample already present in dictionary do not overwrite
                     # important for burden testing
-                    if str(haplotype) == "." and sample not in d:
+                    if (haplotype is None or str(haplotype) == ".") and sample not in d:
                         d[sample] = np.nan
-                    elif haplotype is not None and haplotype != 0:
+                    elif haplotype is not None and haplotype != 0 and str(haplotype) != ".":
                         d[sample] = 1
                         break
                     # if sample already present as missing and haplotype is '0'

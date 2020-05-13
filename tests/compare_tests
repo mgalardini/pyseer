@@ -40,7 +40,7 @@ if __name__ == "__main__":
 
         idx = set(m1.index).intersection(m2.index)
         if len(idx) != m1.shape[0] or len(idx) != m2.shape[0]:
-            sys.stderr.write('Different number of kmers\n')
+            sys.stderr.write('Different variants\n')
             sys.exit(1)
         m1 = m1.loc[idx]
         m2 = m2.loc[idx]

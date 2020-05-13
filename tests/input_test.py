@@ -498,7 +498,6 @@ class TestVariantLoading(unittest.TestCase):
                          False, [], True,
                          p.head(5).index, [])
         eof, k, var_name, kstrains, nkstrains, af, missing = t
-        print(t)
         self.assertEqual(eof, False)
         self.assertTrue(abs((k -
                          np.array([0, 0, 0, 0, 0])).max()) < 1E-7)
@@ -567,6 +566,29 @@ class TestVariantLoading(unittest.TestCase):
                          ['sample_3', 'sample_4', 'sample_5'])
         self.assertEqual(af, 0.4)
         self.assertEqual(missing, 0)
+        # check that missing variants are properly missed
+        # issue #120
+        p = pd.read_csv(P,
+                        index_col=0,
+                        sep='\t')['binary']
+        infile = VariantFile(VCFMISSING)
+        variant = next(infile)
+        total = 0
+        missing = 0
+        samples = set()
+        for sample, call in variant.samples.items():
+            if sample not in p.index:
+                continue
+            for haplotype in call.get('GT', [None]):
+                if haplotype is None or haplotype == '.':
+                    missing += 1
+                total += 1
+                samples.add(sample)
+        pysam_missing = missing / float(total)
+        infile = VariantFile(VCFMISSING)
+        t = read_variant(infile, p, 'vcf', False, [], False, p.index, [])
+        eof, k, var_name, kstrains, nkstrains, af, missing = t
+        self.assertEqual(pysam_missing, missing)
 
     def test_read_vcf_var(self):
         infile = VariantFile(VCF)
@@ -580,6 +602,7 @@ class TestVariantLoading(unittest.TestCase):
                           'sample_1054': 1,
                           'sample_1072': 1,
                           'sample_1128': 1,
+                          'sample_1647': np.nan,
                           'sample_188': 1,
                           'sample_328': 1,
                           'sample_353': 1,
@@ -608,7 +631,8 @@ class TestVariantLoading(unittest.TestCase):
         var_name = read_vcf_var(variant, d)
         self.assertEqual(var_name, 'FM211187_31_G_T')
         self.assertEqual(d,
-                         {})
+                         {x: np.nan
+                          for x in variant.samples.keys()})
 
 
 class TestIterVariants(unittest.TestCase):

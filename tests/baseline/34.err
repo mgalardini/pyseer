@@ -3,14 +3,14 @@ Detected binary phenotype
 Reading all variants
 Analysing 50 samples found in both phenotype and loaded npy
 Applying correlation filtering
-  0%|          | 0/252 [00:00<?, ?variants/s] 58%|█████▊    | 147/252 [00:00<00:00, 1464.20variants/s]100%|██████████| 252/252 [00:00<00:00, 1473.42variants/s]
-Fitting elastic net to top 189 variants
-Best penalty (lambda) from cross-validation: 1.07E-01
-Best model deviance from cross-validation: 1.361 ± 5.66E-02
+  0%|          | 0/234 [00:00<?, ?variants/s] 40%|███▉      | 93/234 [00:00<00:00, 923.02variants/s] 92%|█████████▏| 215/234 [00:00<00:00, 994.63variants/s]100%|██████████| 234/234 [00:00<00:00, 1078.53variants/s]
+Fitting elastic net to top 163 variants
+Best penalty (lambda) from cross-validation: 1.02E-01
+Best model deviance from cross-validation: 1.356 ± 6.12E-02
 Best R^2 from cross-validation: -0.380
 Finding and printing selected variants
 Saved enet model as enet_vcf_model.pkl
 886 loaded variants
-697 filtered variants
-189 tested variants
+723 filtered variants
+163 tested variants
 5 printed variants
