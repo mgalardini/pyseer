@@ -37,9 +37,13 @@ def load_phenotypes(infile, column):
     p = pd.read_csv(infile, index_col=0, sep='\t')
     if p.shape[1] < 1:
         sys.stderr.write('Phenotype file must contain at least one phenotype column\n')
-        sys.exit(0)
+        sys.exit(1)
 
     p.index = p.index.astype(str)
+    if np.any(p.index.duplicated()):
+        sys.stderr.write('Phenotype file contains duplicated sample names\n')
+        sys.exit(1)
+
     if column is None:
         p = p[p.columns[-1]]
     else:
@@ -78,6 +82,9 @@ def load_structure(infile, p, max_dimensions, mds_type="classic", n_cpus=1,
                     index_col=0,
                     sep='\t')
     m.index = m.index.astype(str)
+    if np.any(m.index.duplicated()):
+        sys.stderr.write('Structure file contains duplicated sample names\n')
+        sys.exit(1)
     sys.stderr.write("Structure matrix has dimension " + str(m.shape) + "\n")
 
     # Also take intersection here, so that MDS isn't done using samples not present
@@ -180,6 +187,9 @@ def load_covariates(infile, covariates, p):
                     header=0,
                     sep='\t')
     c.index = c.index.astype(str)
+    if np.any(c.index.duplicated()):
+        sys.stderr.write('Covariate file contains duplicated sample names\n')
+        sys.exit(1)
 
     if (len(p.index.difference(c.index)) > 0):
         sys.stderr.write("All samples with a phenotype must be present in covariate file\n")
