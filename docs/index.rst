@@ -42,6 +42,12 @@ If you use unitigs (through `unitig-counter <https://github.com/johnlees/unitig-
 :emphasis:`Jaillard M., Lima L. et al. A fast and agnostic method for bacterial genome-wide association
 studies: Bridging the gap between k-mers and genetic events. PLOS Genetics. 14, e1007758 (2018). doi:10.1371/journal.pgen.1007758.`
 
+The whole genome/predictive models:
+
+:emphasis:`Lees, John A., Mai, T. T., et al. Improved inference and prediction of bacterial genotype-phenotype associations 
+using interpretable pangenome-spanning regressions. (2020)`
+Preprint: `<https://doi.org/10.1101/852426>`__
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
@@ -49,6 +55,7 @@ studies: Bridging the gap between k-mers and genetic events. PLOS Genetics. 14, 
    self
    installation.rst
    options.rst
+   best_practices.rst
    usage.rst
    tutorial.rst
    predict.rst

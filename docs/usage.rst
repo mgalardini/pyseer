@@ -8,14 +8,7 @@ Will run the original ``seer`` model on given phenotypes and k-mers, using
 MDS scaling of the pairwise distances provided to correct for population
 structure. This will paralellize the analysis over 15 cores.
 
-Current 'best-practice' GWAS recommendations:
-
-* Use the ``--lmm`` mode.
-* Use a phylogeny to generate the ``--similarity`` matrix.
-* Use `unitigs <https://github.com/johnlees/unitig-counter>`__ as the input,
-  with ``--kmers``. End-to-end analysis is identical to k-mers.
-
-For whole-genome models or prediction we recommend you read :doc:`predict`.
+See the :doc:`best_practices` page for guidance on which options to use.
 
 .. contents::
    :local:
@@ -100,11 +93,17 @@ in k-mer counting, as well as presenting fewer tests (and advantage both computa
 statistically) and being easier to interpret thanks to their length and context provided by
 the variation graph.
 
-Count unitigs with `unitig-counter <https://github.com/johnlees/unitig-counter>`__ (see documentation
-in the ``README.md``). This can be installed thorough conda, see :doc:`installation` for
-details.
+Unitigs can both be counted, and called consistently in new populations, using the
+`unitig-caller <https://github.com/johnlees/unitig-caller>`__ package.
 
-Usage is then identical to k-mers, with the ``--kmers`` options, and ``--uncompressed`` if necessary.
+An older version of the package, giving the same results, is available as 
+`unitig-counter <https://github.com/johnlees/unitig-counter>`__ (see documentation
+in the ``README.md``). 
+
+Usage is then identical to k-mers, providing input with the ``--kmers`` options, and ``--uncompressed`` if necessary.
+
+.. note:: Both packages can be installed thorough conda, see :doc:`installation` for
+   details.
 
 SNPs and INDELs
 ^^^^^^^^^^^^^^^

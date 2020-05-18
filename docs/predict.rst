@@ -376,7 +376,7 @@ used for all samples, which may significantly reduce accuracy.
 
 One way around this issue is to use unitigs. However, sequences which are unitigs in the DBG of
 one population may not be unitigs in the DBG of a different sample set, even if they are present.
-So simply running `unitig-counter` on both training and test datasets will result in many missing calls.
+So simply running ``unitig-counter`` on both training and test datasets will result in many missing calls.
 
 You should instead use `unitig-caller <https://github.com/johnlees/unitig-caller>`__ to make variant calls in
 the test population using the same unitigs definitions as in the training population. Full usage and details

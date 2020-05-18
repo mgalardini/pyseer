@@ -49,7 +49,10 @@ autodoc_mock_imports = ["tqdm",
                         "matplotlib",
                         "dendropy",
                         "glmnet_py",
-                        "glmnet_python"]
+                        "glmnet_python",
+                        "cvglmnet",
+                        "cvglmnetCoef",
+                        "cvglmnetPredict"]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
