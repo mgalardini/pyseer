@@ -1,4 +1,10 @@
 # CHANGELOG
+v1.3.6 (May 2020)
+- Bugfix for missing variants in VCF files (now properly handled)
+- Bugfixes for k-mer mapping (lack of annotation, bwa fastmap with many hits
+- Explicitly look for duplicated samples in input files
+- Removed package from pypi (glmnet_py dependency could not be installed that way)
+
 v1.3.5 (March 2020)
 - Bugfix for covariates samples mismatching for LMM
 - Bugfix for numeric sample names
