@@ -399,8 +399,9 @@ def main():
 
             min_lineage = min(lineage_wald.items(), key=operator.itemgetter(1))[0]
 
-            # Remove from objects
+            # Remove from objects, but keep a copy
             min_index = lineage_dict.index(min_lineage)
+            lineage_clusters_full = np.copy(lineage_clusters)
             lineage_clusters = np.delete(lineage_clusters, min_index, 1)
             del lineage_dict[min_index]
         else:
@@ -614,12 +615,13 @@ def main():
 
         # perform sequence reweighting
         if options.sequence_reweighting:
-            clus_totals = np.sum(lineage_clusters, axis=0)
-            weights = np.matmul(lineage_clusters, 1/clus_totals).reshape(-1, 1)
+            clus_totals = np.sum(lineage_clusters_full, axis=0)
+            weights = np.matmul(lineage_clusters_full, 1/clus_totals).reshape(-1, 1)
         else:
             weights = np.ones((p.shape[0], 1))
         if options.lineage_clusters:
-            fold_ids = np.where(lineage_clusters == 1)[1]
+            fold_ids = np.where(lineage_clusters_full == 1)[1]
+            assert(fold_ids.shape[0] == weights.shape[0])
         else:
             fold_ids = None
 
