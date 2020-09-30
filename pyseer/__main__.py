@@ -400,8 +400,10 @@ def main():
             min_lineage = min(lineage_wald.items(), key=operator.itemgetter(1))[0]
 
             # Remove from objects, but keep a copy
-            min_index = lineage_dict.index(min_lineage)
             lineage_clusters_full = np.copy(lineage_clusters)
+            lineage_dict_full = lineage_dict.copy()
+
+            min_index = lineage_dict.index(min_lineage)
             lineage_clusters = np.delete(lineage_clusters, min_index, 1)
             del lineage_dict[min_index]
         else:
@@ -627,14 +629,19 @@ def main():
 
         # fit enet with cross validation
         if (model == "enet"):
-            sys.stderr.write("Fitting elastic net to top " + str(tested) + " variants\n")
+            sys.stderr.write("Fitting elastic net to top " + str(tested) +
+                             " variants\n")
             enet_betas = fit_enet(p, all_vars, cov, weights,
                                   options.continuous, options.alpha,
-                                  lineage_dict, fold_ids, options.n_folds, options.cpu)
+                                  lineage_dict_full, fold_ids, options.n_folds,
+                                  options.cpu)
 
             # print those with passing indices, along with coefficient
             sys.stderr.write("Finding and printing selected variants\n")
-            infile, sample_order = open_variant_file(var_type, var_file, options.burden, burden_regions, options.uncompressed)
+            infile, sample_order = \
+                open_variant_file(var_type, var_file,
+                                  options.burden, burden_regions,
+                                  options.uncompressed)
 
             pred_model = {'intercept': (1, enet_betas[0])}
             if cov.shape[1] > 0:
@@ -673,9 +680,10 @@ def main():
                     pickle.dump([pred_model, options.continuous], pickle_file)
                     sys.stderr.write("Saved enet model as %s.pkl\n" % options.save_model)
 
-        elif (model == "rf"):
+        elif model == "rf":
             sys.stderr.write("Fitting random forest to top " + str(tested) + " variants\n")
-            rf_model, rf_betas = fit_rf(p, all_vars, cov, weights, options.continuous, options.alpha, options.n_folds, options.cpu)
+            rf_model, rf_betas = fit_rf(p, all_vars, cov, weights,
+                                        options.continuous, options.cpu)
 
             # print those with passing indices, along with coefficient
             sys.stderr.write("Printing variants\n")
