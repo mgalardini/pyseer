@@ -379,6 +379,7 @@ def main():
     if options.lineage_clusters:
         lineage_clusters, lineage_dict = load_lineage(options.lineage_clusters, p)
 
+    lineage_dict_full = lineage_dict
     if options.lineage:
         lineage_samples = p.index # this is ensured in load_lineage
 
