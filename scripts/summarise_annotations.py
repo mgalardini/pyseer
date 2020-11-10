@@ -46,7 +46,10 @@ if __name__ == "__main__":
         for line in anot_file:
             anot_fields = line.rstrip().split("\t")
             af = float(anot_fields[1])
-            pvalue = float(anot_fields[3])
+            if anot_fields[3] == "":
+                pvalue = float(anot_fields[2])
+            else:
+                pvalue = float(anot_fields[3])
             beta = abs(float(anot_fields[4]))
             # double check that there are actual hits here
             if anot_fields[-1].count(';') == 0:
