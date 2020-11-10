@@ -16,6 +16,9 @@ def get_options():
     parser.add_argument('--nearby',
                         action='store_true',
                         help='Use up/downstream annotation, if not in a gene')
+    parser.add_argument('--unadj-p',
+                        action='store_true',
+                        help='Use the unadjusted p-value (set if adjusted p-value not available)')
 
     return parser.parse_args()
 
@@ -46,8 +49,10 @@ if __name__ == "__main__":
         for line in anot_file:
             anot_fields = line.rstrip().split("\t")
             af = float(anot_fields[1])
-            if anot_fields[3] == "":
+            if options.unadj_p:
                 pvalue = float(anot_fields[2])
+            elif anot_fields[3] == "":
+                sys.stderr.write("No adjusted p-value found; try with --unadj-p")
             else:
                 pvalue = float(anot_fields[3])
             beta = abs(float(anot_fields[4]))
