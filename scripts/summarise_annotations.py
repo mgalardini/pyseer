@@ -52,7 +52,7 @@ if __name__ == "__main__":
             if options.unadj_p:
                 pvalue = float(anot_fields[2])
             elif anot_fields[3] == "":
-                sys.stderr.write("No adjusted p-value found; try with --unadj-p")
+                sys.stderr.write("No adjusted p-value found; try with --unadj-p\n")
             else:
                 pvalue = float(anot_fields[3])
             beta = abs(float(anot_fields[4]))
