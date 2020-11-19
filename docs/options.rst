@@ -4,25 +4,25 @@ Option reference
 Usage::
 
    usage: pyseer [-h] --phenotypes PHENOTYPES
-              [--phenotype-column PHENOTYPE_COLUMN]
-              (--kmers KMERS | --vcf VCF | --pres PRES) [--burden BURDEN]
-              [--distances DISTANCES | --load-m LOAD_M]
-              [--similarity SIMILARITY | --load-lmm LOAD_LMM]
-              [--save-m SAVE_M] [--save-lmm SAVE_LMM]
-              [--mds {classic,metric,non-metric}]
-              [--max-dimensions MAX_DIMENSIONS] [--no-distances]
-              [--continuous] [--lmm] [--wg {enet,rf,blup}] [--lineage]
-              [--lineage-clusters LINEAGE_CLUSTERS]
-              [--lineage-file LINEAGE_FILE] [--sequence-reweighting]
-              [--save-vars SAVE_VARS] [--load-vars LOAD_VARS]
-              [--save-model SAVE_MODEL] [--alpha ALPHA] [--n-folds N_FOLDS]
-              [--min-af MIN_AF] [--max-af MAX_AF] [--max-missing MAX_MISSING]
-              [--filter-pvalue FILTER_PVALUE] [--lrt-pvalue LRT_PVALUE]
-              [--cor-filter COR_FILTER] [--covariates COVARIATES]
-              [--use-covariates [USE_COVARIATES [USE_COVARIATES ...]]]
-              [--print-samples] [--print-filtered]
-              [--output-patterns OUTPUT_PATTERNS] [--uncompressed] [--cpu CPU]
-              [--block_size BLOCK_SIZE] [--version]
+                 [--phenotype-column PHENOTYPE_COLUMN]
+                 (--kmers KMERS | --vcf VCF | --pres PRES) [--burden BURDEN]
+                 [--distances DISTANCES | --load-m LOAD_M]
+                 [--similarity SIMILARITY | --load-lmm LOAD_LMM]
+                 [--save-m SAVE_M] [--save-lmm SAVE_LMM]
+                 [--mds {classic,metric,non-metric}]
+                 [--max-dimensions MAX_DIMENSIONS] [--no-distances]
+                 [--continuous] [--lmm] [--wg {enet,rf,blup}] [--lineage]
+                 [--lineage-clusters LINEAGE_CLUSTERS]
+                 [--lineage-file LINEAGE_FILE] [--sequence-reweighting]
+                 [--save-vars SAVE_VARS] [--load-vars LOAD_VARS]
+                 [--save-model SAVE_MODEL] [--alpha ALPHA] [--n-folds N_FOLDS]
+                 [--min-af MIN_AF] [--max-af MAX_AF] [--max-missing MAX_MISSING]
+                 [--filter-pvalue FILTER_PVALUE] [--lrt-pvalue LRT_PVALUE]
+                 [--cor-filter COR_FILTER] [--covariates COVARIATES]
+                 [--use-covariates [USE_COVARIATES [USE_COVARIATES ...]]]
+                 [--print-samples] [--print-filtered]
+                 [--output-patterns OUTPUT_PATTERNS] [--uncompressed] [--cpu CPU]
+                 [--block_size BLOCK_SIZE] [--version]
 
    SEER (doi: 10.1038/ncomms12797), reimplemented in python
 
@@ -103,14 +103,16 @@ Usage::
                            Correlation filter for elastic net (phenotype/variant
                            correlation quantile at which to start keeping
                            variants) [Default: 0.25]
+
    Covariates:
      --covariates COVARIATES
-                           User-defined covariates file (tab-delimited, no
+                           User-defined covariates file (tab-delimited, with
                            header, first column contains sample names)
      --use-covariates [USE_COVARIATES [USE_COVARIATES ...]]
                            Covariates to use. Format is "2 3q 4" (q for
                            quantitative) [Default: load covariates but don't use
                            them]
+
    Other:
      --print-samples       Print sample lists [Default: hide samples]
      --print-filtered      Print filtered variants (i.e. fitting errors)
