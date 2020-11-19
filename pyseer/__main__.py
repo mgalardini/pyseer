@@ -205,7 +205,7 @@ def get_options():
     covariates.add_argument('--covariates',
                             default=None,
                             help='User-defined covariates file '
-                                 '(tab-delimited, no header, '
+                                 '(tab-delimited, with header, '
                                  'first column contains sample names)')
     covariates.add_argument('--use-covariates',
                             default=None,
