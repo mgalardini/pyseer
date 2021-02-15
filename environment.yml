@@ -1,0 +1,25 @@
+name: pyseer_env
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python
+  - pip
+  - pytest
+  - numpy
+  - scipy
+  - python-dateutil >=2.5.0
+  - pandas
+  - statsmodels >=0.10
+  - scikit-learn
+  - glmnet_py
+  - pysam >=0.15.3
+  - dendropy
+  - matplotlib-base
+  - pybedtools
+  - mash
+  - bwa
+  - bedtools
+  - bedops
+  - tqdm
