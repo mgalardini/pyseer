@@ -50,6 +50,12 @@ def load_phenotypes(infile, column):
         p = p[column]
     # Remove missing values
     p = p.dropna()
+
+    # Check type
+    if not np.issubdtype(p.values, np.number):
+        sys.stderr.write('Phenotypes must be numeric\n')
+        sys.exit(1)
+
     return p
 
 
