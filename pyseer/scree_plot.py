@@ -35,10 +35,11 @@ def main():
     import matplotlib
     try:
         matplotlib.use("TkAgg")
+        import matplotlib.pyplot as plt
     except ImportError as e:
         matplotlib.use("AGG")
+        import matplotlib.pyplot as plt
 
-    import matplotlib.pyplot as plt
 
     m = pd.read_csv(options.distances,
                     index_col=0,
