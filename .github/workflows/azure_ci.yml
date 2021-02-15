@@ -31,4 +31,4 @@ jobs:
         alias python=$CONDA/bin/python
         python -m pip install --no-deps --ignore-installed .
         pytest -v tests
-        cd test && python run_test.py
+        cd tests && bash run_test.sh
