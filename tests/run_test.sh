@@ -56,24 +56,24 @@ python ../pyseer-runner.py --vcf variants.vcf.gz --phenotypes subset.pheno --loa
 python ../pyseer-runner.py --vcf variants.vcf.gz --burden burden_regions_multiple.txt --phenotypes subset.pheno --load-m pop_struct.pkl --max-dimensions 3 > 35.log 2> 35.err || die "Multiple regions for burden testing"
 
 # test other pyseer commands
-python ../scree_plot_pyseer-runner.py distances.tsv.gz --max-dimensions 20 > /dev/null 2> /dev/null || die "Scree plot"
-python ../similarity-runner.py samples.txt --kmers kmers.gz > /dev/null 2> /dev/null || die "Similarity w/ kmers"
-python ../similarity-runner.py samples.txt --vcf variants.vcf.gz > /dev/null 2> /dev/null || die "Similarity w/ vcf"
-python ../similarity-runner.py samples.txt --pres presence_absence.Rtab > /dev/null 2> /dev/null || die "Similarity w/ roary/piggy"
-cat mash.tsv | python ../square_mash-runner.py > /dev/null 2> /dev/null || die "Mash squarer"
-python ../annotate_hits_pyseer-runner.py significant_kmers.txt references.txt /dev/null > /dev/null 2> /dev/null || die 'Annotate hits'
-python ../phandango_mapper-runner.py significant_kmers.txt Spn23F.fa phandango.test.out > /dev/null 2> /dev/null || die 'Phandango mapper'
-python ../enet_predict-runner.py --vcf variants.vcf.gz enet_vcf_model.pkl subset.samples_list > /dev/null 2> /dev/null || die "Enet predict"
+python ../scree_plot_pyseer-runner.py distances.tsv.gz --max-dimensions 20
+python ../similarity-runner.py samples.txt --kmers kmers.gz
+python ../similarity-runner.py samples.txt --vcf variants.vcf.gz
+python ../similarity-runner.py samples.txt --pres presence_absence.Rtab
+cat mash.tsv | python ../square_mash-runner.py
+python ../annotate_hits_pyseer-runner.py significant_kmers.txt references.txt /dev/null
+python ../phandango_mapper-runner.py significant_kmers.txt Spn23F.fa phandango.test.out
+python ../enet_predict-runner.py --vcf variants.vcf.gz enet_vcf_model.pkl subset.samples_list
 
 # test the scripts folder
-python ../enet_predict-runner.py --vcf variants.vcf.gz enet_vcf_model.pkl subset.samples_list > /dev/null 2> /dev/null || die "Enet predict"
-python ../scripts/count_patterns.py patterns.txt > /dev/null 2> /dev/null || die "Count patterns"
-python ../scripts/phylogeny_distance.py tree.nwk > /dev/null 2> /dev/null || die "Tree distances"
-python ../scripts/phylogeny_distance.py tree.nwk --lmm > /dev/null 2> /dev/null || die "Tree distances (C)"
-python ../scripts/phylogeny_distance.py tree.nwk --topology > /dev/null 2> /dev/null || die "Tree distances (topology)"
-python ../pyseer-runner.py --vcf variants.vcf.gz --phenotypes subset.pheno --lmm --similarity similarity.tsv.gz > vcf.lmm.txt 2> /dev/null || die "LMM input for enet model"
-python ../scripts/save_model.py --p-cutoff 0.5 vcf.lmm.txt enet.lmm > /dev/null 2> /dev/null || die "Save enet model from LMM input"
-python ../enet_predict-runner.py --vcf variants.vcf.gz enet.lmm.pkl subset.samples_list > /dev/null 2> /dev/null || die "Enet predict with LMM model"
+python ../enet_predict-runner.py --vcf variants.vcf.gz enet_vcf_model.pkl subset.samples_list
+python ../scripts/count_patterns.py patterns.txt
+python ../scripts/phylogeny_distance.py tree.nwk
+python ../scripts/phylogeny_distance.py tree.nwk --lmm 
+python ../scripts/phylogeny_distance.py tree.nwk --topology
+python ../pyseer-runner.py --vcf variants.vcf.gz --phenotypes subset.pheno --lmm --similarity similarity.tsv.gz > vcf.lmm.txt
+python ../scripts/save_model.py --p-cutoff 0.5 vcf.lmm.txt enet.lmm
+python ../enet_predict-runner.py --vcf variants.vcf.gz enet.lmm.pkl subset.samples_list
 
 # test all command line options (things that should fail or behave weirdly)
 python ../pyseer-runner.py --kmers kmers.txt --phenotypes subset.pheno --load-m pop_struct.pkl > /dev/null 2> /dev/null && die "Uncompressed kmers but no option"
