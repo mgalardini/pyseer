@@ -25,6 +25,7 @@ except NameError:
 
 DATA_DIR = 'tests'
 P = os.path.join(DATA_DIR, 'subset.pheno')
+P_CHAR = os.path.join(DATA_DIR, 'chars.pheno')
 M = os.path.join(DATA_DIR, 'distances_smaller.tsv.gz')
 LIN = os.path.join(DATA_DIR, 'lineage_clusters.txt')
 COV = os.path.join(DATA_DIR, 'covariates.txt')
@@ -54,6 +55,8 @@ class TestLoadFunctions(unittest.TestCase):
             load_phenotypes(P, 'test')
         with self.assertRaises(FileNotFoundError):
             load_phenotypes('nope', None)
+        with self.assertRaises(SystemExit):
+            load_phenotypes(P_CHAR, None)
 
     def test_load_structure(self):
         p = pd.read_csv(P,
