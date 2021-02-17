@@ -15,7 +15,7 @@ dependencies:
   - scikit-learn
   - glmnet_py
   - pysam >=0.15.3
-  - dendropy
+  - dendropy >=4.4.0
   - matplotlib-base
   - pybedtools
   - mash

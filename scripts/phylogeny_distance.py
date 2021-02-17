@@ -49,8 +49,6 @@ if __name__ == "__main__":
         preserve_underscores=True)
 
     if options.midpoint:
-        # Needs to be run twice
-        tree.reroot_at_midpoint(update_bipartitions=True, suppress_unifurcations=False)
         tree.reroot_at_midpoint(update_bipartitions=True, suppress_unifurcations=False)
 
     d = {}
