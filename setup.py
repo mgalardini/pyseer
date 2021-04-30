@@ -37,7 +37,7 @@ setup(
     long_description_content_type='text/markdown',
     url='https://github.com/mgalardini/pyseer',
     author='Marco Galardini and John Lees',
-    author_email='marco@ebi.ac.uk',
+    author_email='galardini.marco@mh-hannover.de',
     license='Apache Software License',
     classifiers=[
         'Development Status :: 4 - Beta',

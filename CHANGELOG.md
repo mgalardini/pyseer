@@ -1,4 +1,14 @@
 # CHANGELOG
+v1.3.7 (May 2020)
+- Enhancement: check that provided phenotypes are of numeric type
+- Bugfix: properly report all filtered variants
+- Bugfix: don't crash if regression fails for missing data
+- Bugfix for whole genome regression and lineages
+- Bugfix/docs: properly report that the covariates file should have a header
+- scripts/summarise_annotations.py can work with unadjusted p-values (new option, thanks to Lindsay Clark)
+- scripts/phylogeny_distance.py: no need to reroot twice with updated dendropy
+- CI: transition to GitHub actions
+
 v1.3.6 (May 2020)
 - Bugfix for missing variants in VCF files (now properly handled)
 - Bugfixes for k-mer mapping (lack of annotation, bwa fastmap with many hits
