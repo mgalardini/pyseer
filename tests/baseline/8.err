@@ -2,7 +2,13 @@ Read 50 phenotypes
 Detected binary phenotype
 Loaded projection with dimension (50, 35)
 Analysing 50 samples found in both phenotype and structure matrix
+No observations of AAAAAAAAAAAAAAAAATGCATATTTATCTTAGCAAAACGACGATTTAAATCGTCGTTTTTTTGTAGTACGACGGGCATGTCGTATATCTGAGGTGTAAG in selected samples
+No observations of AAAAAAAAAAAAAAGTTCAAAATGCAATAAAAATAATTGACTGAATAAACTACATATGTTAGAATAAAAACAAGGAAAAAGAAAGGGGTTTCATTGCATG in selected samples
+No observations of AAAAAAAAAAAAAAGTTCAAAAT in selected samples
+No observations of AAAAAAAAAAAAAATGCATATTTATCTTAGCAAAACGACGATTTAAATCGTCGTTTTTTTGTAGTACGACGGGCATGTCGTATATC in selected samples
+No observations of AAAAAAAAAAAAAATGCATATTTATCTTAGCAAAACGA in selected samples
+No observations of AAAAAAAAAAAGCATTTTACTATTTTATATATATATATATATATATCATAAGATAAGTTTTTTATAAAGACACGCAAATGAGTATAAATCAGCTAATTTT in selected samples
 200 loaded variants
-12 filtered variants
+12 pre-filtered variants
 188 tested variants
 188 printed variants

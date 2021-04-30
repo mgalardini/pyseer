@@ -654,8 +654,8 @@ class TestIterVariants(unittest.TestCase):
                               False, False)
         # fist variant doesn't pass af filter
         v = next(i_var)
-        for i in v:
-            self.assertEqual(i, None)
+        self.assertEqual(v[0], 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')
+        self.assertEqual(v[1], None)
         v = next(i_var)
         v = next(i_var)
         self.assertEqual(v[0], 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')
@@ -708,8 +708,8 @@ class TestIterVariants(unittest.TestCase):
                               False, False)
         # fist variant doesn't pass af filter
         v = next(i_var)
-        for i in v:
-            self.assertEqual(i, None)
+        self.assertEqual(v[0], 'COG_1')
+        self.assertEqual(v[1], None)
         # lets' try again with lenient af filter
         infile = open(PRES)
         header = infile.readline().rstrip()
@@ -761,8 +761,8 @@ class TestIterVariants(unittest.TestCase):
                               False, False)
         # fist variant doesn't pass af filter
         v = next(i_var)
-        for i in v:
-            self.assertEqual(i, None)
+        self.assertEqual(v[0], 'FM211187_16_G_A')
+        self.assertEqual(v[1], None)
         # let's try again with lenient af filter
         infile = VariantFile(VCF)
         i_var = iter_variants(p, m, cov, 'vcf',

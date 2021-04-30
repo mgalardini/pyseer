@@ -3,7 +3,7 @@ Detected binary phenotype
 Reading all variants
 Analysing 50 samples found in both phenotype and loaded npy
 Applying correlation filtering
-  0%|          | 0/234 [00:00<?, ?variants/s] 40%|███▉      | 93/234 [00:00<00:00, 923.02variants/s] 92%|█████████▏| 215/234 [00:00<00:00, 994.63variants/s]100%|██████████| 234/234 [00:00<00:00, 1078.53variants/s]
+  0%|          | 0/234 [00:00<?, ?variants/s] 60%|██████    | 141/234 [00:00<00:00, 1408.25variants/s]100%|██████████| 234/234 [00:00<00:00, 1405.61variants/s]
 Fitting elastic net to top 163 variants
 Best penalty (lambda) from cross-validation: 1.02E-01
 Best model deviance from cross-validation: 1.356 ± 6.12E-02
@@ -11,6 +11,6 @@ Best R^2 from cross-validation: -0.380
 Finding and printing selected variants
 Saved enet model as enet_vcf_model.pkl
 886 loaded variants
-723 filtered variants
+723 pre-filtered variants
 163 tested variants
 5 printed variants

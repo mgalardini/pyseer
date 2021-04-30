@@ -3,6 +3,6 @@ Detected binary phenotype
 Structure matrix has dimension (1837, 1837)
 Analysing 1837 samples found in both phenotype and structure matrix
 200 loaded variants
-158 filtered variants
+158 pre-filtered variants
 42 tested variants
 42 printed variants
