@@ -339,7 +339,7 @@ def read_variant(infile, p, var_type, burden, burden_regions,
     """
     if var_type not in {'kmers', 'vcf', 'Rtab'}:
         raise ValueError('Variants type not supported')
-    if var_type is "vcf":
+    if var_type == "vcf":
         # burden tests read through regions and slice vcf
         if burden:
             if len(burden_regions) > 0:
