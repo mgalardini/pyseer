@@ -27,11 +27,11 @@ No observations of FM211187_567_G_A in selected samples
 No observations of FM211187_702_C_A in selected samples
 No observations of FM211187_827_T_C in selected samples
 Multiple alleles at FM211187_845. Skipping
-39variants [00:00, 381.16variants/s]No observations of FM211187_1078_G_T in selected samples
+No observations of FM211187_1078_G_T in selected samples
 No observations of FM211187_1152_G_T in selected samples
 No observations of FM211187_1180_G_A in selected samples
 No observations of FM211187_1224_G_T in selected samples
-No observations of FM211187_1226_C_T in selected samples
+45variants [00:00, 444.10variants/s]No observations of FM211187_1226_C_T in selected samples
 No observations of FM211187_1244_A_G in selected samples
 No observations of FM211187_1247_T_G in selected samples
 No observations of FM211187_1290_G_A in selected samples
@@ -48,7 +48,7 @@ No observations of FM211187_1548_T_C in selected samples
 No observations of FM211187_1575_T_G in selected samples
 No observations of FM211187_1587_A_AT in selected samples
 No observations of FM211187_1622_G_T in selected samples
-65variants [00:00, 331.54variants/s]No observations of FM211187_1633_G_A in selected samples
+No observations of FM211187_1633_G_A in selected samples
 No observations of FM211187_1668_T_C in selected samples
 No observations of FM211187_1682_C_T in selected samples
 No observations of FM211187_1699_A_G in selected samples
@@ -64,13 +64,13 @@ No observations of FM211187_1957_T_C in selected samples
 No observations of FM211187_2185_G_A in selected samples
 No observations of FM211187_2200_C_T in selected samples
 No observations of FM211187_2221_C_T in selected samples
-No observations of FM211187_2227_G_A in selected samples
+90variants [00:00, 378.62variants/s]No observations of FM211187_2227_G_A in selected samples
 No observations of FM211187_2305_T_G in selected samples
 No observations of FM211187_2340_C_T in selected samples
 No observations of FM211187_2362_C_T in selected samples
 No observations of FM211187_2467_C_T in selected samples
 No observations of FM211187_2490_C_T in selected samples
-99variants [00:00, 330.72variants/s]No observations of FM211187_2499_C_T in selected samples
+No observations of FM211187_2499_C_T in selected samples
 No observations of FM211187_2521_C_T in selected samples
 No observations of FM211187_2606_G_T in selected samples
 No observations of FM211187_2657_G_A in selected samples
@@ -91,9 +91,9 @@ No observations of FM211187_3074_G_T in selected samples
 No observations of FM211187_3102_G_A in selected samples
 No observations of FM211187_3104_A_C in selected samples
 No observations of FM211187_3106_C_T in selected samples
-No observations of FM211187_3110_A_AG in selected samples
+133variants [00:00, 397.22variants/s]No observations of FM211187_3110_A_AG in selected samples
 No observations of FM211187_3125_A_G in selected samples
-137variants [00:00, 342.82variants/s]Multiple alleles at FM211187_3126. Skipping
+Multiple alleles at FM211187_3126. Skipping
 Multiple alleles at FM211187_3130. Skipping
 Multiple alleles at FM211187_3131. Skipping
 No observations of FM211187_3155_G_A in selected samples
@@ -104,13 +104,13 @@ No observations of FM211187_3334_C_T in selected samples
 No observations of FM211187_3348_C_T in selected samples
 No observations of FM211187_3370_G_A in selected samples
 No observations of FM211187_3547_C_T in selected samples
-169variants [00:00, 334.56variants/s]No observations of FM211187_3624_G_T in selected samples
+No observations of FM211187_3624_G_T in selected samples
 No observations of FM211187_3646_G_T in selected samples
 No observations of FM211187_3650_C_T in selected samples
 No observations of FM211187_3721_C_T in selected samples
 No observations of FM211187_3730_A_C in selected samples
 No observations of FM211187_3777_G_A in selected samples
-No observations of FM211187_3779_C_T in selected samples
+178variants [00:00, 382.06variants/s]No observations of FM211187_3779_C_T in selected samples
 No observations of FM211187_3785_C_T in selected samples
 No observations of FM211187_3800_C_G in selected samples
 No observations of FM211187_3826_C_T in selected samples
@@ -130,7 +130,7 @@ No observations of FM211187_4135_C_T in selected samples
 No observations of FM211187_4170_C_T in selected samples
 No observations of FM211187_4171_C_T in selected samples
 No observations of FM211187_4198_C_T in selected samples
-206variants [00:00, 343.55variants/s]No observations of FM211187_4201_A_G in selected samples
+No observations of FM211187_4201_A_G in selected samples
 No observations of FM211187_4234_G_A in selected samples
 No observations of FM211187_4258_C_T in selected samples
 No observations of FM211187_4279_G_A in selected samples
@@ -138,7 +138,7 @@ No observations of FM211187_4316_G_A in selected samples
 No observations of FM211187_4318_C_T in selected samples
 Multiple alleles at FM211187_4329. Skipping
 No observations of FM211187_4352_G_T in selected samples
-No observations of FM211187_4418_T_G in selected samples
+217variants [00:00, 380.08variants/s]No observations of FM211187_4418_T_G in selected samples
 No observations of FM211187_4427_A_G in selected samples
 No observations of FM211187_4443_T_C in selected samples
 No observations of FM211187_4446_G_A in selected samples
@@ -158,7 +158,7 @@ No observations of FM211187_4949_C_T in selected samples
 No observations of FM211187_4965_C_T in selected samples
 No observations of FM211187_4984_A_C in selected samples
 No observations of FM211187_5054_C_T in selected samples
-246variants [00:00, 358.13variants/s]No observations of FM211187_5106_G_A in selected samples
+No observations of FM211187_5106_G_A in selected samples
 No observations of FM211187_5142_T_C in selected samples
 Multiple alleles at FM211187_5148. Skipping
 No observations of FM211187_5164_G_A in selected samples
@@ -167,7 +167,7 @@ No observations of FM211187_5208_G_A in selected samples
 No observations of FM211187_5219_C_T in selected samples
 No observations of FM211187_5267_C_T in selected samples
 No observations of FM211187_5304_C_A in selected samples
-No observations of FM211187_5309_C_A in selected samples
+260variants [00:00, 395.32variants/s]No observations of FM211187_5309_C_A in selected samples
 No observations of FM211187_5379_A_C in selected samples
 No observations of FM211187_5393_C_T in selected samples
 No observations of FM211187_5426_G_A in selected samples
@@ -179,7 +179,7 @@ No observations of FM211187_5523_G_A in selected samples
 No observations of FM211187_5638_A_G in selected samples
 No observations of FM211187_5747_A_G in selected samples
 No observations of FM211187_5756_C_T in selected samples
-280variants [00:00, 336.85variants/s]No observations of FM211187_5795_C_T in selected samples
+No observations of FM211187_5795_C_T in selected samples
 No observations of FM211187_5824_G_T in selected samples
 No observations of FM211187_5948_A_G in selected samples
 No observations of FM211187_5970_C_T in selected samples
@@ -190,7 +190,7 @@ No observations of FM211187_6133_T_C in selected samples
 No observations of FM211187_6135_C_T in selected samples
 No observations of FM211187_6181_G_A in selected samples
 No observations of FM211187_6234_T_C in selected samples
-No observations of FM211187_6244_G_A in selected samples
+300variants [00:00, 372.50variants/s]No observations of FM211187_6244_G_A in selected samples
 No observations of FM211187_6264_G_A in selected samples
 No observations of FM211187_6295_G_A in selected samples
 No observations of FM211187_6326_A_G in selected samples
@@ -203,7 +203,7 @@ No observations of FM211187_6438_C_A in selected samples
 No observations of FM211187_6453_A_G in selected samples
 No observations of FM211187_6469_A_C in selected samples
 No observations of FM211187_6504_C_T in selected samples
-320variants [00:00, 352.90variants/s]No observations of FM211187_6543_C_T in selected samples
+No observations of FM211187_6543_C_T in selected samples
 No observations of FM211187_6617_A_G in selected samples
 No observations of FM211187_6634_G_A in selected samples
 No observations of FM211187_6695_C_T in selected samples
@@ -220,7 +220,7 @@ No observations of FM211187_6847_C_A in selected samples
 No observations of FM211187_6861_G_A in selected samples
 No observations of FM211187_6894_G_T in selected samples
 No observations of FM211187_6902_C_T in selected samples
-No observations of FM211187_6919_G_A in selected samples
+343variants [00:00, 389.22variants/s]No observations of FM211187_6919_G_A in selected samples
 No observations of FM211187_6948_G_A in selected samples
 No observations of FM211187_6977_C_A in selected samples
 No observations of FM211187_7032_C_T in selected samples
@@ -230,7 +230,7 @@ No observations of FM211187_7111_C_T in selected samples
 No observations of FM211187_7115_T_G in selected samples
 No observations of FM211187_7129_G_A in selected samples
 No observations of FM211187_7138_G_T in selected samples
-355variants [00:01, 315.38variants/s]No observations of FM211187_7167_G_A in selected samples
+No observations of FM211187_7167_G_A in selected samples
 No observations of FM211187_7175_G_A in selected samples
 No observations of FM211187_7189_C_T in selected samples
 No observations of FM211187_7219_C_T in selected samples
@@ -252,9 +252,9 @@ No observations of FM211187_7560_A_G in selected samples
 No observations of FM211187_7616_C_A in selected samples
 No observations of FM211187_7635_A_G in selected samples
 No observations of FM211187_7642_G_A in selected samples
-No observations of FM211187_7694_G_A in selected samples
+384variants [00:00, 394.29variants/s]No observations of FM211187_7694_G_A in selected samples
 No observations of FM211187_7726_C_A in selected samples
-387variants [00:01, 245.99variants/s]No observations of FM211187_7727_G_A in selected samples
+No observations of FM211187_7727_G_A in selected samples
 No observations of FM211187_7729_C_T in selected samples
 No observations of FM211187_7732_G_A in selected samples
 No observations of FM211187_7763_G_A in selected samples
@@ -280,9 +280,9 @@ No observations of FM211187_8184_C_T in selected samples
 Multiple alleles at FM211187_8206. Skipping
 No observations of FM211187_8241_A_G in selected samples
 No observations of FM211187_8248_A_G in selected samples
-421variants [00:01, 266.89variants/s]No observations of FM211187_8285_C_T in selected samples
+No observations of FM211187_8285_C_T in selected samples
 No observations of FM211187_8311_G_A in selected samples
-No observations of FM211187_8340_G_A in selected samples
+424variants [00:01, 378.71variants/s]No observations of FM211187_8340_G_A in selected samples
 No observations of FM211187_8358_A_C in selected samples
 No observations of FM211187_8413_T_C in selected samples
 No observations of FM211187_8436_AG_A in selected samples
@@ -301,7 +301,7 @@ No observations of FM211187_8568_G_T in selected samples
 No observations of FM211187_8593_A_G in selected samples
 No observations of FM211187_8604_A_C in selected samples
 Multiple alleles at FM211187_8607. Skipping
-450variants [00:01, 273.34variants/s]No observations of FM211187_8618_G_T in selected samples
+No observations of FM211187_8618_G_T in selected samples
 Multiple alleles at FM211187_8674. Skipping
 No observations of FM211187_8678_T_C in selected samples
 No observations of FM211187_8703_T_A in selected samples
@@ -311,7 +311,7 @@ No observations of FM211187_8729_G_A in selected samples
 No observations of FM211187_8874_G_T in selected samples
 No observations of FM211187_8894_C_T in selected samples
 No observations of FM211187_8908_G_A in selected samples
-No observations of FM211187_8979_C_T in selected samples
+465variants [00:01, 387.05variants/s]No observations of FM211187_8979_C_T in selected samples
 No observations of FM211187_9058_T_C in selected samples
 No observations of FM211187_9116_C_T in selected samples
 No observations of FM211187_9126_T_G in selected samples
@@ -322,7 +322,7 @@ No observations of FM211187_9260_G_A in selected samples
 No observations of FM211187_9279_G_A in selected samples
 No observations of FM211187_9285_A_G in selected samples
 No observations of FM211187_9312_C_T in selected samples
-483variants [00:01, 286.52variants/s]No observations of FM211187_9344_C_T in selected samples
+No observations of FM211187_9344_C_T in selected samples
 No observations of FM211187_9345_G_T in selected samples
 No observations of FM211187_9365_C_T in selected samples
 No observations of FM211187_9407_C_T in selected samples
@@ -334,7 +334,7 @@ No observations of FM211187_9508_C_T in selected samples
 No observations of FM211187_9602_C_T in selected samples
 No observations of FM211187_9633_T_G in selected samples
 No observations of FM211187_9686_T_C in selected samples
-No observations of FM211187_9689_C_T in selected samples
+504variants [00:01, 341.50variants/s]No observations of FM211187_9689_C_T in selected samples
 No observations of FM211187_9720_C_T in selected samples
 No observations of FM211187_9754_G_A in selected samples
 No observations of FM211187_9774_T_C in selected samples
@@ -347,7 +347,7 @@ No observations of FM211187_9960_G_A in selected samples
 No observations of FM211187_10011_C_T in selected samples
 No observations of FM211187_10019_C_T in selected samples
 No observations of FM211187_10182_T_C in selected samples
-521variants [00:01, 309.33variants/s]No observations of FM211187_10194_C_T in selected samples
+No observations of FM211187_10194_C_T in selected samples
 No observations of FM211187_10211_C_A in selected samples
 No observations of FM211187_10231_G_A in selected samples
 No observations of FM211187_10265_C_G in selected samples
@@ -361,7 +361,7 @@ No observations of FM211187_10561_G_A in selected samples
 No observations of FM211187_10582_A_G in selected samples
 No observations of FM211187_10583_G_T in selected samples
 No observations of FM211187_10584_G_T in selected samples
-No observations of FM211187_10586_G_A in selected samples
+540variants [00:01, 328.72variants/s]No observations of FM211187_10586_G_A in selected samples
 No observations of FM211187_10588_T_C in selected samples
 No observations of FM211187_10655_G_A in selected samples
 No observations of FM211187_10700_A_G in selected samples
@@ -371,7 +371,7 @@ No observations of FM211187_10768_T_C in selected samples
 No observations of FM211187_10836_G_A in selected samples
 No observations of FM211187_10849_C_T in selected samples
 No observations of FM211187_10851_G_A in selected samples
-558variants [00:01, 311.13variants/s]No observations of FM211187_11064_C_T in selected samples
+No observations of FM211187_11064_C_T in selected samples
 No observations of FM211187_11092_C_A in selected samples
 No observations of FM211187_11146_G_A in selected samples
 No observations of FM211187_11194_C_T in selected samples
@@ -383,7 +383,7 @@ No observations of FM211187_11328_C_A in selected samples
 No observations of FM211187_11341_C_T in selected samples
 No observations of FM211187_11356_G_A in selected samples
 No observations of FM211187_11420_C_T in selected samples
-No observations of FM211187_11425_C_T in selected samples
+582variants [00:01, 351.47variants/s]No observations of FM211187_11425_C_T in selected samples
 No observations of FM211187_11431_C_A in selected samples
 No observations of FM211187_11490_T_C in selected samples
 No observations of FM211187_11548_C_T in selected samples
@@ -393,7 +393,7 @@ No observations of FM211187_11617_A_C in selected samples
 No observations of FM211187_11645_G_A in selected samples
 No observations of FM211187_11653_C_A in selected samples
 No observations of FM211187_11666_A_G in selected samples
-599variants [00:01, 334.49variants/s]No observations of FM211187_11671_C_T in selected samples
+No observations of FM211187_11671_C_T in selected samples
 No observations of FM211187_11759_A_T in selected samples
 No observations of FM211187_11774_T_C in selected samples
 No observations of FM211187_11826_G_A in selected samples
@@ -409,7 +409,7 @@ No observations of FM211187_12210_G_A in selected samples
 No observations of FM211187_12236_C_T in selected samples
 No observations of FM211187_12247_C_A in selected samples
 No observations of FM211187_12266_T_C in selected samples
-No observations of FM211187_12300_C_T in selected samples
+623variants [00:01, 346.84variants/s]No observations of FM211187_12300_C_T in selected samples
 No observations of FM211187_12327_G_GAAGTGTATTCAAATTAGA in selected samples
 No observations of FM211187_12380_T_C in selected samples
 No observations of FM211187_12422_C_T in selected samples
@@ -421,7 +421,7 @@ No observations of FM211187_12785_G_A in selected samples
 No observations of FM211187_12794_A_G in selected samples
 No observations of FM211187_12800_ATTC_A in selected samples
 No observations of FM211187_12819_A_G in selected samples
-641variants [00:01, 355.81variants/s]No observations of FM211187_12837_G_A in selected samples
+No observations of FM211187_12837_G_A in selected samples
 No observations of FM211187_12919_C_T in selected samples
 No observations of FM211187_12958_T_C in selected samples
 No observations of FM211187_12972_T_C in selected samples
@@ -439,7 +439,7 @@ No observations of FM211187_13358_C_T in selected samples
 No observations of FM211187_13368_G_A in selected samples
 No observations of FM211187_13426_G_A in selected samples
 No observations of FM211187_13514_T_C in selected samples
-No observations of FM211187_13572_T_C in selected samples
+666variants [00:01, 368.54variants/s]No observations of FM211187_13572_T_C in selected samples
 No observations of FM211187_13581_G_A in selected samples
 No observations of FM211187_13599_A_G in selected samples
 No observations of FM211187_13608_G_A in selected samples
@@ -449,7 +449,7 @@ No observations of FM211187_13663_A_G in selected samples
 Multiple alleles at FM211187_13688. Skipping
 No observations of FM211187_13700_T_C in selected samples
 No observations of FM211187_13712_A_T in selected samples
-678variants [00:02, 349.28variants/s]No observations of FM211187_13736_C_T in selected samples
+No observations of FM211187_13736_C_T in selected samples
 No observations of FM211187_13739_G_A in selected samples
 No observations of FM211187_13748_T_C in selected samples
 No observations of FM211187_13751_C_T in selected samples
@@ -473,12 +473,12 @@ No observations of FM211187_14026_C_T in selected samples
 No observations of FM211187_14036_T_C in selected samples
 No observations of FM211187_14087_T_C in selected samples
 No observations of FM211187_14090_A_G in selected samples
-No observations of FM211187_14108_A_G in selected samples
+708variants [00:01, 380.91variants/s]No observations of FM211187_14108_A_G in selected samples
 No observations of FM211187_14114_G_A in selected samples
 No observations of FM211187_14130_G_A in selected samples
 No observations of FM211187_14158_C_T in selected samples
 No observations of FM211187_14162_C_T in selected samples
-714variants [00:02, 289.55variants/s]No observations of FM211187_14168_A_G in selected samples
+No observations of FM211187_14168_A_G in selected samples
 No observations of FM211187_14220_G_T in selected samples
 No observations of FM211187_14250_G_A in selected samples
 No observations of FM211187_14251_C_T in selected samples
@@ -506,25 +506,25 @@ Multiple alleles at FM211187_14375. Skipping
 Multiple alleles at FM211187_14378. Skipping
 Multiple alleles at FM211187_14624. Skipping
 Multiple alleles at FM211187_14657. Skipping
-Multiple alleles at FM211187_15347. Skipping
+776variants [00:01, 462.69variants/s]Multiple alleles at FM211187_15347. Skipping
 Multiple alleles at FM211187_15404. Skipping
 Multiple alleles at FM211187_15574. Skipping
 Multiple alleles at FM211187_15577. Skipping
-856variants [00:02, 380.35variants/s]Multiple alleles at FM211187_15708. Skipping
+Multiple alleles at FM211187_15708. Skipping
 Multiple alleles at FM211187_15764. Skipping
 Multiple alleles at FM211187_15766. Skipping
 Multiple alleles at FM211187_15769. Skipping
 Multiple alleles at FM211187_15770. Skipping
-886variants [00:02, 363.57variants/s]
+886variants [00:02, 427.79variants/s]
 Saved enet variants as enet_vcf.pkl
 Applying correlation filtering
-  0%|          | 0/234 [00:00<?, ?variants/s] 51%|█████▏    | 120/234 [00:00<00:00, 1190.77variants/s] 92%|█████████▏| 216/234 [00:00<00:00, 1104.46variants/s]100%|██████████| 234/234 [00:00<00:00, 1047.08variants/s]
+  0%|          | 0/234 [00:00<?, ?variants/s] 64%|██████▎   | 149/234 [00:00<00:00, 1485.51variants/s]100%|██████████| 234/234 [00:00<00:00, 1488.77variants/s]
 Fitting elastic net to top 163 variants
 Best penalty (lambda) from cross-validation: 1.02E-01
 Best model deviance from cross-validation: 1.356 ± 6.12E-02
 Best R^2 from cross-validation: -0.380
 Finding and printing selected variants
 886 loaded variants
-723 filtered variants
+723 pre-filtered variants
 163 tested variants
 5 printed variants

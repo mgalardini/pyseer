@@ -223,7 +223,8 @@ def get_options():
     other.add_argument('--print-filtered',
                        action='store_true',
                        default=False,
-                       help='Print filtered variants (i.e. fitting errors) [Default: hide them]')
+                       help='Print filtered variants (i.e. fitting errors) '
+                            '(does not apply if --wg is used) [Default: hide them]')
     other.add_argument('--output-patterns',
                        default=False,
                        help='File to print patterns to, useful for finding '
@@ -530,6 +531,12 @@ def main():
                     for x in values:
                         if x.prefilter:
                             prefilter += 1
+                            if options.print_filtered:
+                                printed += 1
+                                print(format_output(ret,
+                                                    lineage_dict,
+                                                    model,
+                                                    options.print_samples))
                             continue
                         tested += 1
                         if options.output_patterns:
@@ -549,6 +556,12 @@ def main():
                 for x in ret:
                     if x.prefilter:
                         prefilter += 1
+                        if options.print_filtered:
+                            printed += 1
+                            print(format_output(ret,
+                                                lineage_dict,
+                                                model,
+                                                options.print_samples))
                         continue
                     tested += 1
                     if options.output_patterns:
@@ -753,6 +766,12 @@ def main():
                 for x in ret:
                     if x.prefilter:
                         prefilter += 1
+                        if options.print_filtered:
+                            printed += 1
+                            print(format_output(ret,
+                                                lineage_dict,
+                                                model,
+                                                options.print_samples))
                         continue
                     tested += 1
                     if options.output_patterns:
@@ -771,6 +790,12 @@ def main():
 
                 if ret.prefilter:
                     prefilter += 1
+                    if options.print_filtered:
+                        printed += 1
+                        print(format_output(ret,
+                                            lineage_dict,
+                                            model,
+                                            options.print_samples))
                     continue
                 tested += 1
                 if options.output_patterns:
@@ -787,7 +812,7 @@ def main():
 
     # End
     sys.stderr.write('%d loaded variants\n' % (prefilter + tested))
-    sys.stderr.write('%d filtered variants\n' % prefilter)
+    sys.stderr.write('%d pre-filtered variants\n' % prefilter)
     sys.stderr.write('%d tested variants\n' % tested)
     sys.stderr.write('%d printed variants\n' % printed)
 

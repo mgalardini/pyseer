@@ -586,15 +586,22 @@ def iter_variants(p, m, cov, var_type, burden, burden_regions, infile,
         if eof:
             return
 
-        if (k is None) or not (min_af <= af <= max_af) or (missing > max_missing):
-            yield (None, None, None, None, None, None,
-                   None, None, None, None, None, None,
-                   None, None, None, None)
-        else:
-            v = p.values
-            c = cov.values
+        v = p.values
+        c = cov.values
+        if k is not None:
             pattern = hash_pattern(k)
-
+        else:
+            pattern = None
+        
+        if (k is None) or not (min_af <= af <= max_af) or (missing > max_missing):
+            # TODO: currently the way to know if a variant was
+            # af filtered is to check that phenotypes vector is None
+            # a more robust way could be better
+            yield (var_name, None, k, m, c, af, pattern,
+                   lineage_effects, lineage_clusters,
+                   filter_pvalue, lrt_pvalue, null_fit, firth_null,
+                   kstrains, nkstrains, continuous)
+        else:
             yield (var_name, v, k, m, c, af, pattern,
                    lineage_effects, lineage_clusters,
                    filter_pvalue, lrt_pvalue, null_fit, firth_null,

@@ -345,6 +345,13 @@ def fixed_effects_regression(variant, p, k, m, c, af, pattern,
                             np.nan, np.nan, np.nan, np.array([]),
                             None, kstrains, nkstrains,
                             notes, False, True)
+    except statsmodels.tools.sm_exceptions.MissingDataError:
+        # if missing data or inf
+        notes.add('missing-data-error')
+        return var_obj.Seer(variant, pattern, af, prep, np.nan,
+                            np.nan, np.nan, np.nan, np.array([]),
+                            None, kstrains, nkstrains,
+                            notes, False, True)
 
     if lineage_effects:
         max_lineage = fit_lineage_effect(lin, c, k)
