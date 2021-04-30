@@ -563,6 +563,7 @@ high-bse                     SE of fit was >3, which may imply a high effect siz
 perfectly-separable-data     Variant presence and phenotype exactly correlate, so regression cannot be fitted.
 firth-fail                   Firth regression failed (did not converge after 1000 iterations).
 matrix-inversion-error       A pseudo-inverse could not be taken, preventing model from being fitted. This likely implies nearly separable data.
+missing-data-error           Model could not be fitted because of missing data or ``inf`` values.
 ===========================  =======
 
 Number of unique patterns

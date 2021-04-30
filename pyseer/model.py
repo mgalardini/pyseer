@@ -135,6 +135,9 @@ def fit_null(p, m, cov, continuous, firth=False):
     except statsmodels.tools.sm_exceptions.PerfectSeparationError:
         sys.stderr.write('Perfectly separable data error for null model\n')
         return None
+    except statsmodels.tools.sm_exceptions.MissingDataError:
+        sys.stderr.write('Missing data error for null model\n')
+        return None
 
     return null_res
 
@@ -178,7 +181,8 @@ def fit_lineage_effect(lin, c, k):
         max_lineage = np.argmax(wald_test[1:lin.shape[1]+1])
     # In case regression fails
     except (statsmodels.tools.sm_exceptions.PerfectSeparationError,
-            np.linalg.LinAlgError):
+            np.linalg.LinAlgError,
+            statsmodels.tools.sm_exceptions.MissingDataError):
         max_lineage = None
 
     return max_lineage
