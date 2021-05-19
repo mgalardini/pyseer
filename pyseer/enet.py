@@ -110,8 +110,8 @@ def load_all_vars(var_type, p, burden, burden_regions, infile,
         var_idx += 1
 
     # construct sparse matrix
-    variants = csr_matrix((data, indices, indptr), dtype=float)
-
+    variants = csr_matrix((data, indices, indptr), dtype=float,
+                          shape=(len(selected_vars), len(sample_order)))
     return(variants, selected_vars, var_idx)
 
 def fit_enet(p, variants, covariates, weights, continuous, alpha,
