@@ -265,6 +265,9 @@ def main():
     if options.burden and not options.vcf:
         sys.stderr.write('Burden test can only be performed with VCF input\n')
         sys.exit(1)
+    if options.lmm and not options.similarity and not options.load_lmm:
+        sys.stderr.write('Must provide a similarity matrix or lmm cache for random effects\n')
+        sys.exit(1)
     if not options.no_distances:
         if (options.lmm and (options.distances or options.load_m) and not options.lineage) or (not options.lmm and (options.similarity or options.load_lmm)):
             sys.stderr.write('Must use distance matrix with fixed effects, or similarity matrix with random effects\n')
