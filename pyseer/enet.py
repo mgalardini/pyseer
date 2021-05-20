@@ -110,6 +110,9 @@ def load_all_vars(var_type, p, burden, burden_regions, infile,
         var_idx += 1
 
     # construct sparse matrix
+    if (len(selected_vars)) == 0:
+        raise ValueError("No variants passed filters")
+
     variants = csr_matrix((data, indices, indptr), dtype=float,
                           shape=(len(selected_vars), len(all_strains)))
     return(variants, selected_vars, var_idx)
