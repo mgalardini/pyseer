@@ -1,4 +1,11 @@
 # CHANGELOG
+v1.3.8 (May 2020)
+- Improvement: fall back to Firth regression when encountering a matrix inversion error (thanks to Julian Libiseller-Egger)
+- Bugfix: check for zero passing variants in read_all (enet, thanks to Julian Libiseller-Egger)
+- Bugfix: use len(all_strains) instead of len(sample_order) to determine shape of sparse matrix in load_all_vars (enet, thanks to Julian Libiseller-Egger) 
+- Bugfix: properly report all filtered variants
+- Bugfix: --lmm requires either --similarity or a LMM cache
+
 v1.3.7 (May 2020)
 - Enhancement: check that provided phenotypes are of numeric type
 - Bugfix: properly report all filtered variants
