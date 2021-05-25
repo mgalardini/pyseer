@@ -536,7 +536,7 @@ def main():
                             prefilter += 1
                             if options.print_filtered:
                                 printed += 1
-                                print(format_output(ret,
+                                print(format_output(x,
                                                     lineage_dict,
                                                     model,
                                                     options.print_samples))
@@ -561,7 +561,7 @@ def main():
                         prefilter += 1
                         if options.print_filtered:
                             printed += 1
-                            print(format_output(ret,
+                            print(format_output(x,
                                                 lineage_dict,
                                                 model,
                                                 options.print_samples))
@@ -771,7 +771,7 @@ def main():
                         prefilter += 1
                         if options.print_filtered:
                             printed += 1
-                            print(format_output(ret,
+                            print(format_output(x,
                                                 lineage_dict,
                                                 model,
                                                 options.print_samples))
