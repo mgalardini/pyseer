@@ -325,6 +325,11 @@ def fixed_effects_regression(variant, p, k, m, c, af, pattern,
                     bad_chisq = True
                     notes.add('perfectly-separable-data')
 
+                except np.linalg.linalg.LinAlgError:
+                    # singular matrix error
+                    bad_chisq = True
+                    notes.add('matrix-inversion-error')
+
             # Fit Firth regression with large SE, or nearly separable values
             if bad_chisq:
                 firth_fit = fit_firth(mod, start_vec, v, p)
@@ -342,13 +347,6 @@ def fixed_effects_regression(variant, p, k, m, c, af, pattern,
                     if lrstat > 0:  # check for non-convergence
                         lrt_pvalue = stats.chi2.sf(lrstat, 1)
 
-    except np.linalg.linalg.LinAlgError:
-        # singular matrix error
-        notes.add('matrix-inversion-error')
-        return var_obj.Seer(variant, pattern, af, prep, np.nan,
-                            np.nan, np.nan, np.nan, np.array([]),
-                            None, kstrains, nkstrains,
-                            notes, False, True)
     except statsmodels.tools.sm_exceptions.MissingDataError:
         # if missing data or inf
         notes.add('missing-data-error')
