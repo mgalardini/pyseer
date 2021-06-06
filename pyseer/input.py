@@ -421,7 +421,7 @@ def read_variant(infile, p, var_type, burden, burden_regions,
                 if present == '1':
                     d[sample] = 1
                 elif present == ".":
-                    d[sample] = np.nan
+                    continue
 
         # Use common dictionary to format design matrix etc
         kstrains = sorted(set(d.keys()).intersection(all_strains)) # This will include missing
