@@ -53,7 +53,8 @@ python ../pyseer-runner.py --vcf variants.vcf.gz --phenotypes subset.pheno --sav
 python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --wg enet --alpha 1 --cor-filter 0.25 > 32.log 2> 32.err || die "Load Enet with kmers input"
 python ../pyseer-runner.py --pres presence_absence.Rtab --phenotypes subset.pheno --wg enet --alpha 1 --cor-filter 0.25 > 33.log 2> 33.err || die "Load Enet with roary/piggy input"
 python ../pyseer-runner.py --vcf variants.vcf.gz --phenotypes subset.pheno --load-vars enet_vcf --wg enet --save-model enet_vcf_model --alpha 1 --cor-filter 0.25 > 34.log 2> 34.err || die "Load Enet and save model"
-python ../pyseer-runner.py --vcf variants.vcf.gz --burden burden_regions_multiple.txt --phenotypes subset.pheno --load-m pop_struct.pkl --max-dimensions 3 > 35.log 2> 35.err || die "Multiple regions for burden testing"
+python ../pyseer-runner.py --vcf variants.vcf.gz --phenotypes subset.pheno --load-vars enet_vcf --wg enet --lineage-clusters lineage_clusters.txt --sequence-reweighting --alpha 1 --cor-filter 0.25 > 35.log 2> 35.err || die "Enet with lineages"
+python ../pyseer-runner.py --vcf variants.vcf.gz --burden burden_regions_multiple.txt --phenotypes subset.pheno --load-m pop_struct.pkl --max-dimensions 3 > 36.log 2> 36.err || die "Multiple regions for burden testing"
 
 # test other pyseer commands
 python ../scree_plot_pyseer-runner.py distances.tsv.gz --max-dimensions 20 > /dev/null 2> /dev/null || die "Scree plot"

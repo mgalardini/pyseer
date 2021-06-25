@@ -383,6 +383,10 @@ def main():
     if options.lineage_clusters:
         lineage_clusters, lineage_dict = load_lineage(options.lineage_clusters, p)
 
+        # Keep a copy, as these have a column removed below
+        lineage_clusters_full = np.copy(lineage_clusters)
+        lineage_dict_full = lineage_dict.copy()
+
     lineage_dict_full = lineage_dict
     if options.lineage:
         lineage_samples = p.index # this is ensured in load_lineage
@@ -404,10 +408,7 @@ def main():
 
             min_lineage = min(lineage_wald.items(), key=operator.itemgetter(1))[0]
 
-            # Remove from objects, but keep a copy
-            lineage_clusters_full = np.copy(lineage_clusters)
-            lineage_dict_full = lineage_dict.copy()
-
+            # Remove from objects (full copy kept above)
             min_index = lineage_dict.index(min_lineage)
             lineage_clusters = np.delete(lineage_clusters, min_index, 1)
             del lineage_dict[min_index]
