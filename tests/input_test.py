@@ -35,6 +35,7 @@ BM = os.path.join(DATA_DIR, 'burden_regions_multiple.txt')
 KMER = os.path.join(DATA_DIR, 'kmers.gz')
 PRES = os.path.join(DATA_DIR, 'presence_absence_smaller.Rtab')
 PRESSPACE = os.path.join(DATA_DIR, 'presence_absence_smaller_space.Rtab')
+PRESMISSING = os.path.join(DATA_DIR, 'presence_absence_missing.Rtab')
 VCF = os.path.join(DATA_DIR, 'variants_smaller.vcf.gz')
 VCFNOGT = os.path.join(DATA_DIR, 'variants_no_gt.vcf.gz')
 VCFMISSING = os.path.join(DATA_DIR, 'variants_missing.vcf.gz')
@@ -423,6 +424,33 @@ class TestVariantLoading(unittest.TestCase):
                          [])
         self.assertEqual(af, 1.0)
         self.assertEqual(missing, 0.0)
+
+    def test_read_variant_rtab_missing(self):
+        infile = open(PRESMISSING)
+        p = pd.read_csv(P, index_col=0, sep='\t')['binary']
+        header = infile.readline().rstrip()
+        sample_order = header.split()[1:]
+        # check header
+        self.assertEqual(sample_order, list(p.index))
+        # check first gene
+        t = read_variant(infile, p, 'Rtab', False, [], False,
+                         p.index, sample_order)
+        self.assertEqual(
+            list(t[1]),
+            [0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0,
+             1, 0, 0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 0,
+             0, 1, 0, 0, 0, 0, 1, 0])
+        # read whole file
+        vars = []
+        while not t[0]:
+            vars.append(t)
+            t = read_variant(infile, p, 'Rtab', False, [], False,
+                             p.index, sample_order)
+        _, _, var_names, _, _, afs, _ = zip(*vars)
+        # test allele frequencies
+        self.assertEqual(
+            list(afs),
+            [0.32, 0.52, 0.44, 0.5, 0.46, 0.48, 0.38, 0.46, 0.4, 0.44])
 
     def test_read_variant_vcf(self):
         p = pd.read_csv(P,
