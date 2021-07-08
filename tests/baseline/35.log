@@ -1,4 +1,4 @@
-variant	af	filter-pvalue	lrt-pvalue	beta	notes
+variant	af	filter-pvalue	lrt-pvalue	beta	lineage	notes
 FM211187_184_G_A	4.00E-02	2.01E-01		3.40E-01	NA	bad-chisq
 FM211187_293_G_A	2.00E-02	2.54E-01		-6.69E-01	NA	bad-chisq
 FM211187_869_C_T	1.00E-01	7.84E-03		-1.63E+00	NA	bad-chisq
