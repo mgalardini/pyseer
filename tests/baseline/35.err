@@ -3,7 +3,7 @@ Detected binary phenotype
 Reading all variants
 Analysing 50 samples found in both phenotype and loaded npy
 Applying correlation filtering
-  0%|          | 0/234 [00:00<?, ?variants/s] 60%|██████    | 141/234 [00:00<00:00, 1409.89variants/s]100%|██████████| 234/234 [00:00<00:00, 1433.03variants/s]
+  0%|          | 0/234 [00:00<?, ?variants/s] 62%|██████▏   | 144/234 [00:00<00:00, 1437.18variants/s]100%|██████████| 234/234 [00:00<00:00, 1436.06variants/s]
 Fitting elastic net to top 163 variants
 Best penalty (lambda) from cross-validation: 6.33E-02
 Best model deviance from cross-validation: 1.249 ± 1.37E-01

@@ -495,6 +495,8 @@ def main():
             header.append('variant_h2')
     if options.lineage:
         header.append('lineage')
+    elif options.wg and options.sequence_reweighting and options.lineage_clusters:
+        header.append('lineage')
     if options.print_samples:
         header += ['k-samples', 'nk-samples']
     header.append('notes')
