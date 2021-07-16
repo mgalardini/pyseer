@@ -3,34 +3,14 @@ Detected binary phenotype
 Reading all variants
 Analysing 50 samples found in both phenotype and loaded npy
 Applying correlation filtering
-  0%|          | 0/234 [00:00<?, ?variants/s] 62%|██████▏   | 144/234 [00:00<00:00, 1437.18variants/s]100%|██████████| 234/234 [00:00<00:00, 1436.06variants/s]
+  0%|          | 0/234 [00:00<?, ?variants/s] 62%|██████▏   | 145/234 [00:00<00:00, 1443.18variants/s]100%|██████████| 234/234 [00:00<00:00, 1451.57variants/s]
 Fitting elastic net to top 163 variants
-Best penalty (lambda) from cross-validation: 6.33E-02
-Best model deviance from cross-validation: 1.249 ± 1.37E-01
-Best R^2 from cross-validation: -0.136
-Predictions within each lineage
-Lineage	Size	R2	TP	TN	FP	FN
-BAPS_1	3	1.000	2	1	0	0
-BAPS_10	3	-2.000	0	1	0	2
-BAPS_12	4	-1.000	2	0	2	0
-BAPS_14	4	-0.333	2	1	0	1
-BAPS_15	1	nan	1	0	0	0
-BAPS_16	1	nan	1	0	0	0
-BAPS_19	2	-1.000	1	0	1	0
-BAPS_2	3	nan	3	0	0	0
-BAPS_20	1	nan	0	1	0	0
-BAPS_22	1	nan	0	1	0	0
-BAPS_27	5	-0.667	2	1	2	0
-BAPS_28	2	nan	2	0	0	0
-BAPS_29	1	nan	0	1	0	0
-BAPS_3	2	-1.000	1	0	1	0
-BAPS_4	2	nan	0	2	0	0
-BAPS_5	2	1.000	1	1	0	0
-BAPS_6	2	1.000	1	1	0	0
-BAPS_7	5	-0.667	3	0	2	0
-BAPS_9	6	-1.000	3	0	3	0
+Best penalty (lambda) from cross-validation: 1.07E-01
+Best model deviance from cross-validation: 1.357 ± 5.64E-02
+Best R^2 from cross-validation: -0.380
 Finding and printing selected variants
+Saved enet model as enet_vcf_model.pkl
 886 loaded variants
 723 pre-filtered variants
 163 tested variants
-22 printed variants
+5 printed variants
