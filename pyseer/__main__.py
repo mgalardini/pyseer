@@ -694,7 +694,7 @@ def main():
             if options.save_model:
                 for cov_idx, covariate in enumerate(cov):
                     if enet_betas[cov_idx] > 0:
-                        pred_model[covariate] = (np.mean(covariate), enet_betas[cov_idx])
+                        pred_model[covariate] = (np.mean(cov[covariate]), enet_betas[cov_idx])
 
                 with open(options.save_model + '.pkl', 'wb') as pickle_file:
                     pickle.dump([pred_model, options.continuous], pickle_file)
