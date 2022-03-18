@@ -38,7 +38,7 @@ if __name__ == "__main__":
             sys.stderr.write('Different outputs shape\n')
             sys.exit(1)
 
-        idx = set(m1.index).intersection(m2.index)
+        idx = list(set(m1.index).intersection(m2.index))
         if len(idx) != m1.shape[0] or len(idx) != m2.shape[0]:
             sys.stderr.write('Different variants\n')
             sys.exit(1)

@@ -113,7 +113,7 @@ def load_structure(infile, p, max_dimensions, mds_type="classic", n_cpus=1,
         elif mds_type != "metric":
             sys.stderr.write("Unsupported mds type chosen. Assuming metric\n")
 
-        mds = manifold.MDS(max_dimensions, metric_mds, n_jobs=n_cpus,
+        mds = manifold.MDS(n_components=max_dimensions, metric=metric_mds, n_jobs=n_cpus,
                            dissimilarity='precomputed',
                            random_state=seed)
         projection = mds.fit_transform(m.values)
