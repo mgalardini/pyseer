@@ -20,7 +20,6 @@ with set_env(MKL_NUM_THREADS='1',
 from scipy.stats import norm
 import scipy.sparse
 import pandas as pd
-from sklearn import manifold
 from multiprocessing import Pool
 
 from .__init__ import __version__
