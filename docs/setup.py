@@ -66,15 +66,5 @@ setup(
             'enet_predict_pyseer = pyseer.enet_predict:main'
             ]
     },
-    install_requires=['numpy',
-                      'scipy',
-                      'pandas',
-                      'statsmodels>=0.10.0',
-                      'scikit-learn',
-                      'pysam',
-                      'DendroPy',
-                      'matplotlib',
-                      'pybedtools',
-                      'tqdm'],
     test_suite="tests"
 )
