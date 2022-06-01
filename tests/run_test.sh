@@ -93,6 +93,7 @@ python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --similari
 python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --lmm --covariates covariates_missing.txt --use-covariates 2q --load-lmm lmm.cache.npz > /dev/null 2> /dev/null && die "LMM reloaded with non-matching covariates"
 python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --similarity similarity.tsv.gz --lmm --covariates covariates_mismatch.txt --use-covariates 2q --save-lmm lmm.cache > /dev/null 2> /dev/null && die "LMM with non-matching covariates"
 python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --lmm --covariates covariates_mismatch.txt --use-covariates 2q --load-lmm lmm.cache.npz > /dev/null 2> /dev/null && die "LMM reloaded with non-matching covariates"
+python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --wg --output-patterns > /dev/null 2> /dev/null && die "WG mode outputting patterns"
 # TODO: test enet options failures
 
 # Now compare the outputs

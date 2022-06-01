@@ -227,7 +227,7 @@ def get_options():
     other.add_argument('--output-patterns',
                        default=False,
                        help='File to print patterns to, useful for finding '
-                            'pvalue threshold')
+                            'pvalue threshold (not used with --wg)')
     other.add_argument('--uncompressed',
                        action='store_true',
                        default=False,
@@ -288,6 +288,10 @@ def main():
     if ((options.wg and options.sequence_reweighting) and (not options.lineage_clusters or options.lineage)):
         sys.stderr.write("Using sequence reweighting requires clusters to weight with.\n")
         sys.stderr.write("Provide these with --lineage-clusters. Incompatible with --lineage.\n")
+        sys.exit(1)
+    if options.wg and options.output_patterns:
+        sys.stderr.write("Whole genome model does not produce patterns.\n")
+        sys.stderr.write("Re-run without --output-patterns.\n")
         sys.exit(1)
     if (options.block_size < 1):
         sys.stderr.write('Block size must be at least 1\n')
