@@ -64,6 +64,15 @@ python ../similarity-runner.py samples.txt --vcf variants.vcf.gz > /dev/null 2> 
 python ../similarity-runner.py samples.txt --pres presence_absence.Rtab > /dev/null 2> /dev/null || die "Similarity w/ roary/piggy"
 cat mash.tsv | python ../square_mash-runner.py > /dev/null 2> /dev/null || die "Mash squarer"
 python ../annotate_hits_pyseer-runner.py significant_kmers.txt references.txt /dev/null > /dev/null 2> /dev/null || die 'Annotate hits'
+# issue 208
+mkdir -p "test (1)"
+cp references.txt "test (1)"
+cp Spn23F.* "test (1)"
+cp 6952_7#3.* "test (1)"
+cd "test (1)"
+python ../../annotate_hits_pyseer-runner.py ../significant_kmers.txt references.txt /dev/null > /dev/null 2> /dev/null || die 'Annotate hits with weird folder names'
+cd ..
+#
 python ../phandango_mapper-runner.py significant_kmers.txt Spn23F.fa phandango.test.out > /dev/null 2> /dev/null || die 'Phandango mapper'
 python ../enet_predict-runner.py --vcf variants.vcf.gz enet_vcf_model.pkl subset.samples_list > /dev/null 2> /dev/null || die "Enet predict"
 
