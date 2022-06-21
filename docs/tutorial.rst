@@ -456,8 +456,8 @@ by many k-mers. In this case *penA* (*pbp2b*) and *penX* (*pbp2x*) are the main
 hits. Other top genes *recR* and *ddl* are adjacent to the *pbp* genes and `are
 in LD with them <https://academic.oup.com/mbe/article/16/12/1687/2925385>`_,
 creating an artifical association.
-The results with large effect sizes (recall that the odds-ratio is given by
-:math:`e^{\beta}`) and relatively low p-values also have low MAF, and are
+
+The results with large effect sizes (see :ref:`effect-size`) and relatively low p-values also have low MAF, and are
 probably false positives. This can be seen better by changing the axes:
 
 .. image:: pen_plot_maf.png

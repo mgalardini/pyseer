@@ -537,7 +537,7 @@ variant                 sequence of k-mer or ID of variant from VCF or Rtab.
 af                      allele frequency.  The proportion of samples the variant is present in.
 filter-pvalue           association of the variant with the phenotype, unadjusted for population structure.
 lrt-pvalue              the p-value from the mixed model association, as given by FaST-LMM.
-beta                    the effect size/slope of the variant. For a binary phenotype, exponentiate to obtain the odds-ratio.
+beta                    the effect size/slope of the variant.
 beta-std-err            the standard error of the fit on beta.
 variant_h2              the variance in phenotype explained by the variant. The :math:`h^2` for this variant alone.
 k-samples (optional)    the samples the variant is present in
@@ -581,6 +581,23 @@ This will return the number of unique patterns and the significance threshold.
 ``--alpha`` is the unadjusted  significance threshold to use. The other options interface
 to GNU ``sort`` to speed up the calculation, and control the amount of data
 stored in main memory/where to store on disk.
+
+.. _effect-size:
+
+Effect sizes
+^^^^^^^^^^^^
+The effect size is referred to as :math:`\beta`.
+For a binary phenotype, fitted with the fixed effect model, the odds ratio can
+be calculated with :math:`e^{\beta}`.
+For continuous phenotypes or if using the linear mixed model (even with a binary phenotype)
+the :math:`\beta` roughly gives the absolute increase in probability.
+
+For example, if a 5% of samples without a variant have a phenotype, and :math:`\beta = 0.6`,
+then around 65% of samples with the variant would be expected to have the phenotype, giving
+an odds ratio of :math:`\frac{0.65}{0.05} = 13`.
+
+For a more accurate transformation, see `this article <https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5887138/>`__
+and the accompanying `shiny app <https://shiny.cnsgenomics.com/LMOR/>`__.
 
 Processing k-mer output
 -----------------------
