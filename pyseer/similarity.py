@@ -104,8 +104,9 @@ def main():
                             block_size)
     while not eof:
         variants, variant_mat, eof = next(v_iter)
-        if G.shape[1] > block_size:
-            G = np.concatenate(G, variant_mat)
+        if G.shape[1] >= block_size:
+            G = np.concatenate([G, variant_mat], axis=1)
+            sys.stderr.write('Matrix size ' + str(G.shape[1]) + '\n')
         else:
             G = variant_mat
 
