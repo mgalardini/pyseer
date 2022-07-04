@@ -25,6 +25,7 @@ def main():
     import sys
     import numpy as np
     import pandas as pd
+    import statsmodels
     import statsmodels.api as sm
     import matplotlib.pyplot as plt
 
@@ -38,8 +39,25 @@ def main():
     y = -np.log10(m)
     x = -np.log10(np.random.uniform(0, 1, m.shape[0]))
 
-    fig = sm.qqplot_2samples(y,
-                             x,
+    # check for statsmodels version (issue #212)
+    old_stats = False
+    try:
+        vmajor, vminor = statsmodels.__version__.split('.')[:2]
+        if int(vmajor) == 0 and int(vminor) < 13:
+            old_stats = True
+        else:
+            old_stats = False
+    except:
+        pass
+
+    if old_stats:
+        xx = y
+        yy = x
+    else:
+        xx = x
+        yy = y
+    fig = sm.qqplot_2samples(xx,
+                             yy,
                              xlabel='Expected $-log_{10}(pvalue)$',
                              ylabel='Observed $-log_{10}(pvalue)$',
                              line='45',
