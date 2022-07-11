@@ -19,10 +19,10 @@ Usage::
                  [--min-af MIN_AF] [--max-af MAX_AF] [--max-missing MAX_MISSING]
                  [--filter-pvalue FILTER_PVALUE] [--lrt-pvalue LRT_PVALUE]
                  [--cor-filter COR_FILTER] [--covariates COVARIATES]
-                 [--use-covariates [USE_COVARIATES [USE_COVARIATES ...]]]
-                 [--print-samples] [--print-filtered]
-                 [--output-patterns OUTPUT_PATTERNS] [--uncompressed] [--cpu CPU]
-                 [--block_size BLOCK_SIZE] [--version]
+                 [--use-covariates [USE_COVARIATES ...]] [--print-samples]
+                 [--print-filtered] [--output-patterns OUTPUT_PATTERNS]
+                 [--uncompressed] [--cpu CPU] [--block_size BLOCK_SIZE]
+                 [--version]
 
    SEER (doi: 10.1038/ncomms12797), reimplemented in python
 
@@ -108,18 +108,18 @@ Usage::
      --covariates COVARIATES
                            User-defined covariates file (tab-delimited, with
                            header, first column contains sample names)
-     --use-covariates [USE_COVARIATES [USE_COVARIATES ...]]
+     --use-covariates [USE_COVARIATES ...]
                            Covariates to use. Format is "2 3q 4" (q for
                            quantitative) [Default: load covariates but don't use
                            them]
 
    Other:
      --print-samples       Print sample lists [Default: hide samples]
-     --print-filtered      Print filtered variants (i.e. fitting errors)
-                           [Default: hide them]
+     --print-filtered      Print filtered variants (i.e. fitting errors) (does
+                           not apply if --wg is used) [Default: hide them]
      --output-patterns OUTPUT_PATTERNS
                            File to print patterns to, useful for finding pvalue
-                           threshold
+                           threshold (not used with --wg)
      --uncompressed        Uncompressed kmers file [Default: gzipped]
      --cpu CPU             Processes [Default: 1]
      --block_size BLOCK_SIZE

@@ -1,4 +1,14 @@
 # CHANGELOG
+v1.3.10 (July 2022)
+- Docs: more clarity on effect sizes for LMM
+- Bugfix (similarity): make sure the script actually uses all variants
+- Bugfix (QQ-plot): avoid axis inversion with newer versions of statsmodels (thanks to Julian Libiseller-Egger)
+- Bugfix: use kwargs when invoking functions from scikit-learn
+- Bugfix (annotate hits): avoid crashes when full path to reference genomes contains non-ASCII chars
+- Bugfix: WG models should not be ran with the `--output-patterns` function
+- Bugfix: avoid a crash when saving a WG model with covariates
+- Bugfix: add the "lineage" header when running a whole genome model
+
 v1.3.9 (June 2021)
 - Bugfix: avoid a crash when providing lineages in whole genome mode
 
