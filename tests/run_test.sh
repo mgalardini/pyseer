@@ -78,6 +78,7 @@ python ../enet_predict-runner.py --vcf variants.vcf.gz enet_vcf_model.pkl subset
 
 # test the scripts folder
 python ../enet_predict-runner.py --vcf variants.vcf.gz enet_vcf_model.pkl subset.samples_list > /dev/null 2> /dev/null || die "Enet predict"
+python ../enet_predict-runner.py --vcf variants.vcf.gz enet_vcf_model.pkl subset.samples_list --covariates covariates.txt --use-covariates 2q 3 > /dev/null 2> /dev/null || die "Enet predict w/ covariates"
 python ../scripts/count_patterns.py patterns.txt > /dev/null 2> /dev/null || die "Count patterns"
 python ../scripts/phylogeny_distance.py tree.nwk > /dev/null 2> /dev/null || die "Tree distances"
 python ../scripts/phylogeny_distance.py tree.nwk --lmm > /dev/null 2> /dev/null || die "Tree distances (C)"
