@@ -124,7 +124,7 @@ def main():
             for covariate in cov:
                 pred_beta = model_dict.pop(covariate, (0, 0))
                 if pred_beta[1] != 0:
-                    predictions += (cov[covariate] * pred_beta[1]).reshape(-1, 1)
+                    predictions += (cov[covariate] * pred_beta[1]).values.reshape(-1, 1)
 
     # Read in lineages
     if options.lineage_clusters:
