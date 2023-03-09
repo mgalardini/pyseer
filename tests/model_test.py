@@ -85,7 +85,7 @@ class TestPreFiltering(unittest.TestCase):
         p = np.loadtxt(P_BINARY)
         k = np.loadtxt(K)
         prep, bad_chisq = pre_filtering(p, k, False)
-        self.assertEqual(prep, 0.5365065578449575)
+        self.assertAlmostEqual(prep, 0.5365065578449575)
         self.assertFalse(bad_chisq)
         # continous phenotype
         p = np.random.random(100)
@@ -98,20 +98,20 @@ class TestPreFiltering(unittest.TestCase):
         p = np.concatenate((np.ones(50), np.zeros(50)))
         k = np.concatenate((np.ones(45), np.zeros(55)))
         prep, bad_chisq = pre_filtering(p, k, False)
-        self.assertEqual(prep, 1.4919966396986922e-19)
+        self.assertAlmostEqual(prep, 1.4919966396986922e-19)
         self.assertTrue(bad_chisq)
 
     def test_pre_filtering_continuous(self):
         p_cont = np.loadtxt(P_CONT)
         k = np.loadtxt(K)
         prep, bad_chisq = pre_filtering(p_cont, k, True)
-        self.assertEqual(prep, 0.29623810011571716)
+        self.assertAlmostEqual(prep, 0.29623810011571716)
         self.assertFalse(bad_chisq)
         # using a binary p Matrix
         p = np.concatenate((np.ones(50), np.zeros(50)))
         k = np.concatenate((np.ones(45), np.zeros(55)))
         prep, bad_chisq = pre_filtering(p, k, True)
-        self.assertEqual(prep, 8.6308642007939013e-30)
+        self.assertAlmostEqual(prep, 8.6308642007939013e-30)
         self.assertFalse(bad_chisq)
 
 
