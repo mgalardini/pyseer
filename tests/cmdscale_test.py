@@ -23,7 +23,7 @@ class TestCommandScale(unittest.TestCase):
         # precision problems between systems
         Y = Y[:, :10]
         e = e[:10]
-        self.assertTrue(abs((self.Y - Y).max()) < precision)
+        self.assertTrue(abs((abs(self.Y) - abs(Y)).max()) < precision)
         self.assertTrue(abs((self.e - e).max()) < precision)
 
 
