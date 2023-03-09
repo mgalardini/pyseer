@@ -111,7 +111,7 @@ def main():
     p = pd.DataFrame(data=np.full(len(samples), intercept),
                      index=samples,
                      columns=['prediction'])
-    predictions = np.array(p.values, dtype=np.float)
+    predictions = np.array(p.values, dtype=np.float64)
 
     # Read in covariates
     if options.covariates is not None:
