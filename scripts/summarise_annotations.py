@@ -78,7 +78,7 @@ if __name__ == "__main__":
                             if up != "":
                                 update_summary(summary, up, log10p, af, beta)
                     else:
-                        sys.stderr.write(f"Could not annotation, skipping: {annotation}\n")
+                        sys.stderr.write(f"Could not parse annotation, skipping: {annotation}\n")
 
 
     # write output

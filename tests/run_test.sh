@@ -58,8 +58,8 @@ python ../pyseer-runner.py --vcf variants.vcf.gz --phenotypes subset.pheno --loa
 python ../pyseer-runner.py --vcf variants.vcf.gz --burden burden_regions_multiple.txt --phenotypes subset.pheno --load-m pop_struct.pkl --max-dimensions 3 > 37.log 2> 37.err || die "Multiple regions for burden testing"
 
 # test other pyseer commands
-python ../scree_plot_pyseer-runner.py distances.tsv.gz --max-dimensions 20
-python ../scree_plot_pyseer-runner.py distances.tsv.gz --max-dimensions 20 > /dev/null 2> /dev/null || die "Scree plot"
+#this gives an error on CI because of missing Tk/X
+#python ../scree_plot_pyseer-runner.py distances.tsv.gz --max-dimensions 20 > /dev/null 2> /dev/null || die "Scree plot"
 python ../similarity-runner.py samples.txt --kmers kmers.gz > /dev/null 2> /dev/null || die "Similarity w/ kmers"
 python ../similarity-runner.py samples.txt --vcf variants.vcf.gz > /dev/null 2> /dev/null || die "Similarity w/ vcf"
 python ../similarity-runner.py samples.txt --pres presence_absence.Rtab > /dev/null 2> /dev/null || die "Similarity w/ roary/piggy"
