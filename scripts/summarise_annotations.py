@@ -67,14 +67,19 @@ if __name__ == "__main__":
             if pvalue > 0:
                 log10p = -log10(pvalue)
                 for annotation in annotations:
-                    (position, down, inside, up) = annotation.split(";")
-                    if inside != "":
-                        update_summary(summary, inside, log10p, af, beta)
-                    elif options.nearby:
-                        if down != "":
-                            update_summary(summary, down, log10p, af, beta)
-                        if up != "":
-                            update_summary(summary, up, log10p, af, beta)
+                    annot_fields = annotation.split(";")
+                    if len(annot_fields) == 4:
+                        (position, down, inside, up) = annot_fields[0:4]
+                        if inside != "":
+                            update_summary(summary, inside, log10p, af, beta)
+                        elif options.nearby:
+                            if down != "":
+                                update_summary(summary, down, log10p, af, beta)
+                            if up != "":
+                                update_summary(summary, up, log10p, af, beta)
+                    else:
+                        sys.stderr.write(f"Could not parse annotation, skipping: {annotation}\n")
+
 
     # write output
     print("\t".join(["gene", "hits", "maxp", "avg_af", "avg_maf", "avg_beta"]))
