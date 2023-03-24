@@ -95,7 +95,7 @@ def load_structure(infile, p, max_dimensions, mds_type="classic", n_cpus=1,
 
     # Also take intersection here, so that MDS isn't done using samples not present
     # in sample
-    intersecting_samples = p.index.intersection(m.index)
+    intersecting_samples = p.index.intersection(m.index).intersection(m.columns)
     m = m.loc[intersecting_samples, intersecting_samples]
 
     if len(intersecting_samples) == 0:
