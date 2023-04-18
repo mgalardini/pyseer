@@ -416,11 +416,11 @@ def read_variant(infile, p, var_type, burden, burden_regions,
                 raise ValueError('Unexpected mismatch between header and data row')
             for present, sample in zip(strains, sample_order):
                 # sanity check
-                if present not in {'0', '1', '.'}:
+                if present not in {'0', '1', '.', ''}:
                     raise ValueError('Rtab file not binary')
                 if present == '1':
                     d[sample] = 1
-                elif present == ".":
+                elif present == "." or present == "":
                     d[sample] = np.nan
 
         # Use common dictionary to format design matrix etc
