@@ -83,9 +83,10 @@ def format_output(item, lineage_dict=None, model='seer', print_samples=False):
                 intercept = '%.2E' % Decimal(item.intercept)
             else:
                 intercept = ''
-            out += '\t' + intercept + '\t'
+            out += '\t' + intercept
             # No distances may not have further betas
             if not np.all(np.equal(item.betas, None)):
+                out += '\t'
                 out += '\t'.join(['%.2E' % Decimal(x)
                                  if np.isfinite(x)
                                  else ''
