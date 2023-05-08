@@ -1,4 +1,11 @@
 # CHANGELOG
+v1.3.11 (May 2023)
+- Improvement: Rtab files can use a empty string to signify missing values
+- Bugfix: avoid crashes wn running wgGWAS with covariates
+- Bugfix (summarise_annotations.py): more robust parsing
+- Bugfix: avoid crashes when distance matrices are not squared
+- Bugfix: properly format output when using `--no-distances`
+
 v1.3.10 (July 2022)
 - Docs: more clarity on effect sizes for LMM
 - Bugfix (similarity): make sure the script actually uses all variants

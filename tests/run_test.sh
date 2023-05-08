@@ -17,7 +17,7 @@ gzip -d -c presence_absence.Rtab.gz > presence_absence.Rtab
 
 # test all command line options
 python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --distances distances.tsv.gz --save-m pop_struct > 1.log 2> 1.err || die "Save population structure"
-python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --distances distances_not_square.tsv.gz || die "Population structure is not a square"
+python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --distances distances_not_square.tsv.gz > /dev/null 2> /dev/null || die "Population structure is not a square"
 python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --load-m pop_struct.pkl > 2.log 2> 2.err || die "Load population structure"
 python ../pyseer-runner.py --kmers kmers.gz --phenotypes subset.pheno --filter-pvalue 1E-5 --lrt-pvalue 1E-8 --load-m pop_struct.pkl > 3.log 2> 3.err || die "Basic filters"
 python ../pyseer-runner.py --kmers kmers.gz --phenotypes example.pheno --distances distances.tsv.gz --max-dimensions 3 --min-af 0.4 --max-af 0.6 > 4.log 2> 4.err || die "Binary phenotype w/ AF filtering"
