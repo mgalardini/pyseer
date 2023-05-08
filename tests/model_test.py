@@ -9,6 +9,7 @@ import statsmodels.formula.api as smf
 try:
     smf.Logit
 except AttributeError:
+    import statsmodels
     smf.Logit = statsmodels.discrete.discrete_model.Logit
 from pyseer.model import pre_filtering
 from pyseer.model import fit_null

@@ -107,6 +107,12 @@ def fit_null(p, m, cov, continuous, firth=False):
         start_vec[0] = np.log(np.mean(p)/(1-np.mean(p)))
         null_mod = smf.Logit(p, v)
 
+    # statsmodels does not raise exceptions with perfectly separable data
+    # but just a warning
+    # this may stop working in the future
+    # source: https://github.com/statsmodels/statsmodels/blob/e12de82fabd8e3fd71413aae384763c1442c4516/statsmodels/discrete/discrete_model.py#L186
+    null_mod.raise_on_perfect_prediction = True
+
     try:
         if continuous:
             null_res = null_mod.fit(disp=False)
@@ -173,6 +179,11 @@ def fit_lineage_effect(lin, c, k):
                            axis=1)
 
     lineage_mod = smf.Logit(k, X)
+    # statsmodels does not raise exceptions with perfectly separable data
+    # but just a warning
+    # this may stop working in the future
+    # source: https://github.com/statsmodels/statsmodels/blob/e12de82fabd8e3fd71413aae384763c1442c4516/statsmodels/discrete/discrete_model.py#L186
+    lineage_mod.raise_on_perfect_prediction = True
     try:
         lineage_res = lineage_mod.fit(method='newton', disp=False)
 
@@ -287,6 +298,11 @@ def fixed_effects_regression(variant, p, k, m, c, af, pattern,
     try:
         if continuous:
             mod = smf.OLS(p, v)
+            # statsmodels does not raise exceptions with perfectly separable data
+            # but just a warning
+            # this may stop working in the future
+            # source: https://github.com/statsmodels/statsmodels/blob/e12de82fabd8e3fd71413aae384763c1442c4516/statsmodels/discrete/discrete_model.py#L186
+            mod.raise_on_perfect_prediction = True
 
             res = mod.fit()
             intercept = res.params[0]
@@ -298,6 +314,11 @@ def fixed_effects_regression(variant, p, k, m, c, af, pattern,
 
         else:
             mod = smf.Logit(p, v)
+            # statsmodels does not raise exceptions with perfectly separable data
+            # but just a warning
+            # this may stop working in the future
+            # source: https://github.com/statsmodels/statsmodels/blob/e12de82fabd8e3fd71413aae384763c1442c4516/statsmodels/discrete/discrete_model.py#L186
+            mod.raise_on_perfect_prediction = True
 
             start_vec = np.zeros(v.shape[1])
             start_vec[0] = np.log(np.mean(p)/(1-np.mean(p)))
