@@ -279,6 +279,10 @@ def main():
             sys.stderr.write('Option --no-distances must be used when no distance matrix is provided\n')
             sys.exit(1)
     else:
+        if not options.lmm and not options.wg and not options.lineage_clusters and options.lineage:
+            sys.stderr.write('Must provide a lineage clusters file when --no-distances '
+                             'and --lineage are used together in fixed-effects mode\n')
+            sys.exit(1)
         if options.distances or options.load_m:
             sys.stderr.write('Cannot use --no-distances with --distances or --load-m\n')
             sys.exit(1)
