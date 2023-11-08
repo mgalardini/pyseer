@@ -21,14 +21,20 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
-    - name: Install dependencies
-      run: |
-        $CONDA/bin/conda env update --file environment.yml --name base
+    - name: Get current date
+      id: date
+      run: echo "date=$(date +%Y-%m-%d)" >> "${GITHUB_OUTPUT}"
+    - name: Install Conda environment from environment.yml
+      uses: mamba-org/setup-micromamba@v1
+      with:
+        micromamba-version: '1.4.6-0'
+        environment-file: environment.yml
+        # persist on the same day.
+        cache-environment-key: environment-${{ steps.date.outputs.date }}
+        cache-downloads-key: downloads-${{ steps.date.outputs.date }}
     - name: Install and run_test.py
+      shell: bash -l {0}
       run: |
-        PATH=$CONDA/bin/bin:$PATH
-        source $CONDA/bin/activate base
-        alias python=$CONDA/bin/python
         python -m pip install --no-deps --ignore-installed .
         pytest -v tests
         cd tests && bash run_test.sh
