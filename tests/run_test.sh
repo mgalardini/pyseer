@@ -75,6 +75,11 @@ cd "test (1)"
 python ../../annotate_hits_pyseer-runner.py ../significant_kmers.txt references.txt /dev/null > /dev/null 2> /dev/null || die 'Annotate hits with weird folder names'
 cd ..
 #
+# issue 253
+python ../annotate_hits_pyseer-runner.py significant_kmers.txt references.txt with_rRNA.txt --feature-type rRNA > /dev/null 2> /dev/null || die 'Annotate hits with rRNA (1)'
+grep TAGCACTCATCGTTTACAGCGTGGACTACCAGGGTATCTAATCCTGTTTGCTCCCCACGCTTTCGAGCCTCAGCGTCAGTTACAAGCCAGAGAGCCGCTT with_rRNA.txt | grep FM211187.6350 > /dev/null 2> /dev/null || die 'Annotate hits with rRNA (2)'
+rm with_rRNA.txt
+#
 python ../phandango_mapper-runner.py significant_kmers.txt Spn23F.fa phandango.test.out > /dev/null 2> /dev/null || die 'Phandango mapper'
 python ../enet_predict-runner.py --vcf variants.vcf.gz enet_vcf_model.pkl subset.samples_list > /dev/null 2> /dev/null || die "Enet predict"
 
