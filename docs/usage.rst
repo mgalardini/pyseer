@@ -660,6 +660,10 @@ ID will be used.
    of each query is slow, so only significant k-mers should be annotated in
    this manner.
 
+.. note:: By default ``annotate_hits_pyseer`` will only consider CDS features in the
+   provided GFF files. If you want to consider other feature types you can use the
+   ``--feature-type`` option (*e.g.* ``--feature-type rRNA --feature-type tRNA``).
+
 To summarise these annotations over all significant k-mers, use the
 ``summarise_annotations.py`` script::
 

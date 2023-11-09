@@ -404,6 +404,10 @@ haven't already been mapped to a previous annotation (requires ``bedtools``, ``b
 .. note:: If this runs slowly you can split the ``significant_kmers.txt`` file into
    pieces to parallelise the process.
 
+.. note:: By default ``annotate_hits_pyseer`` will only consider CDS features in the
+   provided GFF files. If you want to consider other feature types you can use the
+   ``--feature-type`` option (*e.g.* ``--feature-type rRNA --feature-type tRNA``).
+
 Annotations marked ``ref`` can partially match between k-mer and reference
 sequence, whereas those marked ``draft`` require an exact match. In this case
 the single draft didn't add any matches.
