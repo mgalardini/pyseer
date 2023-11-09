@@ -28,6 +28,11 @@ def get_options():
     parser.add_argument("output",
                         help="Output file")
 
+    parser.add_argument("--feature-type",
+                        action="append",
+                        help="Which feature types to consider "
+                        "[default=CDSs only]",
+                        default=["CDS"])
     parser.add_argument("--bwa",
                         help="Location of bwa executable "
                         "[default=bwa]",
@@ -138,7 +143,7 @@ def main():
             # python prior to 3.5
             subprocess.check_call("gff2bed < \"" + ref_gff + "\" > \"" + tmp_bed.name + "\"", shell=True)
         ref_annotation = pybedtools.BedTool(tmp_bed.name)
-        filtered_ref = ref_annotation.filter(lambda x: True if x[7] == "CDS" else False).saveas('tmp_bed')
+        filtered_ref = ref_annotation.filter(lambda x: True if x[7] in options.feature_type else False).saveas('tmp_bed')
         ref_annotation = pybedtools.BedTool('tmp_bed')
 
         for bwa_algorithm in bwa_algorithms:
