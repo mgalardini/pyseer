@@ -15,6 +15,10 @@ def get_options():
     parser.add_argument('patterns',
                         help='File of patterns from pyseer')
 
+    parser.add_argument('--threshold',
+                        default=False,
+                        action='store_true',
+                        help='Only print p-value threshold')
     parser.add_argument('--alpha',
                         default=0.05,
                         type=float,
@@ -48,5 +52,9 @@ if __name__ == "__main__":
                " | wc -l")
 
     p = subprocess.check_output(command, shell=True, universal_newlines=True)
-    print("Patterns:\t" + p.rstrip())
-    print("Threshold:\t" + '%.2E' % Decimal(options.alpha/float(p.rstrip())))
+    if not options.threshold:
+        print("Patterns:\t" + p.rstrip())
+        print("Threshold:\t" + '%.2E' % Decimal(options.alpha/float(p.rstrip())))
+    else:
+        print('%.2E' % Decimal(options.alpha/float(p.rstrip())))
+
