@@ -91,13 +91,24 @@ class TestLoadFunctions(unittest.TestCase):
                         0.14715874,  0.26079721, 0.40212166,
                         0.01363621,  0.4692565 , -0.91867928, -0.80314748,
                         0.12924261])
+        # scikit-learn >= 1.5.0 gives different results still
+        tr2 = np.array([-0.77358649,  0.27808873, -0.66410947,  0.15156241,  0.64312006])
+        tc2 = np.array([-0.77358649, -0.34210166, -0.20470446,  0.68840152,  0.64905702,
+                        0.10738983, -0.2647525 , -0.22611827,  1.        , -0.7949316 ,
+                        0.70578587, -0.43893806, -0.15941077,  0.63665674,  0.37763782,
+                        -0.58174628, -0.19797499,  0.5000248 , -0.74400678, -0.1875957])
         try:
             self.assertTrue(abs((t.values[0] - tr).max()) < 1E-7)
             self.assertTrue(abs((t.values[:,0] - tc).max()) < 1E-7)
         except AssertionError:
-            # scikit-learn >= 0.20.0 gives different results
-            self.assertTrue(abs((t.values[0] - tr1).max()) < 1E-7)
-            self.assertTrue(abs((t.values[:,0] - tc1).max()) < 1E-7)
+            try:
+                # scikit-learn >= 0.20.0 gives different results
+                self.assertTrue(abs((t.values[0] - tr1).max()) < 1E-7)
+                self.assertTrue(abs((t.values[:,0] - tc1).max()) < 1E-7)
+            except AssertionError:
+                # scikit-learn >= 1.5.0 gives different results still
+                self.assertTrue(abs((t.values[0] - tr2).max()) < 1E-7)
+                self.assertTrue(abs((t.values[:,0] - tc2).max()) < 1E-7)
         t = load_structure(M, p, 5, 'metric', 1, 42)
         tr = np.array([-0.97249805, -0.24747933, 0.49918088,
                        -0.04765291, 0.34207924])
