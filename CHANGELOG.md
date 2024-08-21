@@ -1,4 +1,13 @@
 # CHANGELOG
+v1.3.12 (August 2024)
+- Improvement: `annotate_hits.py` has a new argument to specify more GFF types to use
+- Improvement: `count_patterns.py` has a new argument to only print the p-value threshold (thanks to Bamu Damaris)
+- Bugfix: refuse to run if certain arguments are not provided
+- Docs: fix readthedocs' configuration
+- CI: speeding things up using mamba
+- CI: workaround to avoid GH actions crashing due to glmnet_py
+- Tests: avoid failures due to newer versions of sklearn
+
 v1.3.11 (May 2023)
 - Improvement: Rtab files can use a empty string to signify missing values
 - Bugfix: avoid crashes wn running wgGWAS with covariates
