@@ -44,7 +44,7 @@ if __name__ == "__main__":
     from decimal import Decimal
 
     command = "LC_ALL=C sort -u "
-    if options.cores > 1:
+    if int(options.cores) > 1:
         command +=  "--parallel=" + str(options.cores)
     command += (" -S " + str(int(options.memory) - mem_adjust) + "M" +
                " -T " + options.temp +
