@@ -19,6 +19,9 @@ def get_options():
     parser.add_argument('--unadj-p',
                         action='store_true',
                         help='Use the unadjusted p-value (set if adjusted p-value not available)')
+    parser.add_argument('--no-absolute-beta',
+                        action='store_true',
+                        help='Do not use the absolute value for the betas')
 
     return parser.parse_args()
 
@@ -55,7 +58,9 @@ if __name__ == "__main__":
                 sys.stderr.write("No adjusted p-value found; try with --unadj-p\n")
             else:
                 pvalue = float(anot_fields[3])
-            beta = abs(float(anot_fields[4]))
+            beta = float(anot_fields[4])
+            if not options.no_absolute_beta:
+                beta = abs(beta)
             # double check that there are actual hits here
             if anot_fields[-1].count(';') == 0:
                 sys.stderr.write('K-mer %s seemingly has no '
