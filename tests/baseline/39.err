@@ -3,7 +3,7 @@ Detected binary phenotype
 Reading all variants
 Analysing 50 samples found in both phenotype and loaded npy
 Applying correlation filtering
-  0%|          | 0/234 [00:00<?, ?variants/s]100%|██████████| 234/234 [00:00<00:00, 2570.77variants/s]
+  0%|          | 0/234 [00:00<?, ?variants/s]100%|██████████| 234/234 [00:00<00:00, 2572.22variants/s]
 Fitting elastic net to top 163 variants
 Best penalty (lambda) from cross-validation: 6.33E-02
 Best model deviance from cross-validation: 1.249 ± 1.37E-01
@@ -29,6 +29,7 @@ BAPS_5	2	1.000	1	1	0	0
 BAPS_6	2	1.000	1	1	0	0
 BAPS_7	5	-0.667	3	0	2	0
 BAPS_9	6	-1.000	3	0	3	0
+Writing predictions to preds.lineage.txt
 Finding and printing selected variants
 886 loaded variants
 723 pre-filtered variants

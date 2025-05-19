@@ -118,7 +118,8 @@ def load_all_vars(var_type, p, burden, burden_regions, infile,
     return(variants, selected_vars, var_idx)
 
 def fit_enet(p, variants, covariates, weights, continuous, alpha,
-             lineage_dict = None, fold_ids = None, n_folds = 10, n_cpus = 1):
+             lineage_dict = None, fold_ids = None, n_folds = 10,
+             n_cpus = 1, predictions_outfile = None):
     """Fit an elastic net model to a set of variants. Prints
     information about model fit and prediction quality to STDERR
 
@@ -155,6 +156,10 @@ def fit_enet(p, variants, covariates, weights, continuous, alpha,
             Set to -1 to use all available
 
             [default = 1]
+        predictions_outfile (str)
+            File name to write predictions to
+
+            [default = None]
 
     Returns:
         betas (numpy.array)
@@ -196,6 +201,12 @@ def fit_enet(p, variants, covariates, weights, continuous, alpha,
         sys.stderr.write("Predictions within each lineage\n")
         write_lineage_predictions(p.values, predictions, fold_ids,
                                   lineage_dict, continuous)
+
+    # Write predictions to file
+    if predictions_outfile is not None:
+        sys.stderr.write("Writing predictions to " + predictions_outfile + "\n")
+        write_predictions(p.index, p.values, predictions, fold_ids,
+                          lineage_dict, predictions_outfile)
 
     return(betas.reshape(-1,))
 
@@ -244,6 +255,57 @@ def enet_predict(enet_fit, variants, continuous, responses = None):
     return(preds, R2)
 
 
+def write_predictions(samples,
+                      true_values, predictions, fold_ids,
+                      lineage_dict, fname):
+    """Writes true values and predictions as a tsv file
+
+    Args:
+        samples (iterable)
+            Sample names
+        true_values (np.array)
+            Observed values of phenotype
+        predictions (np.array)
+            Predicted phenotype values
+        fold_ids (list)
+            Index of fold assignment for cross-validation, from 0 to 1-n_folds
+        lineage_dict (list)
+            Names of lineages, indices corrsponding to fold_ids
+        fname (str)
+            File name to write predictions to
+    Returns:
+        None
+    """
+    fout = open(fname, 'w')
+    header = ["sample",]
+    if lineage_dict is not None and fold_ids is not None:
+        header.append("lineage")
+        header.append("fold_id")
+    header.append("true_value")
+    header.append("predicted_value")
+    fout.write("\t".join(header) + "\n")
+
+    if lineage_dict is not None and fold_ids is not None:
+        for sample, true_value, prediction, fold_id in zip(samples,
+                                                           true_values,
+                                                           predictions,
+                                                           fold_ids):
+            fout.write("\t".join([sample,
+                                  lineage_dict[fold_id],
+                                  str(fold_id),
+                                  str(true_value),
+                                  str(prediction[0])]) + "\n")
+    else:
+        for sample, true_value, prediction in zip(samples,
+                                                  true_values,
+                                                  predictions):
+            fout.write("\t".join([sample,
+                                  str(true_value),
+                                  str(prediction[0])]) + "\n")
+
+    fout.close()
+
+
 def write_lineage_predictions(true_values, predictions, fold_ids,
                               lineage_dict, continuous, stderr_print=True):
     """Writes prediction ability stratified by lineage to stderr
@@ -253,10 +315,10 @@ def write_lineage_predictions(true_values, predictions, fold_ids,
             Observed values of phenotype
         predictions (np.array)
             Predicted phenotype values
-        lineage_dict (list)
-            Names of lineages, indices corrsponding to fold_ids
         fold_ids (list)
             Index of fold assignment for cross-validation, from 0 to 1-n_folds
+        lineage_dict (list)
+            Names of lineages, indices corrsponding to fold_ids
         continuous (bool)
             True if a continuous phenotype, False if a binary phenotype
         stderr_print (bool)

@@ -1,0 +1,15 @@
+Read 50 phenotypes
+Detected continuous phenotype
+Reading all variants
+Analysing 50 samples found in both phenotype and loaded npy
+Applying correlation filtering
+  0%|          | 0/234 [00:00<?, ?variants/s]100%|██████████| 234/234 [00:00<00:00, 2473.31variants/s]
+Fitting elastic net to top 175 variants
+Best penalty (lambda) from cross-validation: 1.65E+00
+Best R^2 from cross-validation: 0.519
+Writing predictions to preds.cont.txt
+Finding and printing selected variants
+886 loaded variants
+711 pre-filtered variants
+175 tested variants
+28 printed variants

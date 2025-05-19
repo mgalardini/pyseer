@@ -1,0 +1,6 @@
+variant	af	filter-pvalue	lrt-pvalue	beta	notes
+FM211187_869_C_T	1.00E-01	7.84E-03		-1.08E+00	bad-chisq
+FM211187_1981_G_A	9.40E-01	1.13E-01		1.14E-01	bad-chisq
+FM211187_2943_T_C	1.20E-01	2.06E-02		7.03E-01	bad-chisq
+FM211187_6054_C_T	6.00E-02	1.13E-01		1.55E-02	bad-chisq
+FM211187_11762_G_T	6.00E-02	1.13E-01		2.43E-16	bad-chisq
