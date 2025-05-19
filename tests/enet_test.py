@@ -531,7 +531,7 @@ class TestWritePredictions(unittest.TestCase):
     def test_write_binary(self):
         samples = [f'sample_{x}' for x in range(1, 101)]
         true_values = np.random.randint(0, 2, size=(100,))
-        predictions = np.random.randint(0, 2, size=(100,))
+        predictions = [[x] for x in np.random.randint(0, 2, size=(100,))]
         fname = 'binary_predictions_test.txt'
 
         write_predictions(samples, true_values, predictions,
@@ -562,7 +562,7 @@ class TestWritePredictions(unittest.TestCase):
     def test_write_continuous(self):
         samples = [f'sample_{x}' for x in range(1, 101)]
         true_values = np.random.random(size=(100,))
-        predictions = np.random.random(size=(100,))
+        predictions = [[x] for x in np.random.randint(0, 2, size=(100,))]
         fname = 'continuous_predictions_test.txt'
 
         write_predictions(samples, true_values, predictions,
