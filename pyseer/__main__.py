@@ -158,6 +158,10 @@ def get_options():
                       help='Prefix for loading variants')
     wg.add_argument('--save-model',
                       help='Prefix for saving model')
+    wg.add_argument('--save-predictions',
+                    default=None,
+                    help='File to save predictions to in TSV format '
+                         '[Default: do not save predictions]')
     wg.add_argument('--alpha',
                       type=float,
                       default=0.0069,
@@ -661,7 +665,7 @@ def main():
             enet_betas = fit_enet(p, all_vars, cov, weights,
                                   options.continuous, options.alpha,
                                   lineage_dict_full, fold_ids, options.n_folds,
-                                  options.cpu)
+                                  options.cpu, options.save_predictions,)
 
             # print those with passing indices, along with coefficient
             sys.stderr.write("Finding and printing selected variants\n")

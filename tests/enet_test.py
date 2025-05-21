@@ -11,6 +11,7 @@ from pyseer.enet import fit_enet
 from pyseer.enet import load_all_vars
 from pyseer.enet import correlation_filter
 from pyseer.enet import find_enet_selected
+from pyseer.enet import write_predictions
 from pyseer.model import fit_null
 
 
@@ -524,6 +525,70 @@ class TestLoadAllVars(unittest.TestCase):
             _  = load_all_vars('Rtab', p, False, None,
                                infile, set(p.index), None,
                                0.45, 0.55, 1.0, False)
+
+
+class TestWritePredictions(unittest.TestCase):
+    def test_write_binary(self):
+        samples = [f'sample_{x}' for x in range(1, 101)]
+        true_values = np.random.randint(0, 2, size=(100,))
+        predictions = [[x] for x in np.random.randint(0, 2, size=(100,))]
+        fname = 'binary_predictions_test.txt'
+
+        write_predictions(samples, true_values, predictions,
+                          None, None, fname)
+
+        self.assertTrue(os.path.isfile(fname))
+        df = pd.read_csv(fname, sep='\t')
+        self.assertEqual(df.shape, (100, 3))
+        self.assertTrue('sample' in df.columns)
+        self.assertTrue('true_value' in df.columns)
+        self.assertTrue('predicted_value' in df.columns)
+
+        fold_ids = np.random.randint(0, 10, size=(100,))
+        lineage_dict = [f'lineage_{x}' for x in range(1, 11)]
+
+        write_predictions(samples, true_values, predictions,
+                          fold_ids, lineage_dict, fname)
+
+        self.assertTrue(os.path.isfile(fname))
+        df = pd.read_csv(fname, sep='\t')
+        self.assertEqual(df.shape, (100, 5))
+        self.assertTrue('sample' in df.columns)
+        self.assertTrue('lineage' in df.columns)
+        self.assertTrue('fold_id' in df.columns)
+        self.assertTrue('true_value' in df.columns)
+        self.assertTrue('predicted_value' in df.columns)
+
+    def test_write_continuous(self):
+        samples = [f'sample_{x}' for x in range(1, 101)]
+        true_values = np.random.random(size=(100,))
+        predictions = [[x] for x in np.random.randint(0, 2, size=(100,))]
+        fname = 'continuous_predictions_test.txt'
+
+        write_predictions(samples, true_values, predictions,
+                          None, None, fname)
+
+        self.assertTrue(os.path.isfile(fname))
+        df = pd.read_csv(fname, sep='\t')
+        self.assertEqual(df.shape, (100, 3))
+        self.assertTrue('sample' in df.columns)
+        self.assertTrue('true_value' in df.columns)
+        self.assertTrue('predicted_value' in df.columns)
+
+        fold_ids = np.random.randint(0, 10, size=(100,))
+        lineage_dict = [f'lineage_{x}' for x in range(1, 11)]
+
+        write_predictions(samples, true_values, predictions,
+                          fold_ids, lineage_dict, fname)
+
+        self.assertTrue(os.path.isfile(fname))
+        df = pd.read_csv(fname, sep='\t')
+        self.assertEqual(df.shape, (100, 5))
+        self.assertTrue('sample' in df.columns)
+        self.assertTrue('lineage' in df.columns)
+        self.assertTrue('fold_id' in df.columns)
+        self.assertTrue('true_value' in df.columns)
+        self.assertTrue('predicted_value' in df.columns)
 
 
 if __name__ == '__main__':

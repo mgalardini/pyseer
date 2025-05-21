@@ -57,6 +57,9 @@ python ../pyseer-runner.py --vcf variants.vcf.gz --phenotypes subset.pheno --loa
 python ../pyseer-runner.py --vcf variants.vcf.gz --phenotypes subset.pheno --load-vars enet_vcf --wg enet --save-model enet_vcf_model --covariates covariates.txt --use-covariates 2q 3 --alpha 1 --cor-filter 0.25 > 35.log 2> 35.err || die "Load Enet w/ covariates and save model"
 python ../pyseer-runner.py --vcf variants.vcf.gz --phenotypes subset.pheno --load-vars enet_vcf --wg enet --lineage-clusters lineage_clusters.txt --sequence-reweighting --alpha 1 --cor-filter 0.25 > 36.log 2> 36.err || die "Enet with lineages"
 python ../pyseer-runner.py --vcf variants.vcf.gz --burden burden_regions_multiple.txt --phenotypes subset.pheno --load-m pop_struct.pkl --max-dimensions 3 > 37.log 2> 37.err || die "Multiple regions for burden testing"
+python ../pyseer-runner.py --vcf variants.vcf.gz --phenotypes subset.pheno --load-vars enet_vcf --wg enet --alpha 1 --cor-filter 0.25 --save-predictions preds.txt > 38.log 2> 38.err|| die "Enet saving predictions to file"
+python ../pyseer-runner.py --vcf variants.vcf.gz --phenotypes subset.pheno --load-vars enet_vcf --wg enet --lineage-clusters lineage_clusters.txt --sequence-reweighting --alpha 1 --cor-filter 0.25 --save-predictions preds.lineage.txt > 39.log 2> 39.err || die "Enet saving predictions to file (w/ lineages)"
+python ../pyseer-runner.py --vcf variants.vcf.gz --phenotypes subset.pheno --phenotype-column continuous --load-vars enet_vcf --wg enet --alpha 1 --cor-filter 0.25 --save-predictions preds.cont.txt > 40.log 2> 40.err || die "Enet saving predictions to file (continuous phenotype)"
 
 # test other pyseer commands
 #this gives an error on CI because of missing Tk/X
