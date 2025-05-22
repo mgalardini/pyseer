@@ -1,4 +1,10 @@
 # CHANGELOG
+v1.4.0 (May 2025)
+- Improvement: added the `--save-predictions` argument to save the true/predicted values from the training set
+- Improvement: summarise_annotations.py allows the user to decide if they want to use the absolute betas or not
+- Bugfix: count_patterns.py properly handles multiple cores (thanks to Galo Adrián Goig)
+- CI: pin scipy version to avoid errors with older glmnet_py
+
 v1.3.12 (August 2024)
 - Improvement: `annotate_hits.py` has a new argument to specify more GFF types to use
 - Improvement: `count_patterns.py` has a new argument to only print the p-value threshold (thanks to Bamu Damaris)
