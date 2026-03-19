@@ -97,6 +97,12 @@ class TestLoadFunctions(unittest.TestCase):
                         0.10738983, -0.2647525 , -0.22611827,  1.        , -0.7949316 ,
                         0.70578587, -0.43893806, -0.15941077,  0.63665674,  0.37763782,
                         -0.58174628, -0.19797499,  0.5000248 , -0.74400678, -0.1875957])
+        # scikit-learn >= 1.8.0 gives different results still
+        tr3 = np.array([0.33762230, 0.04617572, 0.16052974, 0.52845894, -0.90760096])
+        tc3 = np.array([0.33762230, -0.08747260, 0.06004778, 0.38093803, -0.25578627,
+                        0.23132635, -1.00000000, 0.44847081, -0.43020593, 0.01492802,
+                        0.13843412, 0.67209455, -0.40516276, 0.17481251, 0.38093804,
+                        -0.62889757, -0.07803323, 0.46890566, -0.10716067, -0.31579913])
         try:
             self.assertTrue(abs((t.values[0] - tr).max()) < 1E-7)
             self.assertTrue(abs((t.values[:,0] - tc).max()) < 1E-7)
@@ -106,9 +112,14 @@ class TestLoadFunctions(unittest.TestCase):
                 self.assertTrue(abs((t.values[0] - tr1).max()) < 1E-7)
                 self.assertTrue(abs((t.values[:,0] - tc1).max()) < 1E-7)
             except AssertionError:
-                # scikit-learn >= 1.5.0 gives different results still
-                self.assertTrue(abs((t.values[0] - tr2).max()) < 1E-7)
-                self.assertTrue(abs((t.values[:,0] - tc2).max()) < 1E-7)
+                try:
+                    # scikit-learn >= 1.5.0 gives different results still
+                    self.assertTrue(abs((t.values[0] - tr2).max()) < 1E-7)
+                    self.assertTrue(abs((t.values[:,0] - tc2).max()) < 1E-7)
+                except AssertionError:
+                    # scikit-learn >= 1.8.0 gives different results still
+                    self.assertTrue(abs((t.values[0] - tr3).max()) < 1E-7)
+                    self.assertTrue(abs((t.values[:,0] - tc3).max()) < 1E-7)
         t = load_structure(M, p, 5, 'metric', 1, 42)
         tr = np.array([-0.97249805, -0.24747933, 0.49918088,
                        -0.04765291, 0.34207924])
@@ -117,12 +128,28 @@ class TestLoadFunctions(unittest.TestCase):
                        -0.34305642, 0.58112243, 0.56611122, 0.16864438,
                        -0.42256615, -0.30980933, -0.61344531, -0.3418638,
                        -0.55246211, 0.74549807, 1., 0.66051035])
-        self.assertTrue(abs((t.values[0] - tr).max()) < 1E-7)
-        self.assertTrue(abs((t.values[:,0] - tc).max()) < 1E-7)
+        # scikit-learn >= 1.8.0 gives different results for metric MDS
+        tr_metric = np.array([0.60675124, 0.24243111, 0.11760914, 0.48049612, -0.88035329])
+        tc_metric = np.array([0.60675124, 0.07887546, -0.91352384, -0.01243249, -0.10302767,
+                              0.72392243, -0.43245006, -0.02775887, -1.00000000, 0.09598576,
+                              0.14929232, 0.92884737, -0.64577922, -0.01815094, -0.01307313,
+                              -0.75508475, 0.73135780, 0.13226520, -0.13928871, 0.61327209])
+        try:
+            self.assertTrue(abs((t.values[0] - tr).max()) < 1E-7)
+            self.assertTrue(abs((t.values[:,0] - tc).max()) < 1E-7)
+        except AssertionError:
+            # scikit-learn >= 1.8.0 gives different results for metric MDS
+            self.assertTrue(abs((t.values[0] - tr_metric).max()) < 1E-7)
+            self.assertTrue(abs((t.values[:,0] - tc_metric).max()) < 1E-7)
         # bogus mds_type, should default to "metric"
         t = load_structure(M, p, 5, 'test', 1, 42)
-        self.assertTrue(abs((t.values[0] - tr).max()) < 1E-7)
-        self.assertTrue(abs((t.values[:,0] - tc).max()) < 1E-7)
+        try:
+            self.assertTrue(abs((t.values[0] - tr).max()) < 1E-7)
+            self.assertTrue(abs((t.values[:,0] - tc).max()) < 1E-7)
+        except AssertionError:
+            # scikit-learn >= 1.8.0 gives different results for metric MDS
+            self.assertTrue(abs((t.values[0] - tr_metric).max()) < 1E-7)
+            self.assertTrue(abs((t.values[:,0] - tc_metric).max()) < 1E-7)
         # no file to be found
         with self.assertRaises(FileNotFoundError):
             t = load_structure('nope', p, 5, 'test', 1, 42)

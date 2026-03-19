@@ -131,11 +131,11 @@ def fit_null(p, m, cov, continuous, firth=False):
                                             disp=False)
                 # Null fit with default optimiser may fail, Powell
                 # optimizer might work
-                except np.linalg.linalg.LinAlgError:
+                except np.linalg.LinAlgError:
                     null_res = null_mod.fit(start_params=start_vec,
                                             method='powell',
                                             disp=False)
-    except np.linalg.linalg.LinAlgError:
+    except np.linalg.LinAlgError:
         sys.stderr.write('Matrix inversion error for null model\n')
         return None
     except statsmodels.tools.sm_exceptions.PerfectSeparationError:
@@ -346,7 +346,7 @@ def fixed_effects_regression(variant, p, k, m, c, af, pattern,
                     bad_chisq = True
                     notes.add('perfectly-separable-data')
 
-                except np.linalg.linalg.LinAlgError:
+                except np.linalg.LinAlgError:
                     # singular matrix error
                     bad_chisq = True
                     notes.add('matrix-inversion-error')
