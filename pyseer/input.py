@@ -52,7 +52,7 @@ def load_phenotypes(infile, column):
     p = p.dropna()
 
     # Check type
-    if not np.issubdtype(p.values.dtype, np.number):
+    if not pd.api.types.is_numeric_dtype(p.values.dtype):
         sys.stderr.write('Phenotypes must be numeric\n')
         sys.exit(1)
 
@@ -113,9 +113,21 @@ def load_structure(infile, p, max_dimensions, mds_type="classic", n_cpus=1,
         elif mds_type != "metric":
             sys.stderr.write("Unsupported mds type chosen. Assuming metric\n")
 
-        mds = manifold.MDS(n_components=max_dimensions, metric=metric_mds, n_jobs=n_cpus,
-                           dissimilarity='precomputed',
-                           random_state=seed)
+        try:
+            mds = manifold.MDS(n_components=max_dimensions,
+                               metric_mds=metric_mds,
+                               metric='precomputed',
+                               n_jobs=n_cpus,
+                               normalized_stress='auto',
+                               random_state=seed,
+                               n_init=1)
+        except TypeError:
+            # sklearn < 1.8 does not have metric_mds
+            mds = manifold.MDS(n_components=max_dimensions,
+                               metric=metric_mds,
+                               n_jobs=n_cpus,
+                               random_state=seed,
+                               dissimilarity='precomputed')
         projection = mds.fit_transform(m.values)
 
     m = pd.DataFrame(projection,
