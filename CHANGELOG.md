@@ -1,4 +1,7 @@
 # CHANGELOG
+v1.4.1 (March 2026)
+- Bugfix: Avoid crashes due to newer versions of numpy and scikit-learn
+
 v1.4.0 (May 2025)
 - Improvement: added the `--save-predictions` argument to save the true/predicted values from the training set
 - Improvement: summarise_annotations.py allows the user to decide if they want to use the absolute betas or not

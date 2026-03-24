@@ -2,4 +2,4 @@
 
 '''Python reimplementation of SEER for bacterial GWAS'''
 
-__version__ = '1.4.1-dev'
+__version__ = '1.4.1'
