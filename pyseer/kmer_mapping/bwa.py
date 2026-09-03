@@ -32,9 +32,9 @@ def bwa_index(fasta_file):
             subprocess.check_call(command, shell=True, stderr=devnull)
 
 # Runs bwa, iterates over results and parses them
-def bwa_iter(reference, fasta, algorithm):
+def bwa_iter(reference, fasta, algorithm, threads:int = 1 ):
     if algorithm == "mem":
-        command = "bwa mem -v 1 -k 8 '" + reference + "' '" + fasta + "'"
+        command = f"bwa mem -v 1 -k 8 -t {threads}'" + reference + "' '" + fasta + "'"
     elif algorithm == "fastmap":
         command = "bwa fastmap -w %d -l 9 '" % (MAX_FASTMAP_HITS) + reference + "' '" + fasta + "'"
     else:
