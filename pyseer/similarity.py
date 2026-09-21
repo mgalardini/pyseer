@@ -94,7 +94,7 @@ def main():
         sample_order = header.split()[1:]
 
     eof = 0
-    G = None
+    blocks = []
     sys.stderr.write("Reading in variants\n")
     v_iter = load_var_block(var_type, p, None, None, infile,
                             all_strains, sample_order,
@@ -103,11 +103,10 @@ def main():
                             block_size)
     while not eof:
         variants, variant_mat, eof = next(v_iter)
-        if G is not None:
-            G = np.concatenate([G, variant_mat], axis=1)
-        else:
-            G = variant_mat
-        sys.stderr.write('Matrix size ' + str(G.shape[1]) + '\n')
+        blocks.append(variant_mat)
+
+    G = np.concatenate(blocks, axis=1)
+    sys.stderr.write('Matrix size ' + str(G.shape[1]) + '\n')
 
     sys.stderr.write("Calculating sample similarity\n")
     K = np.matmul(G, np.transpose(G))
