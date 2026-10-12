@@ -28,6 +28,10 @@ def get_options():
                         help="Location of bwa executable "
                         "[Default: bwa]",
                         default="bwa")
+    parser.add_argument("--threads",
+                        help="Threads used for bwa "
+                        "[Default: 1]",
+                        default=1)
     parser.add_argument("--tmp-prefix",
                         help="Directory to store temporary files "
                         "[Default: cwd]",
@@ -83,7 +87,7 @@ def main():
         outfile.write("\t".join(["SNP", "BP", "minLOG10(P)", "log10(p)", "r^2"]) + "\n")
 
         contigs = set()
-        mapped_kmers = bwa_iter(options.reference, tmp_fa.name, "mem")
+        mapped_kmers = bwa_iter(options.reference, tmp_fa.name, "mem", options.threads)
         for mapping, kmer_line in zip(mapped_kmers, seer_results):
             total += 1
             p_val = float(kmer_line.split("\t")[lrt_idx])
