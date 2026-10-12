@@ -447,9 +447,13 @@ def fit_firth(logit_model, start_vec, X, y,
     for i in range(0, step_limit):
         pi = logit_model.predict(beta_iterations[i])
         W = np.diagflat(np.multiply(pi, 1-pi))
-        var_covar_mat = np.linalg.pinv(
-                        -logit_model.hessian(beta_iterations[i])
-                        )
+        try:
+            var_covar_mat = np.linalg.pinv(
+                            -logit_model.hessian(beta_iterations[i])
+                            )
+        except np.linalg.LinAlgError:
+            sys.stderr.write('Matrix inversion error for firth regression\n')
+            return None
 
         # build hat matrix
         rootW = np.sqrt(W)
